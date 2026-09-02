@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <!-- PDF.js para extracción de texto desde PDFs de cotización -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -909,6 +910,7 @@ const state = {
     commissionDefault: 20,
     iscRate: 16,
     fxRate: 60.00,
+    extractAliases: {},
   },
 };
 /* ---------- PERSISTENCIA ---------- */
@@ -957,6 +959,19 @@ function load(){
 }
 /* ---------- HELPERS ---------- */
 function uid(){ return 'c_' + Math.random().toString(36).slice(2,9); }
+function addMonths(dateStr, m){
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00'); if(isNaN(d)) return '';
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + (parseInt(m,10)||0));
+  if(d.getDate() < day) d.setDate(0); /* ajusta fin de mes */
+  const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+  return y+'-'+mo+'-'+da;
+}
+function _todayStr(){ const t=new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+function setConstStart(v){ const c=activeCase(); if(!c)return; c.period.constStart=v; if(v && c.period.constMonths){ c.period.constEnd = addMonths(v, c.period.constMonths); } c.updatedAt=new Date().toISOString(); save(); render(); }
+function setConstMonths(v){ const c=activeCase(); if(!c)return; c.period.constMonths=parseInt(v,10)||0; if(c.period.constStart){ c.period.constEnd = addMonths(c.period.constStart, c.period.constMonths); } c.updatedAt=new Date().toISOString(); save(); render(); }
+function setConstStartToday(){ setConstStart(_todayStr()); }
 function activeCase(){ return state.cases.find(c => c.id === state.activeCaseId); }
 function fmtMoney(n, ccy='USD'){
   if(n === null || n === undefined || n === '' || isNaN(+n)) return '—';
@@ -1536,12 +1551,19 @@ function viewDashboard(){
         </div>
         <button class="btn btn-gold" onclick="newCase()">+ Nuevo caso</button>
       </div>
+      <div class="row" style="gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <input class="input" id="caseSearch" placeholder="Buscar por cliente, ref o ubicación…" style="max-width:340px" oninput="filterCases()">
+        <select class="select" id="caseStatusFilter" style="max-width:190px" onchange="filterCases()">
+          <option value="">Todos los estados</option>
+          <option>Cotizando</option><option>Comparando</option><option>Colocado</option><option>Extensión</option>
+        </select>
+      </div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Ref.</th><th>Asegurado</th><th>Tipo</th><th>SI Obras</th><th>Vigencia</th><th>Aseguradoras</th><th>Estado</th><th></th></tr></thead>
-          <tbody>
+          <tbody id="casesBody">
             ${cs.map(c => `
-              <tr>
+              <tr data-search="${escapeHtml(((c.ref||'')+' '+(c.insured.name||'')+' '+(c.interest.location||'')).toLowerCase())}" data-status="${escapeHtml(c.status||'')}">
                 <td><strong>${escapeHtml(c.ref)}</strong></td>
                 <td>${escapeHtml(c.insured.name || '—')}<div class="muted" style="font-size:11px">${escapeHtml(c.interest.location||'')}</div></td>
                 <td>${c.header.type}</td>
@@ -1550,6 +1572,7 @@ function viewDashboard(){
                 <td>${c.panel.filter(p=>p.selected).length} / ${c.panel.length}</td>
                 <td>${statusBadge(c.status)}</td>
                 <td style="text-align:right">
+                  <button class="btn btn-ghost btn-sm" onclick="duplicateCase('${c.id}')" title="Duplicar para otro proyecto de la misma constructora">Duplicar</button>
                   <button class="btn btn-ghost btn-sm" onclick="openCase('${c.id}')">Abrir</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteCase('${c.id}')">Eliminar</button>
                 </td>
@@ -1576,6 +1599,132 @@ function deleteCase(id){
   if(sbClient && currentUser){ sbClient.from('cases').delete().eq('id', id).then(function(){}, function(){}); }
   if(state.activeCaseId === id) state.activeCaseId = state.cases[0]?.id || null;
   save(); render();
+}
+function duplicateCase(id){
+  const orig = state.cases.find(c => c.id === id);
+  if(!orig) return;
+  const copy = JSON.parse(JSON.stringify(orig));
+  copy.id = uid();
+  copy.ref = (orig.ref || 'TRC') + '-COPIA';
+  copy.status = 'Cotizando';
+  copy.quotes = [];
+  if(Array.isArray(copy.panel)) copy.panel.forEach(p => { p.sent = false; });
+  copy.createdAt = new Date().toISOString();
+  copy.updatedAt = new Date().toISOString();
+  state.cases.unshift(copy);
+  state.activeCaseId = copy.id;
+  state.view = 'risk';
+  save(); render();
+}
+function filterCases(){
+  const qEl = document.getElementById('caseSearch'), sEl = document.getElementById('caseStatusFilter');
+  const q = (qEl ? qEl.value : '').toLowerCase().trim();
+  const st = sEl ? sEl.value : '';
+  document.querySelectorAll('#casesBody tr[data-search]').forEach(tr => {
+    const okQ = !q || (tr.getAttribute('data-search')||'').includes(q);
+    const okS = !st || (tr.getAttribute('data-status')||'') === st;
+    tr.style.display = (okQ && okS) ? '' : 'none';
+  });
+}
+function insuredDirectory(){
+  const seen = {}, out = [];
+  (state.cases||[]).forEach(c => { const n=((c.insured&&c.insured.name)||'').trim(); if(n && !seen[n.toLowerCase()]){ seen[n.toLowerCase()]=1; out.push(c.insured); } });
+  return out;
+}
+function autofillInsured(name){
+  const c = activeCase(); if(!c) return;
+  const key = (name||'').trim().toLowerCase();
+  const match = insuredDirectory().find(i => ((i.name||'').trim().toLowerCase()) === key);
+  if(!match) return;
+  ['rnc','address','activity','contractor','principal','subs'].forEach(k => {
+    if((!c.insured[k] || c.insured[k]==='') && match[k]) c.insured[k] = match[k];
+  });
+  save(); render();
+}
+const CASE_DOC_TYPES = [{k:'endoso',label:'Endoso'},{k:'poliza',label:'Póliza'},{k:'factura',label:'Factura'},{k:'cronograma',label:'Cronograma'},{k:'presupuesto',label:'Presupuesto'}];
+function docFor(c, k){ return ((c&&c.docs)||[]).find(d => d.tipo === k); }
+function docsSection(c){
+  const slots = CASE_DOC_TYPES.map(t => {
+    const d = docFor(c, t.k);
+    const inputEl = '<input type="file" id="caseDocInput_'+t.k+'" style="display:none" onchange="uploadCaseDoc(\''+t.k+'\', this)">';
+    const inner = d
+      ? '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">📄 '+escapeHtml(d.name)+'</span><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-ghost btn-sm" onclick="openCaseDoc(\''+t.k+'\')">Abrir</button><button class="btn btn-ghost btn-sm" title="Reemplazar" onclick="document.getElementById(\'caseDocInput_'+t.k+'\').click()">Reemplazar</button><button class="btn btn-danger btn-sm" onclick="removeCaseDoc(\''+t.k+'\')">✕</button></span>'
+      : '<span style="font-size:12px;color:var(--ink-500);flex:1">Sin archivo</span><button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'caseDocInput_'+t.k+'\').click()">+ Subir</button>';
+    return '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--ink-700);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">'+t.label+'</div><div class="row" style="justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:8px">'+inner+'</div>'+inputEl+'</div>';
+  }).join('');
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><div>
+        <h2 class="card-title">Documentos del caso</h2>
+        <div class="card-subtitle">Endoso · Póliza · Factura · Cronograma · Presupuesto</div>
+      </div></div>
+      ${slots}
+    </div>`;
+}
+async function uploadCaseDoc(k, input){
+  const c = activeCase(); if(!c) return;
+  const file = input.files[0]; if(!file) return;
+  if(!sbClient || !currentUser){ syncToast('⚠ Inicia sesión para subir documentos', false); return; }
+  const path = c.id + '/' + k + '_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  syncToast('Subiendo ' + file.name + '…', true);
+  try{
+    const up = await sbClient.storage.from('case-docs').upload(path, file, { upsert:false });
+    if(up.error) throw up.error;
+    c.docs = c.docs || [];
+    const old = c.docs.find(d => d.tipo === k);
+    if(old){ try{ await sbClient.storage.from('case-docs').remove([old.path]); }catch(e){} c.docs = c.docs.filter(d => d.tipo !== k); }
+    c.docs.push({ tipo:k, name:file.name, path:path, size:file.size, uploadedAt:new Date().toISOString() });
+    c.updatedAt = new Date().toISOString();
+    save(); render();
+    syncToast('Documento subido ✓', true);
+  }catch(e){ console.error('upload doc', e); syncToast('⚠ No se pudo subir: '+_errTxt(e), false); }
+}
+async function openCaseDoc(k){
+  const c = activeCase(); const d = docFor(c, k); if(!d || !sbClient) return;
+  try{
+    const r = await sbClient.storage.from('case-docs').createSignedUrl(d.path, 3600);
+    if(r.error) throw r.error;
+    window.open(r.data.signedUrl, '_blank');
+  }catch(e){ console.error(e); syncToast('⚠ No se pudo abrir: '+_errTxt(e), false); }
+}
+async function removeCaseDoc(k){
+  const c = activeCase(); const d = docFor(c, k); if(!d) return;
+  if(!confirm('¿Eliminar este documento?')) return;
+  try{ if(sbClient) await sbClient.storage.from('case-docs').remove([d.path]); }catch(e){ console.warn(e); }
+  c.docs = c.docs.filter(x => x.tipo !== k); c.updatedAt = new Date().toISOString(); save(); render();
+}
+function uploadProjectImage(input){
+  const c=activeCase(); if(!c) return;
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const maxW=1600, scale=Math.min(1, maxW/img.width);
+      const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      try{ c.projectImage = cv.toDataURL('image/jpeg', 0.82); }catch(err){ c.projectImage = e.target.result; }
+      c.updatedAt=new Date().toISOString(); save(); render();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeProjectImage(){ const c=activeCase(); if(!c) return; c.projectImage=''; c.updatedAt=new Date().toISOString(); save(); render(); }
+function requiredMissing(c){
+  const m=[];
+  if(!(c.insured&&c.insured.name)) m.push('Asegurado');
+  if(!(c.interest&&c.interest.description)) m.push('Descripción de la obra');
+  if(!(c.interest&&c.interest.location)) m.push('Ubicación');
+  if(!(siTotal(c)>0)) m.push('Suma asegurada');
+  if(!(c.period&&c.period.constStart&&c.period.constEnd)) m.push('Vigencia');
+  return m;
+}
+function missingBanner(c){
+  const m=requiredMissing(c);
+  if(!m.length) return '';
+  return '<div style="background:#fef3c7;border:1px solid #f59e0b;border-left:4px solid #d97706;border-radius:8px;padding:10px 14px;margin:0 0 14px;font-size:12.5px;color:#78350f"><b>Faltan datos para un documento completo:</b> '+m.join(', ')+'. Compl\u00e9talos en Datos del Riesgo.</div>';
 }
 /* ============================================================
    VISTA: DATOS DEL RIESGO (wizard)
@@ -1624,6 +1773,7 @@ function refreshMapaObra(){
 function viewRisk(c){
   const tplCurrent = PROJECT_TEMPLATES[c.template];
   return `
+    ${docsSection(c)}
     <div class="card">
       <div class="card-header">
         <div>
@@ -1655,23 +1805,33 @@ function viewRisk(c){
               <option value="Swiss Re"   ${c.formato==='Swiss Re'?'selected':''}>Swiss Re</option>
             </select></div>
           <div class="field"><label>Moneda</label>
-            <select class="select" onchange="updPath('header.currency',this.value)">
+            <select class="select" onchange="updPath('header.currency',this.value);render()">
               <option ${c.header.currency==='DOP'?'selected':''}>DOP</option>
               <option ${c.header.currency==='USD'?'selected':''}>USD</option>
             </select></div>
           <div class="field"><label>Ref. interna</label><input class="input" value="${escapeHtml(c.ref)}" onchange="updField('ref',this.value)"></div>
-          <div class="field full"><label>Asegurado (razón social)</label><input class="input" value="${escapeHtml(c.insured.name)}" onchange="updPath('insured.name',this.value);renderHelper()" placeholder="FASA Constructores, S.R.L."></div>
+          <div class="field full"><label>Asegurado (razón social)</label><input class="input" list="insuredList" value="${escapeHtml(c.insured.name)}" onchange="updPath('insured.name',this.value);autofillInsured(this.value);renderHelper()" placeholder="FASA Constructores, S.R.L."><datalist id="insuredList">${insuredDirectory().map(i=>'<option value="'+escapeHtml(i.name)+'">').join('')}</datalist></div>
           <div class="field"><label>RNC</label><input class="input" value="${escapeHtml(c.insured.rnc)}" onchange="updPath('insured.rnc',this.value)" placeholder="1-30-XXXXX-X"></div>
           <div class="field"><label>Contratista principal</label><input class="input" value="${escapeHtml(c.insured.contractor)}" onchange="updPath('insured.contractor',this.value)"></div>
           <div class="field full"><label>Obra Asegurada — descripción</label><textarea class="textarea" rows="2" onchange="updPath('interest.description',this.value)" placeholder="2da Etapa Proyecto Viviendas...">${escapeHtml(c.interest.description)}</textarea></div>
           <div class="field full"><label>Ubicación de la obra</label><input class="input" value="${escapeHtml(c.interest.location)}" onchange="updPath('interest.location',this.value);refreshMapaObra()" placeholder="Sector, Municipio, Provincia"></div>
           ${mapaObra(c,'mapaObraBox1')}
+          <div class="field full"><label>Imagen del proyecto (render) <span class="hint">para la portada de la presentación</span></label>
+            ${c.projectImage ? `<div class="row" style="gap:10px;align-items:center"><img src="${c.projectImage}" style="height:74px;border-radius:8px;border:1px solid var(--line)"><button class="btn btn-danger btn-sm" onclick="removeProjectImage()">Quitar</button></div>` : `<div><input type="file" accept="image/*" id="projImgInput" style="display:none" onchange="uploadProjectImage(this)"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('projImgInput').click()">+ Subir imagen</button></div>`}
+          </div>
           <div class="field full"><label>Grado de avance de la obra al inicio de cobertura <span class="hint">(opcional, solo si la construcción ya inició)</span></label>
             <input class="input" value="${escapeHtml(c.interest.progress||'')}" onchange="updPath('interest.progress',this.value)" placeholder="Ej: 30% — cimentación completa, estructura 50%, MEP por iniciar"></div>
           <div class="field"><label>Duración construcción</label>
-            <select class="select" onchange="updPath('period.constMonths',+this.value)">
+            <select class="select" onchange="setConstMonths(this.value)">
               ${[3,6,9,12,15,18,24,30,36,48].map(m=>`<option value="${m}" ${c.period.constMonths===m?'selected':''}>${m} meses</option>`).join('')}
             </select></div>
+          <div class="field"><label>Inicio / emisión</label>
+            <div class="row" style="gap:6px">
+              <input class="input" type="date" value="${c.period.constStart||''}" onchange="setConstStart(this.value)" style="flex:1">
+              <button class="btn btn-ghost btn-sm" type="button" onclick="setConstStartToday()">Hoy</button>
+            </div></div>
+          <div class="field"><label>Fin de vigencia <span class="hint">(calculada, editable)</span></label>
+            <input class="input" type="date" value="${c.period.constEnd||''}" onchange="updPath('period.constEnd',this.value)"></div>
           <div class="field"><label>Mantenimiento</label>
             <select class="select" onchange="updPath('period.maintMonths',+this.value)">
               ${[0,6,12,18,24,36].map(m=>`<option value="${m}" ${c.period.maintMonths===m?'selected':''}>${m} meses</option>`).join('')}
@@ -1743,7 +1903,7 @@ function viewRisk(c){
         <div class="field"><label>Ref. interna Garrigo</label><input class="input" value="${escapeHtml(c.ref)}" onchange="updField('ref',this.value)"></div>
         <div class="field"><label>Póliza No. <span class="hint">(cuando colocada)</span></label><input class="input" value="${escapeHtml(c.header.policyNo||'')}" placeholder="11-7153" onchange="updPath('header.policyNo',this.value)"></div>
         <div class="field"><label>Moneda</label>
-          <select class="select" onchange="updPath('header.currency',this.value)">
+          <select class="select" onchange="updPath('header.currency',this.value);render()">
             <option ${c.header.currency==='USD'?'selected':''}>USD</option>
             <option ${c.header.currency==='DOP'?'selected':''}>DOP / RD$</option>
           </select></div>
@@ -1765,8 +1925,8 @@ function viewRisk(c){
       </div>
       <div class="section-title">3. Vigencia / Period</div>
       <div class="form-grid cols-4">
-        <div class="field"><label>Duración construcción (meses)</label><input class="input" type="number" min="1" value="${c.period.constMonths||12}" onchange="updPath('period.constMonths',+this.value)"></div>
-        <div class="field"><label>Inicio construcción <span class="hint">(opcional, al emitir)</span></label><input class="input" type="date" value="${c.period.constStart}" onchange="updPath('period.constStart',this.value)"></div>
+        <div class="field"><label>Duración construcción (meses)</label><input class="input" type="number" min="1" value="${c.period.constMonths||12}" onchange="setConstMonths(this.value)"></div>
+        <div class="field"><label>Inicio construcción <span class="hint">(al emitir)</span></label><input class="input" type="date" value="${c.period.constStart}" onchange="setConstStart(this.value)"></div>
         <div class="field"><label>Fin construcción <span class="hint">(opcional, al emitir)</span></label><input class="input" type="date" value="${c.period.constEnd}" onchange="updPath('period.constEnd',this.value)"></div>
         <div class="field"><label>Mantenimiento (meses)</label>
           <select class="select" onchange="updPath('period.maintMonths',+this.value)">
@@ -2055,6 +2215,7 @@ function viewSlip(c){
   const targetIns = targetId ? DEFAULT_INSURERS.find(i => i.id === targetId) : null;
   const panelEntry = targetId ? c.panel.find(p => p.insurerId === targetId) : null;
   return `
+    ${missingBanner(c)}
     <div class="card" style="margin-bottom:14px">
       <div class="card-header">
         <div>
@@ -2231,7 +2392,7 @@ function renderSlipBody(c){
     </table>
     <h2><span class="doc-section-num">6</span> Coberturas y Endosos Solicitados</h2>
     <p style="font-size:10pt;color:var(--ink-700);margin-bottom:6pt">A continuación los endosos y cláusulas de cobertura que solicitamos al mercado para nuestro asegurado.</p>
-    ${['Endosos Munich Re LATAM','Endosos locales RD'].map(cat => {
+    ${['Endosos Munich Re LATAM'].map(cat => {
       const items = CLAUSE_LIB.filter(cl => cl.cat === cat && c.clauses.find(x=>x.id===cl.id && x.selected));
       if(items.length === 0) return '';
       return `
@@ -2243,6 +2404,23 @@ function renderSlipBody(c){
           </tbody>
         </table>`;
     }).join('')}
+    <h2><span class="doc-section-num">7</span> Acuerdos de Pago Solicitado</h2>
+    ${(() => {
+      const sz = c.template || 'medium';
+      const cuotas = sz==='small'?3 : (sz==='large'?7 : 5);
+      const label = sz==='small'?'pequeño' : (sz==='large'?'grande':'mediano');
+      const pctCuota = 75/cuotas;
+      const selQ = (c.proposal && c.proposal.selectedInsurer) ? c.quotes.find(q=>q.insurerId===c.proposal.selectedInsurer) : null;
+      const prima = (selQ && +selQ.premiumTotal>0) ? +selQ.premiumTotal : 0;
+      const hasMonto = prima>0;
+      const th = '<th>Concepto</th><th style="text-align:right">% de la prima</th>' + (hasMonto?'<th style="text-align:right">Monto</th>':'');
+      const cuotaMonto = Math.round(prima*0.75/cuotas);
+      let filas = '<tr><td><strong>Inicial (al emitir la póliza)</strong></td><td style="text-align:right"><strong>25%</strong></td>'+(hasMonto?'<td style="text-align:right"><strong>'+M(Math.round(prima*0.25))+'</strong></td>':'')+'</tr>';
+      for(let i=1;i<=cuotas;i++){ filas += '<tr><td>Cuota '+i+' (mensual)</td><td style="text-align:right">'+pctCuota.toFixed(pctCuota%1===0?0:1)+'%</td>'+(hasMonto?'<td style="text-align:right">'+M(cuotaMonto)+'</td>':'')+'</tr>'; }
+      const totalRow = hasMonto ? '<tr><td><strong>Total prima</strong></td><td style="text-align:right"><strong>100%</strong></td><td style="text-align:right"><strong>'+M(Math.round(prima))+'</strong></td></tr>' : '';
+      const nota = hasMonto ? '' : '<p style="font-size:9pt;color:var(--ink-500);font-style:italic;margin-top:4pt">Los montos se calcularán al confirmar la prima (aseguradora seleccionada en el comparador).</p>';
+      return '<p style="font-size:10pt;color:var(--ink-700);margin-bottom:6pt">Solicitamos las siguientes condiciones de pago fraccionado para este proyecto (clasificado como <strong>'+label+'</strong>): 25% de prima inicial y el 75% restante en '+cuotas+' cuotas mensuales.</p><table><thead><tr>'+th+'</tr></thead><tbody>'+filas+totalRow+'</tbody></table>'+nota;
+    })()}
     ${c.additional_conditions ? `
       <h3>Condiciones Adicionales</h3>
       <p style="font-size:10pt">${nl2br(c.additional_conditions)}</p>
@@ -2735,10 +2913,133 @@ function autoRecommend(){
   c.updatedAt = new Date().toISOString();
   save(); render();
 }
+function proposalData(c){
+  const ccy = c.header.currency;
+  const scored = scoreQuotes(c);
+  const insName = id => { const i=DEFAULT_INSURERS.find(x=>x.id===id); return i?i.name:(id||'—'); };
+  const selRaw = c.proposal.selectedInsurer ? c.quotes.find(q=>q.insurerId===c.proposal.selectedInsurer) : null;
+  const sel = selRaw && hasQuoteData(selRaw) ? selRaw : null;
+  const sz = c.template || 'medium';
+  const cuotas = sz==='small'?3:(sz==='large'?7:5);
+  const quotes = scored.map(s => { const q=s.q; return {
+    insurer: insName(q.insurerId), tasa: fmtRate(calcRate(q,c)),
+    premiumNet:+q.premiumNet||0, isc:+q.isc||0, premiumTotal:+q.premiumTotal||0,
+    facilidad: '25% + '+cuotas+' cuotas', deducibles: q.deductibles_proposed||'',
+    score: s.totalScore, recommended: !!(sel && q.insurerId===sel.insurerId)
+  }; });
+  return {
+    insured: c.insured.name||'', project: c.interest.description||'', location: c.interest.location||'', currency: ccy,
+    constMonths: c.period.constMonths||12, maint: c.period.maintMonths||0,
+    sumaI: siTotal(c), rc: c.sums.liability_event, formato: c.formato||'Munich Re', tipo: c.header.type||'TRC',
+    projectImage: c.projectImage||'', mercados: quotes.map(q=>q.insurer), quotes: quotes
+  };
+}
+async function fetchProposalNarrative(data){
+  const resp = await fetch('/api/proposal', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(data) });
+  const j = await resp.json();
+  if(!resp.ok) throw new Error(j && j.error ? j.error : ('HTTP '+resp.status));
+  return j;
+}
+function fallbackNarrative(d){
+  const ded={}; (d.quotes||[]).forEach(q=>{ ded[q.insurer]={ catastroficos:'', rc:'', obra:q.deducibles||'' }; });
+  const sym=d.currency==='USD'?'US$ ':'RD$ ';
+  return {
+    obraDesc: d.project||'',
+    interesAsegurable: 'Sección I: daños físicos a materiales, suministros y trabajos de la obra · Sección II: RC extracontractual a terceros '+sym+Math.round(d.rc||0).toLocaleString('en-US'),
+    tipoPoliza: 'Todo Riesgo Construcción y/o Montaje, base póliza estándar '+(d.formato||'Munich Re')+' para Latinoamérica',
+    deducibles: ded
+  };
+}
+function buildProposalDeck(c, d, ai){
+  const P = new PptxGenJS();
+  P.defineLayout({ name:'W', width:13.333, height:7.5 }); P.layout='W';
+  const BLUE='004A88', ORANGE='FF5200', GRAYT='5F6B7A', DARK='1A1F2E', LIGHT='F1F4F8', GREEN='E9F5E1', WHITE='FFFFFF', NAVY='0A2E52', SUB='C9D6E5';
+  const F='Arial', RR=P.ShapeType.roundRect, RC=P.ShapeType.rect;
+  const sym = d.currency==='USD'?'US$':'RD$';
+  const money = v => sym+Math.round(+v||0).toLocaleString('en-US');
+  const moneyD = v => sym+Number(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const logo = (typeof LOGO_DOC_PNG!=='undefined') ? LOGO_DOC_PNG : null;
+
+  // --- Slide 1: Portada ---
+  let s=P.addSlide(); s.background={color:NAVY};
+  if(d.projectImage){ try{ s.addImage({data:d.projectImage,x:5.6,y:0,w:7.73,h:7.5,sizing:{type:'cover',w:7.73,h:7.5}}); }catch(e){} s.addShape(RC,{x:5.6,y:0,w:7.73,h:7.5,fill:{color:NAVY,transparency:40}}); }
+  s.addShape(RC,{x:0,y:0,w:0.28,h:7.5,fill:{color:ORANGE}});
+  s.addShape(RR,{x:0.75,y:0.55,w:3.3,h:1.5,fill:{color:WHITE},rectRadius:0.1});
+  if(logo) s.addImage({data:logo,x:1.0,y:0.85,w:2.8,h:0.9});
+  s.addShape(RR,{x:4.25,y:0.55,w:2.7,h:1.5,fill:{color:WHITE},rectRadius:0.1});
+  s.addText('PREPARADO PARA',{x:4.4,y:0.72,w:2.4,h:0.28,fontFace:F,fontSize:9,color:GRAYT,charSpacing:1,align:'center'});
+  s.addText(d.insured||'Cliente',{x:4.35,y:1.05,w:2.5,h:0.85,fontFace:F,fontSize:12,bold:true,color:BLUE,align:'center',valign:'middle'});
+  s.addText('COMPARATIVO DE PROPUESTAS · '+new Date().toLocaleDateString('es-DO',{month:'long',year:'numeric'}).toUpperCase(),{x:0.78,y:2.95,w:11.5,h:0.4,fontFace:F,fontSize:13,color:ORANGE,charSpacing:2});
+  s.addText('Seguro Todo Riesgo\nde Construcción',{x:0.72,y:3.35,w:11.5,h:1.8,fontFace:F,fontSize:42,bold:true,color:WHITE,lineSpacing:46});
+  s.addText(d.project||'Proyecto',{x:0.78,y:5.25,w:11.5,h:0.5,fontFace:F,fontSize:17,color:SUB});
+  const cardW=3.9, cardY=6.15, cardH=0.95;
+  [['ASEGURADO',d.insured||'—'],['VALOR ASEGURABLE',moneyD(d.sumaI)],['MERCADOS',(d.mercados||[]).join(' · ')||'—']].forEach((cd,i)=>{
+    const x=0.75+i*(cardW+0.18);
+    s.addShape(RR,{x:x,y:cardY,w:cardW,h:cardH,fill:{color:'FFFFFF',transparency:88},line:{color:'6E8CAE',width:0.5},rectRadius:0.05});
+    s.addText(cd[0],{x:x+0.2,y:cardY+0.13,w:cardW-0.35,h:0.25,fontFace:F,fontSize:9,color:'FFB08A',charSpacing:1});
+    s.addText(cd[1],{x:x+0.2,y:cardY+0.42,w:cardW-0.35,h:0.45,fontFace:F,fontSize:12.5,bold:true,color:WHITE,valign:'middle'});
+  });
+
+  // --- Slide 2: Perfil del riesgo ---
+  s=P.addSlide(); s.background={color:WHITE};
+  s.addText('EL PROYECTO',{x:0.72,y:0.5,w:6,h:0.3,fontFace:F,fontSize:12,color:ORANGE,charSpacing:2});
+  s.addText('Perfil del riesgo asegurado',{x:0.7,y:0.82,w:9,h:0.7,fontFace:F,fontSize:30,bold:true,color:BLUE});
+  if(logo) s.addImage({data:logo,x:11.0,y:0.5,w:1.9,h:0.62});
+  s.addShape(RR,{x:0.72,y:1.9,w:5.7,h:1.5,fill:{color:LIGHT},rectRadius:0.08});
+  s.addText(moneyD(d.sumaI),{x:0.97,y:2.15,w:5.2,h:0.6,fontFace:F,fontSize:24,bold:true,color:ORANGE});
+  s.addText('Valor asegurable de la obra (Sección I)',{x:0.97,y:2.85,w:5.2,h:0.4,fontFace:F,fontSize:12,color:GRAYT});
+  s.addShape(RR,{x:6.6,y:1.9,w:5.7,h:1.5,fill:{color:LIGHT},rectRadius:0.08});
+  s.addText(d.constMonths+' meses',{x:6.85,y:2.15,w:5.2,h:0.6,fontFace:F,fontSize:24,bold:true,color:ORANGE});
+  s.addText('Plazo de construcción + '+d.maint+' meses de mantenimiento',{x:6.85,y:2.85,w:5.2,h:0.5,fontFace:F,fontSize:12,color:GRAYT});
+  const kv=[
+    ['Asegurado', (d.insured||'—')+' y/o contratistas y/o subcontratistas'],
+    ['Obra', (ai&&ai.obraDesc)||d.project||'—'],
+    ['Ubicación', d.location||'—'],
+    ['Interés asegurable', (ai&&ai.interesAsegurable)||('Sección I: daños materiales · Sección II: RC a terceros '+money(d.rc))],
+    ['Tipo de póliza', (ai&&ai.tipoPoliza)||('Todo Riesgo Construcción, base '+(d.formato||'Munich Re'))]
+  ];
+  s.addTable(kv.map(r=>[{text:r[0],options:{bold:true,color:BLUE}},{text:String(r[1]),options:{color:GRAYT}}]),{x:0.72,y:3.75,w:11.9,colW:[2.7,9.2],rowH:0.6,fontFace:F,fontSize:12.5,border:{type:'solid',color:'EDEFF3',pt:0.5},valign:'middle'});
+
+  // --- Slide 3: Comparativo económico ---
+  s=P.addSlide(); s.background={color:WHITE};
+  s.addText('Comparativo económico',{x:0.7,y:0.5,w:9,h:0.7,fontFace:F,fontSize:28,bold:true,color:BLUE});
+  if(logo) s.addImage({data:logo,x:11.0,y:0.5,w:1.9,h:0.62});
+  const Q=d.quotes||[];
+  const firstW=3.0, restW=Q.length?((12.3-firstW)/Q.length):9;
+  const colW=[firstW].concat(Q.map(function(){return restW;}));
+  const hdrE=[{text:'Concepto',options:{bold:true,color:WHITE,fill:{color:BLUE}}}].concat(Q.map(q=>({text:q.insurer.toUpperCase(),options:{bold:true,color:WHITE,fill:{color:BLUE},align:'center'}})));
+  const rowsE=[['Tasa negociada',q=>q.tasa,true],['Prima neta',q=>money(q.premiumNet),false],['ISC (16%)',q=>money(q.isc),false],['Prima total',q=>money(q.premiumTotal),true],['Facilidad de pago',q=>q.facilidad,true]];
+  const bodyE=rowsE.map(rd=>[{text:rd[0],options:{bold:true,color:DARK}}].concat(Q.map(q=>({text:String(rd[1](q)),options:{align:'center',bold:rd[2],color:(q.recommended&&rd[2])?ORANGE:(q.recommended?DARK:GRAYT),fill:{color:q.recommended?GREEN:WHITE}}}))));
+  s.addTable([hdrE].concat(Q.length?bodyE:[[{text:'Aún no hay cotizaciones',options:{colspan:1,color:'888888'}}]]),{x:0.5,y:1.35,w:12.3,colW:colW,rowH:0.42,fontFace:F,fontSize:11.5,border:{type:'solid',color:'E5E7EB',pt:0.5},valign:'middle'});
+  const yD=1.35+(rowsE.length+1)*0.42+0.3;
+  s.addText('DEDUCIBLES',{x:0.5,y:yD,w:6,h:0.3,fontFace:F,fontSize:12,color:ORANGE,charSpacing:2});
+  const ded=(ai&&ai.deducibles)||{};
+  const dedRows=[['Riesgos catastróficos / de la naturaleza','catastroficos'],['Responsabilidad civil','rc'],['Daños a la obra / otros riesgos','obra']];
+  const hdrD=[{text:'Cobertura / Concepto',options:{bold:true,color:WHITE,fill:{color:BLUE}}}].concat(Q.map(q=>({text:q.insurer.toUpperCase(),options:{bold:true,color:WHITE,fill:{color:BLUE},align:'center'}})));
+  const bodyD=dedRows.map(dr=>[{text:dr[0],options:{bold:true,color:BLUE}}].concat(Q.map(q=>{ const v=(ded[q.insurer]&&ded[q.insurer][dr[1]])||''; return {text:String(v||'—'),options:{align:'center',color:DARK,fill:{color:q.recommended?GREEN:WHITE}}}; })));
+  s.addTable([hdrD].concat(bodyD),{x:0.5,y:yD+0.34,w:12.3,colW:colW,rowH:0.72,fontFace:F,fontSize:10,border:{type:'solid',color:'E5E7EB',pt:0.5},valign:'middle'});
+  return P;
+}
+async function generateProposalPPT(){
+  const c = activeCase(); if(!c) return;
+  if(typeof PptxGenJS === 'undefined'){ alert('La librería de PowerPoint no cargó. Revisa tu conexión a internet.'); return; }
+  const d = proposalData(c);
+  syncToast('Generando presentación…', true);
+  let ai = null;
+  try{ ai = await fetchProposalNarrative(d); }
+  catch(e){ console.warn('IA propuesta no disponible, uso datos locales:', e); ai = fallbackNarrative(d); }
+  if(!ai || !ai.deducibles) ai = Object.assign(fallbackNarrative(d), ai||{});
+  try{
+    const P = buildProposalDeck(c, d, ai);
+    await P.writeFile({ fileName:'Propuesta-'+((c.ref||'TRC').replace(/[^a-zA-Z0-9_-]/g,'_'))+'.pptx' });
+    syncToast('Presentación lista ✓', true);
+  }catch(e){ console.error(e); syncToast('⚠ No se pudo generar el PPT: '+_errTxt(e), false); }
+}
 function viewProposal(c){
   const filledQuotes = activeQuotes(c);
   const scored = scoreQuotes(c);
   return `
+    ${missingBanner(c)}
     <div class="card">
       <div class="card-header">
         <div>
@@ -2802,6 +3103,7 @@ function viewProposal(c){
         <div class="row">
           <button class="btn btn-ghost btn-sm" onclick="exportDocx('proposal')">⬇ Word</button>
           <button class="btn btn-ghost btn-sm" onclick="exportPdf('proposal')">⬇ PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="generateProposalPPT()">📊 PPT (IA)</button>
         </div>
       </div>
       <div class="preview-body">
@@ -2816,185 +3118,62 @@ function renderProposalDoc(c){
 function renderProposalBody(c){
   const ccy = c.header.currency;
   const M = v => fmtMoney(v, ccy);
-  /* Solo aceptar selección si la cotización elegida tiene datos reales */
+  const scored = scoreQuotes(c);
+  const filled = activeQuotes(c);
+  const insName = id => { const i = DEFAULT_INSURERS.find(x=>x.id===id); return i ? i.name : (id||'—'); };
   const selRaw = c.proposal.selectedInsurer ? c.quotes.find(q => q.insurerId === c.proposal.selectedInsurer) : null;
   const sel = selRaw && hasQuoteData(selRaw) ? selRaw : null;
-  const selIns = sel ? DEFAULT_INSURERS.find(i => i.id === sel.insurerId) : null;
-  return `
-    <p style="text-align:center;color:var(--ink-500);font-style:italic;margin-top:-10px">Preparada para ${escapeHtml(c.insured.name)} · ${fmtDate(c.header.dateIssue)}</p>
-    <h2><span class="doc-section-num">1</span> Resumen del Riesgo</h2>
-    <dl class="kv">
-      <dt>Proyecto</dt><dd>${escapeHtml(c.interest.description)}</dd>
-      <dt>Ubicación</dt><dd>${escapeHtml(c.interest.location)}</dd>
-      <dt>Vigencia construcción</dt><dd>${(c.period.constStart && c.period.constEnd) ? fmtDate(c.period.constStart)+' al '+fmtDate(c.period.constEnd) : (c.period.constMonths||12)+' meses'}</dd>
-      <dt>Mantenimiento</dt><dd>${c.period.maintMonths} meses (${c.period.maintType})</dd>
-      <dt>Suma Asegurada total (Sec. I)</dt><dd>${M(siTotal(c))}</dd>
-      <dt>Límite Responsabilidad Civil</dt><dd>${M(c.sums.liability_event)} por evento / ${M(c.sums.liability_agg)} agregado</dd>
-    </dl>
-    <h2><span class="doc-section-num">2</span> Aseguradoras Cotizantes</h2>
-    ${(() => {
-      const filled = activeQuotes(c);
-      if(filled.length === 0){
-        return '<p style="font-style:italic;color:var(--ink-500)">Pendiente: aún no se han recibido cotizaciones.</p>';
-      }
-      /* Calcular min/max para el código de colores */
-      const totals = filled.map(q => +q.premiumTotal||0).filter(p=>p>0);
-      const minT = Math.min(...totals), maxT = Math.max(...totals);
-      const scored = scoreQuotes(c);
-      const scoreMap = {}; scored.forEach(s => scoreMap[s.q.insurerId] = s);
-      return `
-        <p>Garrigo Reasesores solicitó cotización al mercado dominicano. Recibimos ${filled.length} propuesta${filled.length>1?'s':''} finalista${filled.length>1?'s':''}, comparadas técnicamente a continuación:</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Aseguradora</th>
-              <th style="text-align:center">Tasa ‰</th>
-              <th style="text-align:right">Prima neta</th>
-              <th style="text-align:right">ISC 16%</th>
-              <th style="text-align:right">Prima total</th>
-              <th style="text-align:center;width:60px">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filled.map(q => {
-              const ins=DEFAULT_INSURERS.find(i=>i.id===q.insurerId);
-              const isSel = q.insurerId === c.proposal.selectedInsurer;
-              const total = +q.premiumTotal||0;
-              const isBest = total === minT && minT > 0 && filled.length > 1;
-              const isWorst = total === maxT && filled.length > 1 && minT !== maxT;
-              const bgRow = isSel ? 'background:var(--gold-100)' :
-                            isBest ? 'background:#ecfdf5' :
-                            isWorst ? 'background:#fef2f2' : '';
-              const totalColor = isBest ? 'color:#065f46' : isWorst ? 'color:#991b1b' : '';
-              const s = scoreMap[q.insurerId];
-              const scoreColor = s ? (s.totalScore>=80?'#16a34a':s.totalScore>=60?'#1e4a85':s.totalScore>=40?'#d97706':'#dc2626') : '#999';
-              return `<tr style="${bgRow}">
-                <td><strong>${ins?ins.name:q.insurerId}</strong>${isSel?' ★':''}${isBest?' <span style="color:#16a34a;font-size:9pt">✓ Menor prima</span>':''}</td>
-                <td style="text-align:center;font-variant-numeric:tabular-nums">${fmtRate(calcRate(q,c))}</td>
-                <td style="text-align:right">${M(q.premiumNet)}</td>
-                <td style="text-align:right">${M(q.isc)}</td>
-                <td style="text-align:right;font-weight:700;${totalColor}">${M(q.premiumTotal)}</td>
-                <td style="text-align:center"><span style="display:inline-block;min-width:34px;padding:3pt 6pt;background:${scoreColor};color:#fff;border-radius:3pt;font-weight:700;font-size:10pt">${s?s.totalScore:'—'}</span></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-        <h3 style="margin-top:14pt">Análisis técnico por dimensión</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Aseguradora</th>
-              <th style="text-align:center;width:90px">Precio<br><span style="font-weight:400;font-size:8.5pt;opacity:.8">peso 40%</span></th>
-              <th style="text-align:center;width:90px">Cobertura<br><span style="font-weight:400;font-size:8.5pt;opacity:.8">peso 35%</span></th>
-              <th style="text-align:center;width:90px">Deducibles<br><span style="font-weight:400;font-size:8.5pt;opacity:.8">peso 25%</span></th>
-              <th style="text-align:center;width:80px">Aceptadas</th>
-              <th style="text-align:center;width:80px">Rechazadas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${scored.map(s => {
-              const ins=DEFAULT_INSURERS.find(i=>i.id===s.q.insurerId);
-              const isSel = s.q.insurerId === c.proposal.selectedInsurer;
-              return `<tr ${isSel?'style="background:var(--gold-100)"':''}>
-                <td><strong>${ins?ins.name:s.q.insurerId}</strong></td>
-                <td style="text-align:center">${scoreBarPrint(s.priceScore)}</td>
-                <td style="text-align:center">${scoreBarPrint(s.coverageScore)}</td>
-                <td style="text-align:center">${scoreBarPrint(s.dedScore)}</td>
-                <td style="text-align:center;color:var(--ok);font-weight:600">✓ ${s.acceptedCount}</td>
-                <td style="text-align:center;color:${s.rejectedCount>0?'var(--bad)':'var(--ink-500)'};font-weight:600">${s.rejectedCount>0?'✗ '+s.rejectedCount:'—'}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-        <p style="font-size:9pt;color:var(--ink-500);font-style:italic;margin-top:6pt">Score técnico Garrigo: 0–100 puntos por dimensión. La aseguradora con mejor score total es la recomendada por defecto.</p>
-      `;
-    })()}
-    ${(() => {
-      const filled = activeQuotes(c);
-      if(filled.length === 0) return '';
-      const insLookup = id => DEFAULT_INSURERS.find(i => i.id === id);
-      return `
-        <h2><span class="doc-section-num">3</span> Matriz comparativa de coberturas y endosos</h2>
-        <p style="font-size:10pt;color:var(--ink-700)">Cobertura por cobertura, cuáles aseguradoras aceptan íntegramente el estándar Garrigo, cuáles modifican y cuáles rechazan. Las celdas en blanco (—) indican que la aseguradora no se pronunció en su cotización.</p>
-        <table style="font-size:9pt">
-          <thead>
-            <tr>
-              <th style="width:140pt">Cobertura / Endoso</th>
-              ${filled.map(q => { const ins=insLookup(q.insurerId); return `<th style="text-align:center;width:60pt"><div style="font-size:7.5pt;letter-spacing:.5pt;font-weight:700">${ins?ins.short:q.insurerId.slice(0,2).toUpperCase()}</div><div style="font-size:8pt;font-weight:400;line-height:1.2;margin-top:1pt">${ins?ins.name.replace('Seguros ','').replace(' BHD',''):q.insurerId}</div></th>`; }).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="background:#eef2ff"><td colspan="${filled.length+1}" style="padding:4pt 8pt;font-weight:700;font-size:8.5pt;text-transform:uppercase;letter-spacing:1pt;color:var(--grg-blue)">Coberturas Base (Sección I y II)</td></tr>
-            ${COVERAGE_MATRIX_ROWS.filter(r => r.category === 'base').map(row => `
-              <tr>
-                <td><strong style="color:var(--grg-blue);font-size:9pt">${row.code}</strong><br><span style="font-size:8pt;color:var(--ink-700)">${row.title}</span></td>
-                ${filled.map(q => `<td style="padding:2pt 4pt">${statusCell(getAcceptanceStatus(q, row.code) === 'unknown' ? 'accepted' : getAcceptanceStatus(q, row.code))}</td>`).join('')}
-              </tr>
-            `).join('')}
-            <tr style="background:#eef2ff"><td colspan="${filled.length+1}" style="padding:4pt 8pt;font-weight:700;font-size:8.5pt;text-transform:uppercase;letter-spacing:1pt;color:var(--grg-blue)">Endosos Munich Re LATAM (estándar Garrigo)</td></tr>
-            ${COVERAGE_MATRIX_ROWS.filter(r => r.category === 'endoso').map(row => `
-              <tr>
-                <td><strong style="color:var(--grg-blue);font-size:9pt">${row.code}</strong><br><span style="font-size:8pt;color:var(--ink-700)">${row.title}</span></td>
-                ${filled.map(q => `<td style="padding:2pt 4pt">${statusCell(getAcceptanceStatus(q, row.code))}</td>`).join('')}
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div style="display:flex;gap:14pt;margin-top:6pt;flex-wrap:wrap;font-size:9pt">
-          <span><span style="display:inline-block;width:14pt;height:14pt;background:#ecfdf5;color:#16a34a;font-weight:700;text-align:center;border-radius:2pt">✓</span> Aceptado íntegramente</span>
-          <span><span style="display:inline-block;width:14pt;height:14pt;background:#fffaeb;color:#d97706;font-weight:700;text-align:center;border-radius:2pt">⚠</span> Modificado (con observación)</span>
-          <span><span style="display:inline-block;width:14pt;height:14pt;background:#fef2f2;color:#dc2626;font-weight:700;text-align:center;border-radius:2pt">✗</span> Rechazado</span>
-          <span><span style="display:inline-block;width:14pt;height:14pt;background:#f9fafb;color:#9ca3af;font-weight:700;text-align:center;border-radius:2pt">—</span> No declarado</span>
-        </div>
-        <h3 style="margin-top:18pt">Deducibles propuestos por aseguradora</h3>
-        <table style="font-size:9pt">
-          <thead><tr><th style="width:140pt">Aseguradora</th><th>Deducibles propuestos</th></tr></thead>
-          <tbody>
-            ${filled.map(q => { const ins=insLookup(q.insurerId); const isSel = q.insurerId === c.proposal.selectedInsurer; return `<tr ${isSel?'style="background:var(--gold-100)"':''}><td><strong>${ins?ins.name:q.insurerId}</strong>${isSel?' ★':''}</td><td>${escapeHtml(q.deductibles_proposed||'—')}</td></tr>`; }).join('')}
-          </tbody>
-        </table>
-        ${filled.some(q => q.exclusions_added) ? `
-          <h3 style="margin-top:14pt">Exclusiones adicionales impuestas</h3>
-          <table style="font-size:9pt">
-            <thead><tr><th style="width:140pt">Aseguradora</th><th>Exclusiones adicionales</th></tr></thead>
-            <tbody>
-              ${filled.filter(q => q.exclusions_added).map(q => { const ins=insLookup(q.insurerId); return `<tr><td><strong>${ins?ins.name:q.insurerId}</strong></td><td style="color:var(--bad)">${escapeHtml(q.exclusions_added)}</td></tr>`; }).join('')}
-            </tbody>
-          </table>
-        ` : ''}
-      `;
-    })()}
-    <h2><span class="doc-section-num">4</span> Recomendación de Garrigo</h2>
-    ${sel ? `
-      <p style="background:var(--gold-100);padding:14px 16px;border-radius:8px;border-left:3px solid var(--gold-500)">
-        <strong>Aseguradora recomendada: ${escapeHtml(selIns?.name||'')}</strong><br>
-        Prima total: <strong>${M(sel.premiumTotal)}</strong> · Tasa: ${fmtRate(calcRate(sel,c))}
-      </p>
-      <p>${escapeHtml(c.proposal.recommendation || '—')}</p>
-    ` : `<p>${escapeHtml(c.proposal.recommendation || 'Pendiente de selección de aseguradora.')}</p>`}
-    <h2><span class="doc-section-num">5</span> Deducibles Principales</h2>
+  const selScore = sel ? ((scored.find(s=>s.q.insurerId===sel.insurerId)||{}).totalScore) : null;
+  const dateStr = fmtDate(c.header.dateIssue || (typeof _todayStr==='function'?_todayStr():''));
+  const hero = sel ? `
+    <div style="background:var(--grg-blue);color:#fff;border-radius:8pt;padding:16pt 20pt;margin:6pt 0 16pt;text-align:center">
+      <div style="font-size:8.5pt;text-transform:uppercase;letter-spacing:2pt;opacity:.85">Recomendación de Garrigó</div>
+      <div style="font-size:20pt;font-weight:800;margin:4pt 0">${escapeHtml(insName(sel.insurerId))}</div>
+      <div style="display:flex;justify-content:center;gap:26pt;margin-top:8pt;flex-wrap:wrap">
+        <div><div style="font-size:8pt;opacity:.85;text-transform:uppercase;letter-spacing:1pt">Prima total</div><div style="font-size:16pt;font-weight:800">${M(sel.premiumTotal)}</div></div>
+        <div><div style="font-size:8pt;opacity:.85;text-transform:uppercase;letter-spacing:1pt">Puntaje</div><div style="font-size:16pt;font-weight:800">${selScore!=null?selScore+'/100':'—'}</div></div>
+        <div><div style="font-size:8pt;opacity:.85;text-transform:uppercase;letter-spacing:1pt">Suma asegurada</div><div style="font-size:16pt;font-weight:800">${M(siTotal(c))}</div></div>
+      </div>
+    </div>
+    ${c.proposal.recommendation ? `<p style="font-size:10.5pt;color:var(--ink-700);margin:0 0 14pt">${escapeHtml(c.proposal.recommendation)}</p>` : ''}
+  ` : `<div style="background:var(--grg-orange-lt);border:1pt solid var(--grg-orange);border-radius:8pt;padding:12pt 16pt;margin:6pt 0 14pt;color:#78350f;font-size:10.5pt">Selecciona la aseguradora recomendada en el Comparador para completar esta propuesta.</div>`;
+  const cmp = filled.length ? `
     <table>
-      <thead><tr><th>Sección</th><th>Tipo</th><th>Valor</th></tr></thead>
-      <tbody>${c.deductibles.map(d=>`<tr><td>${escapeHtml(d.section)}</td><td>${escapeHtml(d.type)}</td><td>${escapeHtml(d.value)}</td></tr>`).join('')}</tbody>
+      <thead><tr><th>Aseguradora</th><th style="text-align:right">Prima total</th><th style="text-align:center">Puntaje</th></tr></thead>
+      <tbody>
+        ${scored.map(s => { const isSel = sel && s.q.insurerId===sel.insurerId; return `<tr${isSel?' style="background:var(--grg-blue-bg)"':''}><td>${escapeHtml(insName(s.q.insurerId))}${isSel?' <strong style="color:var(--grg-blue)">✓ recomendada</strong>':''}</td><td style="text-align:right;font-weight:700">${M(s.q.premiumTotal)}</td><td style="text-align:center;font-weight:700">${s.totalScore}/100</td></tr>`; }).join('')}
+      </tbody>
     </table>
-    ${sel ? `<p style="font-size:10pt;color:var(--ink-500);font-style:italic">Deducibles propuestos por ${escapeHtml(selIns?.name||'')}: ${escapeHtml(sel.deductibles_proposed||'—')}</p>` : ''}
-    <h2><span class="doc-section-num">6</span> Exclusiones Clave que el Cliente Debe Conocer</h2>
-    <ul>
-      <li>Exclusión absoluta de guerra, terrorismo, riesgos nucleares y contaminación gradual.</li>
-      <li>Exclusión cibernética <strong>LMA 5400</strong> y sanciones <strong>LMA 3100</strong>.</li>
-      <li>No se cubren pérdidas consecuenciales (lucro cesante, retraso en finalización) salvo endoso DSU específico no incluido en esta propuesta.</li>
-      ${sel && sel.exclusions_added ? `<li>Exclusiones adicionales de la aseguradora: ${escapeHtml(sel.exclusions_added)}</li>` : ''}
-    </ul>
-    <h2><span class="doc-section-num">7</span> Cronograma de Pago de Prima</h2>
-    <p>Modalidad sugerida: pago fraccionado en 4 cuotas trimestrales, conforme al endoso RD-003. El no pago de cualquier cuota podrá suspender automáticamente la cobertura con 15 días de notificación previa.</p>
-    <h2><span class="doc-section-num">8</span> Próximos Pasos</h2>
-    <ol>
-      <li>Confirmación escrita de aceptación de esta propuesta.</li>
-      <li>Pago de la primera cuota de prima.</li>
-      <li>Emisión de la póliza y endoso de Beneficiarios.</li>
-      <li>Reunión de inicio con el ajustador designado y el equipo de obra.</li>
+  ` : `<p style="font-style:italic;color:var(--ink-500)">Pendiente: aún no se han recibido cotizaciones.</p>`;
+  const ded = (sel && sel.deductibles_proposed) ? `<p style="font-size:10pt;color:var(--ink-700);white-space:pre-line">${escapeHtml(sel.deductibles_proposed)}</p>`
+    : ((c.deductibles && c.deductibles.length) ? `<ul style="font-size:10pt;color:var(--ink-700);margin:0;padding-left:16pt;line-height:1.6">${c.deductibles.map(d=>`<li>${escapeHtml((d.section?d.section+' — ':'')+(d.type?d.type+': ':'')+(d.value||''))}</li>`).join('')}</ul>` : `<p style="font-style:italic;color:var(--ink-500)">Por definir según póliza emitida.</p>`);
+  return `
+    <p style="text-align:center;color:var(--ink-500);font-style:italic;margin-top:-8pt">Preparada para ${escapeHtml(c.insured.name||'—')} · ${dateStr}</p>
+    ${hero}
+    <h2><span class="doc-section-num">1</span> Resumen del proyecto</h2>
+    <dl class="kv">
+      <dt>Proyecto</dt><dd>${escapeHtml(c.interest.description||'—')}</dd>
+      <dt>Ubicación</dt><dd>${escapeHtml(c.interest.location||'—')}</dd>
+      <dt>Vigencia</dt><dd>${(c.period.constStart && c.period.constEnd) ? fmtDate(c.period.constStart)+' al '+fmtDate(c.period.constEnd) : (c.period.constMonths||12)+' meses'} + ${c.period.maintMonths||0}m mant.</dd>
+      <dt>Suma asegurada (Sec. I)</dt><dd>${M(siTotal(c))}</dd>
+      <dt>Responsabilidad Civil</dt><dd>${M(c.sums.liability_event)} por evento</dd>
+    </dl>
+    <h2><span class="doc-section-num">2</span> Comparación de opciones</h2>
+    ${cmp}
+    <h2><span class="doc-section-num">3</span> Coberturas y sumas aseguradas</h2>
+    <table>
+      <thead><tr><th>Cobertura</th><th>Descripción</th><th style="text-align:right">Suma (${ccy})</th></tr></thead>
+      <tbody>${coverageRows(c).map(cv=>`<tr><td><strong>${cv.code}</strong></td><td>${escapeHtml(cv.desc)}</td><td style="text-align:right">${cv.sum>0?M(cv.sum):'Incluido'}</td></tr>`).join('')}</tbody>
+    </table>
+    <p style="font-size:9.5pt;color:var(--ink-500);margin-top:4pt">Vigencia: construcción ${c.period.constMonths||12} meses + mantenimiento ${c.period.maintMonths||0} meses.${(sel && (sel.clauses_accepted||[]).length)?` Incluye ${(sel.clauses_accepted||[]).length} endosos aceptados por ${escapeHtml(insName(sel.insurerId))}.`:''}</p>
+    <h2><span class="doc-section-num">4</span> Deducibles principales</h2>
+    ${ded}
+    <h2><span class="doc-section-num">5</span> Próximos pasos</h2>
+    <ol style="font-size:10.5pt;color:var(--ink-700);line-height:1.7">
+      <li>Confirmar la aseguradora seleccionada.</li>
+      <li>Emisión de la póliza y envío de la factura.</li>
+      <li>Pago de la prima para activar la cobertura.</li>
     </ol>
-    <p style="margin-top:24px;font-style:italic;color:var(--ink-700)">El wording completo bilingüe (ES/EN) y todas las cláusulas Munich Re aplicables se anexan a esta propuesta como Anexo Técnico.</p>
   `;
 }
 /* ============================================================
@@ -3218,6 +3397,16 @@ function viewConfig(){
         <div class="field"><label>ISC (%)</label><input class="input" type="number" value="${cf.iscRate}" onchange="updConfig('iscRate',+this.value)"></div>
         <div class="field"><label>Tipo de cambio USD/DOP por defecto</label><input class="input" type="number" step="0.01" value="${cf.fxRate}" onchange="updConfig('fxRate',+this.value)"></div>
       </div>
+      <div class="section-title">Plantillas de lectura por aseguradora (extractor)</div>
+      <p class="muted" style="font-size:11.5px;margin:-6px 0 10px">Escribe cómo llama cada aseguradora a cada campo en sus cotizaciones, separado por comas. El extractor usará estas etiquetas para leer con más precisión. Ej: Prima neta, Prima s/ISC, Prima base.</p>
+      <div class="form-grid cols-2">
+        <div class="field"><label>Aseguradora</label>
+          <select class="select" onchange="state._extInsurer=this.value;render()">
+            <option value="">— Elige una —</option>
+            ${DEFAULT_INSURERS.map(i=>`<option value="${i.id}" ${state._extInsurer===i.id?'selected':''}>${escapeHtml(i.name)}</option>`).join('')}
+          </select></div>
+      </div>
+      ${state._extInsurer ? (()=>{ const al=(state.config.extractAliases||{})[state._extInsurer]||{}; const F=[['premiumNet','Prima neta'],['isc','ISC'],['premiumTotal','Prima total'],['sumSeccionI','Suma aseg. Sec. I'],['sumSeccionII','Suma aseg. Sec. II']]; return '<div class="form-grid cols-2">'+F.map(([k,lab])=>`<div class="field"><label>${lab} — etiquetas</label><input class="input" value="${escapeHtml((al[k]||[]).join(', '))}" onchange="setExtractAlias('${state._extInsurer}','${k}',this.value)" placeholder="Ej: ${lab}, ${lab} anual"></div>`).join('')+'</div>'; })() : ''}
       <div class="sep"></div>
       <div class="row">
         <button class="btn btn-danger btn-sm" onclick="resetData()">⚠ Borrar todos los datos</button>
@@ -3231,6 +3420,12 @@ function viewConfig(){
   `;
 }
 function updConfig(k,v){ state.config[k]=v; save(); }
+function setExtractAlias(insurerId, field, value){
+  if(!state.config.extractAliases) state.config.extractAliases = {};
+  if(!state.config.extractAliases[insurerId]) state.config.extractAliases[insurerId] = {};
+  state.config.extractAliases[insurerId][field] = String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
+  save();
+}
 function resetData(){ if(!confirm('Esto borra TODOS los casos y configuración. ¿Continuar?')) return; localStorage.removeItem(STORAGE_KEY); location.reload(); }
 function exportBackup(){
   const blob = new Blob([JSON.stringify({cases:state.cases,activeCaseId:state.activeCaseId,config:state.config},null,2)], {type:'application/json'});
@@ -3472,167 +3667,56 @@ function renderWordProposal(c){
   const M = v => fmtMoney(v, ccy);
   const filled = activeQuotes(c);
   const insLookup = id => DEFAULT_INSURERS.find(i => i.id === id);
-  const sel = c.proposal.selectedInsurer ? c.quotes.find(q => q.insurerId === c.proposal.selectedInsurer) : null;
-  const selIns = sel ? insLookup(sel.insurerId) : null;
+  const insName = id => { const i=insLookup(id); return i?i.name:(id||'—'); };
+  const selRaw = c.proposal.selectedInsurer ? c.quotes.find(q => q.insurerId === c.proposal.selectedInsurer) : null;
+  const sel = selRaw && hasQuoteData(selRaw) ? selRaw : null;
   const scored = scoreQuotes(c);
+  const selScore = sel ? ((scored.find(s=>s.q.insurerId===sel.insurerId)||{}).totalScore) : null;
   let out = '';
-  out += `<p style="text-align:center;color:${W_GRAY};font-style:italic;margin:-6pt 0 12pt">Preparada para ${escapeHtml(c.insured.name)} · ${fmtDate(c.header.dateIssue)}</p>`;
-  /* 1. Resumen del Riesgo */
-  out += wH2('1', 'Resumen del Riesgo');
-  out += wKv([
-    ['Proyecto', escapeHtml(c.interest.description)],
-    ['Ubicación', escapeHtml(c.interest.location)],
-    ['Vigencia construcción', (c.period.constStart && c.period.constEnd) ? fmtDate(c.period.constStart)+' al '+fmtDate(c.period.constEnd) : (c.period.constMonths||12)+' meses'],
-    ['Mantenimiento', `${c.period.maintMonths} meses (${escapeHtml(c.period.maintType)})`],
-    ['SI total Sec. I', M(c.coverages?.A?.sum||siTotal(c))],
-    ['Límite RC', `${M(c.coverages?.EF?.sum_event||c.sums.liability_event)} por evento / ${M(c.coverages?.EF?.sum_agg||c.sums.liability_agg)} agregado`],
-  ]);
-  /* 2. Aseguradoras Cotizantes */
-  out += wH2('2', 'Aseguradoras Cotizantes');
-  if(filled.length === 0){
-    out += `<p style="font-style:italic;color:${W_GRAY}">Pendiente: aún no se han recibido cotizaciones.</p>`;
+  out += `<p style="text-align:center;color:${W_GRAY};font-style:italic;margin:-6pt 0 12pt;font-family:Arial,sans-serif">Preparada para ${escapeHtml(c.insured.name||'—')} · ${fmtDate(c.header.dateIssue || (typeof _todayStr==='function'?_todayStr():''))}</p>`;
+  if(sel){
+    out += `<div style="background:${W_BLUE};color:#fff;border-radius:6pt;padding:14pt 18pt;margin:6pt 0 14pt;text-align:center;font-family:Arial,sans-serif">
+      <div style="font-size:8pt;text-transform:uppercase;letter-spacing:2pt;opacity:.85">Recomendación de Garrigó</div>
+      <div style="font-size:18pt;font-weight:800;margin:3pt 0">${escapeHtml(insName(sel.insurerId))}</div>
+      <div style="font-size:9pt">Prima total ${M(sel.premiumTotal)} &nbsp;·&nbsp; Puntaje ${selScore!=null?selScore+'/100':'—'} &nbsp;·&nbsp; Suma asegurada ${M(siTotal(c))}</div>
+    </div>`;
+    if(c.proposal.recommendation) out += `<p style="font-size:10pt;color:#374151;font-family:Arial,sans-serif;margin:0 0 12pt">${escapeHtml(c.proposal.recommendation)}</p>`;
   } else {
-    const totals = filled.map(q => +q.premiumTotal||0).filter(p=>p>0);
-    const minT = Math.min(...totals);
-    const scoreMap = {}; scored.forEach(s => scoreMap[s.q.insurerId] = s);
-    out += `<p style="margin:4pt 0;font-size:10pt">Garrigo Reasesores solicitó cotización al mercado dominicano. Recibimos ${filled.length} propuesta(s) finalista(s):</p>`;
-    out += wTable(
-      ['Aseguradora','Tasa ‰','Prima neta','ISC','Prima total','Score'],
-      filled.map(q => {
-        const ins = insLookup(q.insurerId);
-        const isSel = q.insurerId === c.proposal.selectedInsurer;
-        const isBest = +q.premiumTotal === minT && minT > 0 && filled.length > 1;
-        const s = scoreMap[q.insurerId];
-        const scoreColor = s ? (s.totalScore>=80?'#16a34a':s.totalScore>=60?W_BLUE:s.totalScore>=40?'#d97706':'#dc2626') : '#999';
-        return [
-          `<strong>${ins?ins.name:q.insurerId}</strong>${isSel?' ★':''}${isBest?' <span style="color:#16a34a;font-size:8pt">✓ menor</span>':''}`,
-          fmtRate(calcRate(q,c)),
-          M(q.premiumNet), M(q.isc), `<strong>${M(q.premiumTotal)}</strong>`,
-          `<span style="background:${scoreColor};color:#fff;padding:2pt 6pt;font-weight:700;font-size:9pt">${s?s.totalScore:'—'}</span>`
-        ];
-      }),
-      { widths:['28%','10%','17%','12%','19%','14%'] }
-    );
-    /* Análisis técnico */
-    out += wH3('Análisis técnico por dimensión (Score Garrigo)');
-    out += `<p style="font-size:9pt;color:${W_GRAY};margin:2pt 0">Ponderación: Precio 40% · Cobertura 35% · Deducibles 25%</p>`;
-    out += wTable(
-      ['Aseguradora','Precio','Cobertura','Deducibles','Aceptadas','Rechazadas'],
-      scored.map(s => {
-        const ins=insLookup(s.q.insurerId);
-        return [
-          `<strong>${ins?ins.name:s.q.insurerId}</strong>`,
-          `<strong>${s.priceScore}</strong>/100`,
-          `<strong>${s.coverageScore}</strong>/100`,
-          `<strong>${s.dedScore}</strong>/100`,
-          `<span style="color:#16a34a;font-weight:600">✓ ${s.acceptedCount}</span>`,
-          s.rejectedCount>0 ? `<span style="color:#dc2626;font-weight:600">✗ ${s.rejectedCount}</span>` : '—'
-        ];
-      }),
-      { widths:['28%','13%','15%','15%','15%','14%'] }
-    );
+    out += `<div style="background:#fff7ed;border:1pt solid ${W_ORANGE};border-radius:6pt;padding:10pt 14pt;margin:6pt 0 12pt;color:#78350f;font-size:10pt;font-family:Arial,sans-serif">Selecciona la aseguradora recomendada en el Comparador para completar esta propuesta.</div>`;
   }
-  /* 3. Matriz comparativa */
-  if(filled.length > 0){
-    out += wH2('3', 'Matriz comparativa de coberturas y endosos');
-    out += `<p style="margin:4pt 0;font-size:10pt">Cobertura por cobertura, cuáles aseguradoras aceptan íntegramente, modifican o rechazan.</p>`;
-    /* Reduce el número de columnas mostrando las aseguradoras como cabecera con código corto */
-    const headers = ['Cobertura / Endoso', ...filled.map(q => { const ins=insLookup(q.insurerId); return ins?ins.short:q.insurerId.slice(0,2).toUpperCase(); })];
-    const baseRows = COVERAGE_MATRIX_ROWS.filter(r => r.category === 'base');
-    const endoRows = COVERAGE_MATRIX_ROWS.filter(r => r.category === 'endoso');
-    const buildRow = (row) => [
-      `<strong style="color:${W_BLUE}">${row.code}</strong><br><span style="font-size:8pt;color:#374151">${row.title}</span>`,
-      ...filled.map(q => {
-        const status = row.category === 'base' && getAcceptanceStatus(q, row.code) === 'unknown' ? 'accepted' : getAcceptanceStatus(q, row.code);
-        const m = { accepted:['✓','#16a34a','#ecfdf5'], modified:['⚠','#d97706','#fffaeb'], rejected:['✗','#dc2626','#fef2f2'], unknown:['—','#9ca3af','#f9fafb'] };
-        const [icon,fg,bg] = m[status]||m.unknown;
-        return `<div style="background:${bg};color:${fg};font-weight:700;text-align:center;padding:3pt 0;font-size:12pt">${icon}</div>`;
-      })
-    ];
-    const widthFirst = 35;
-    const widthEach = Math.round((100 - widthFirst) / filled.length);
-    const widths = [widthFirst+'%', ...filled.map(() => widthEach+'%')];
-    out += wTable(headers, baseRows.map(buildRow), { widths });
-    out += wH3('Endosos Munich Re LATAM');
-    out += wTable(headers, endoRows.map(buildRow), { widths });
-    /* Leyenda */
-    out += `<p style="font-size:9pt;margin:4pt 0">
-      <span style="background:#ecfdf5;color:#16a34a;font-weight:700;padding:1pt 4pt">✓</span> Aceptado &nbsp;
-      <span style="background:#fffaeb;color:#d97706;font-weight:700;padding:1pt 4pt">⚠</span> Modificado &nbsp;
-      <span style="background:#fef2f2;color:#dc2626;font-weight:700;padding:1pt 4pt">✗</span> Rechazado &nbsp;
-      <span style="background:#f9fafb;color:#9ca3af;font-weight:700;padding:1pt 4pt">—</span> No declarado
-    </p>`;
-    /* Deducibles propuestos */
-    out += wH3('Deducibles propuestos por aseguradora');
-    out += wTable(
-      ['Aseguradora','Deducibles propuestos'],
-      filled.map(q => { const ins=insLookup(q.insurerId); return [`<strong>${ins?ins.name:q.insurerId}</strong>`, escapeHtml(q.deductibles_proposed||'—')]; }),
-      { widths:['30%','70%'] }
-    );
-    /* Exclusiones adicionales */
-    const withExcl = filled.filter(q => q.exclusions_added);
-    if(withExcl.length){
-      out += wH3('Exclusiones adicionales impuestas');
-      out += wTable(
-        ['Aseguradora','Exclusiones adicionales'],
-        withExcl.map(q => { const ins=insLookup(q.insurerId); return [`<strong>${ins?ins.name:q.insurerId}</strong>`, `<span style="color:#dc2626">${escapeHtml(q.exclusions_added)}</span>`]; }),
-        { widths:['30%','70%'] }
-      );
-    }
+  out += wH2('1', 'Resumen del proyecto');
+  out += wKv([
+    ['Proyecto', escapeHtml(c.interest.description||'—')],
+    ['Ubicación', escapeHtml(c.interest.location||'—')],
+    ['Vigencia', ((c.period.constStart && c.period.constEnd) ? fmtDate(c.period.constStart)+' al '+fmtDate(c.period.constEnd) : (c.period.constMonths||12)+' meses') + ` + ${c.period.maintMonths||0}m mant.`],
+    ['Suma asegurada (Sec. I)', M(siTotal(c))],
+    ['Responsabilidad Civil', `${M(c.sums.liability_event)} por evento`]
+  ]);
+  out += wH2('2', 'Comparación de opciones');
+  if(!filled.length){
+    out += `<p style="font-style:italic;color:${W_GRAY};font-family:Arial,sans-serif;font-size:10pt">Pendiente: aún no se han recibido cotizaciones.</p>`;
+  } else {
+    out += wTable(['Aseguradora','Prima total','Puntaje'],
+      scored.map(s => [ insName(s.q.insurerId) + (sel && s.q.insurerId===sel.insurerId ? ' ✓ recomendada' : ''), M(s.q.premiumTotal), s.totalScore+'/100' ]));
   }
-  /* 4. Recomendación */
-  out += wH2('4', 'Recomendación de Garrigo');
-  if(sel && hasQuoteData(sel)){
-    out += `<table style="background:#fffaf2;border-left:3pt solid ${W_ORANGE};width:100%;margin:4pt 0">
-      <tr><td style="padding:10pt 14pt">
-        <strong style="color:${W_BLUE};font-size:12pt">Aseguradora recomendada: ${escapeHtml(selIns?.name||'')}</strong><br>
-        <span style="font-size:10pt">Prima total: <strong>${M(sel.premiumTotal)}</strong> · Tasa: ${fmtRate(calcRate(sel,c))}</span>
-      </td></tr>
-    </table>`;
+  out += wH2('3', 'Coberturas y sumas aseguradas');
+  out += wTable(['Cobertura','Descripción','Suma ('+ccy+')'], coverageRows(c).map(cv=>[cv.code, cv.desc, cv.sum>0?M(cv.sum):'Incluido']), { lastRight:true });
+  out += wH2('4', 'Deducibles principales');
+  if(sel && sel.deductibles_proposed){
+    out += `<p style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;white-space:pre-line">${escapeHtml(sel.deductibles_proposed)}</p>`;
+  } else if(c.deductibles && c.deductibles.length){
+    out += `<ul style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;line-height:1.6;padding-left:16pt">${c.deductibles.map(d=>`<li>${escapeHtml((d.section?d.section+' — ':'')+(d.type?d.type+': ':'')+(d.value||''))}</li>`).join('')}</ul>`;
+  } else {
+    out += `<p style="font-style:italic;color:${W_GRAY};font-family:Arial,sans-serif;font-size:10pt">Por definir según póliza emitida.</p>`;
   }
-  out += `<p style="margin:6pt 0;font-size:10pt;line-height:1.5">${escapeHtml(c.proposal.recommendation || 'Pendiente de selección de aseguradora.')}</p>`;
-  /* 5. Deducibles del caso */
-  out += wH2('5', 'Deducibles Principales');
-  out += wTable(
-    ['Sección','Tipo','Valor'],
-    c.deductibles.map(d => [escapeHtml(d.section), escapeHtml(d.type), escapeHtml(d.value)]),
-    { widths:['30%','30%','40%'] }
-  );
-  /* 6. Exclusiones Clave */
-  out += wH2('6', 'Exclusiones Clave que el Cliente Debe Conocer');
-  out += `<ul style="font-size:10pt;margin:4pt 0;padding-left:18pt">
-    <li>Exclusión absoluta de guerra, terrorismo, riesgos nucleares y contaminación gradual.</li>
-    <li>Exclusión cibernética y sanciones (LMA 3100).</li>
-    <li>No se cubren pérdidas consecuenciales (lucro cesante, retraso) salvo endoso DSU específico.</li>
-    ${sel && sel.exclusions_added ? `<li><strong>Exclusiones adicionales de la aseguradora:</strong> ${escapeHtml(sel.exclusions_added)}</li>` : ''}
-  </ul>`;
-  /* 7. Cronograma */
-  out += wH2('7', 'Cronograma de Pago de Prima');
-  out += `<p style="font-size:10pt;margin:4pt 0">Modalidad sugerida: pago fraccionado en 4 cuotas trimestrales conforme al endoso RD-003. El no pago de cualquier cuota podrá suspender la cobertura con 15 días de notificación previa.</p>`;
-  /* 8. Próximos Pasos */
-  out += wH2('8', 'Próximos Pasos');
-  out += `<ol style="font-size:10pt;margin:4pt 0;padding-left:18pt">
-    <li>Confirmación escrita de aceptación de esta propuesta.</li>
-    <li>Pago de la primera cuota de prima.</li>
-    <li>Emisión de la póliza y endoso de Beneficiarios.</li>
-    <li>Reunión de inicio con el ajustador designado y el equipo de obra.</li>
+  out += wH2('5', 'Próximos pasos');
+  out += `<ol style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;line-height:1.6;padding-left:16pt">
+    <li>Confirmar la aseguradora seleccionada.</li>
+    <li>Emisión de la póliza y envío de la factura.</li>
+    <li>Pago de la prima para activar la cobertura.</li>
   </ol>`;
   return out;
 }
-/* Mapa de CSS variables → colores hex concretos (Word no resuelve variables) */
-const CSS_VAR_TO_HEX = {
-  '--grg-blue':'#004A88','--grg-blue-dk':'#00335E','--grg-blue-2':'#0A5AA0',
-  '--grg-blue-lt':'#3A7AC4','--grg-blue-bg':'#EAF1F9',
-  '--grg-orange':'#FF5200','--grg-orange-2':'#FF6B3D','--grg-orange-lt':'#FFE9E0',
-  '--grg-gray':'#918F8F','--grg-gray-lt':'#C7C9CC','--grg-dark':'#231F20',
-  '--navy-900':'#00335E','--navy-800':'#004A88','--navy-700':'#004A88',
-  '--navy-600':'#0A5AA0','--navy-500':'#3A7AC4',
-  '--gold-500':'#FF5200','--gold-400':'#FF6B3D','--gold-300':'#FFB89A','--gold-100':'#FFE9E0',
-  '--ink-900':'#101724','--ink-700':'#374151','--ink-500':'#6b7280','--ink-300':'#9ca3af',
-  '--line':'#e5e7eb','--line-2':'#f1f3f6','--bg':'#f6f8fb','--white':'#ffffff',
-  '--ok':'#16a34a','--warn':'#d97706','--bad':'#dc2626',
-};
-/* Preprocesa el HTML para que Word lo renderice correctamente */
 function htmlToWordCompatible(html){
   /* 1. Sustituir CSS variables por colores hex concretos */
   let out = html;
@@ -3891,7 +3975,18 @@ function extractSumasSection(secText){
   return r;
 }
 /* Función pública principal — usa la versión estructurada y agrega warnings */
-function extractQuoteFields(text){
+function findAmountByLabels(text, labels){
+  if(!labels || !labels.length || !text) return null;
+  for(let i=0;i<labels.length;i++){
+    const l = String(labels[i]||'').trim(); if(!l) continue;
+    const esc = l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(esc + '[^0-9]{0,25}([0-9][0-9.,]{2,})', 'i');
+    const m = text.match(re);
+    if(m){ const n = parseFloat(String(m[1]).replace(/,/g,'')); if(!isNaN(n)) return n; }
+  }
+  return null;
+}
+function extractQuoteFields(text, insurerId){
   const result = { _matches:{}, _warnings:[], _sections:{}, _structured:true };
   const sections = splitPdfSections(text);
   result._sections = Object.keys(sections);
@@ -3993,6 +4088,15 @@ function extractQuoteFields(text){
       result.vigenciaText = `Del ${dates[0]} al ${dates[1]}`;
     }
   }
+  /* Override por plantilla de aseguradora (etiquetas configuradas en Configuración) */
+  const _al = (insurerId && state.config.extractAliases) ? state.config.extractAliases[insurerId] : null;
+  if(_al){
+    ['premiumNet','isc','premiumTotal','sumSeccionI','sumSeccionII'].forEach(fld => {
+      const v = findAmountByLabels(text, _al[fld]);
+      if(v != null){ result[fld] = v; result._matches[fld] = 'Plantilla aseguradora'; }
+    });
+    if(result.premiumNet && result.isc && !result.premiumTotal) result.premiumTotal = result.premiumNet + result.isc;
+  }
   return result;
 }
 /* Stub que ya no se usa pero se conserva por compatibilidad */
@@ -4077,18 +4181,35 @@ function extractQuoteFieldsLegacy(text){
 }
 /* Calcula prima total si tenemos neta+ISC pero falta total */
 function fillMissingPremium(extracted){
-  if(extracted.premiumNet && !extracted.premiumTotal){
-    extracted.premiumTotal = Math.round(extracted.premiumNet * 1.16);
-  } else if(extracted.premiumTotal && !extracted.premiumNet){
-    extracted.premiumNet = Math.round(extracted.premiumTotal / 1.16);
-    if(!extracted.isc) extracted.isc = extracted.premiumTotal - extracted.premiumNet;
-  }
-  if(extracted.premiumNet && !extracted.isc){
-    extracted.isc = Math.round(extracted.premiumNet * 0.16);
+  const rate = (state.config && state.config.iscRate) ? +state.config.iscRate : 16;
+  if(extracted.premiumNet){
+    extracted.premiumNet = Math.round(extracted.premiumNet);
+    extracted.isc = Math.round(extracted.premiumNet * rate/100);
+    extracted.premiumTotal = extracted.premiumNet + extracted.isc;
+  } else if(extracted.premiumTotal){
+    extracted.premiumTotal = Math.round(extracted.premiumTotal);
+    extracted.premiumNet = Math.round(extracted.premiumTotal / (1 + rate/100));
+    extracted.isc = extracted.premiumTotal - extracted.premiumNet;
   }
   return extracted;
 }
 /* Trigger del input file por cada columna del comparador */
+async function aiExtract(text, insurer){
+  const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insurer||'' }) });
+  let data; try{ data = await resp.json(); }catch(e){ throw new Error('Respuesta inválida del servidor'); }
+  if(!resp.ok) throw new Error(data && data.error ? data.error : ('HTTP '+resp.status));
+  return data || {};
+}
+function aiToExtracted(ai){
+  const r = { _matches:{}, _warnings:[], _sections:['IA'], _structured:true, _ai:true };
+  ['premiumNet','isc','premiumTotal','sumSeccionI','sumSeccionII'].forEach(f => {
+    if(ai[f]!=null && ai[f]!=='' && !isNaN(+ai[f])){ r[f] = +ai[f]; r._matches[f] = 'Leído con IA'; }
+  });
+  if(ai.deductibles) r.deductibles_proposed = String(ai.deductibles);
+  if(Array.isArray(ai.clausesAccepted)){ r.clauses_accepted = ai.clausesAccepted; r.clauses_accepted_text = ai.clausesAccepted.join('\n'); }
+  if(ai.currency) r._aiCurrency = ai.currency;
+  return r;
+}
 function triggerPdfUpload(quoteIndex){
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -4103,7 +4224,16 @@ function triggerPdfUpload(quoteIndex){
     try{
       showPdfLoadingModal(file.name);
       const text = await extractPdfText(file);
-      const extracted = fillMissingPremium(extractQuoteFields(text));
+      const _insId = (activeCase().quotes[quoteIndex]||{}).insurerId;
+      const _insName = ((typeof DEFAULT_INSURERS!=='undefined' && DEFAULT_INSURERS.find(i=>i.id===_insId))||{}).name || '';
+      let extracted;
+      try {
+        const ai = await aiExtract(text, _insName);
+        extracted = fillMissingPremium(aiToExtracted(ai));
+      } catch(e) {
+        console.warn('IA no disponible, uso extractor local:', e);
+        extracted = fillMissingPremium(extractQuoteFields(text, _insId));
+      }
       if(text.replace(/\s+/g,'').length < 400) extracted._scanned = true;
       showPdfReviewModal(quoteIndex, extracted, text, file.name);
     }catch(err){
@@ -4149,7 +4279,7 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
     const raw = (ex._matches && ex._matches[field]) || '';
     return `<tr>
       <td style="padding:6px 10px;font-weight:600;color:var(--ink-700);font-size:12px;white-space:nowrap">${label}</td>
-      <td style="padding:6px 10px"><input id="${id}" class="input" inputmode="numeric" value="${rawInt(val)}" placeholder="—" style="text-align:right;font-weight:600;padding:6px 8px;${txt==='falta'?'border-color:#dc2626':''}"></td>
+      <td style="padding:6px 10px"><div class="row" style="gap:5px;flex-wrap:nowrap"><span style="font-size:11px;color:var(--ink-500)">${sym}</span><input id="${id}"${id==='pdfPremiumNet'?' oninput="recalcPdfPrima()"':''} class="input money-input" inputmode="numeric" value="${rawInt(val)}" placeholder="0" style="padding:6px 8px;${txt==='falta'?'border-color:#dc2626':''}"></div></td>
       <td style="padding:6px 10px"><span style="font-size:9px;font-weight:800;color:${fg};text-transform:uppercase;letter-spacing:.4px">${txt}</span></td>
       <td style="padding:6px 10px;font-size:10px;color:var(--ink-500);font-style:italic;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(String(raw))}">${escapeHtml(String(raw).slice(0,48))}</td>
     </tr>`;
@@ -4188,7 +4318,7 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:var(--surface)">
           <th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--ink-500)">Campo</th>
-          <th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--ink-500)">Valor (editable)</th>
+          <th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--ink-500)">Valor (${sym})</th>
           <th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--ink-500)">Confianza</th>
           <th style="text-align:left;padding:6px 10px;font-size:10px;color:var(--ink-500)">Origen</th>
         </tr></thead>
@@ -4256,6 +4386,18 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
   `;
   modal.classList.add('open');
 }
+function recalcPdfPrima(){
+  const netEl = document.getElementById('pdfPremiumNet');
+  if(!netEl) return;
+  const net = parseFloat(String(netEl.value).replace(/,/g,'').replace(/[^0-9.\-]/g,''));
+  if(isNaN(net)) return;
+  const rate = (state.config && state.config.iscRate) ? +state.config.iscRate : 16;
+  const isc = Math.round(net * rate/100);
+  const iscEl = document.getElementById('pdfISC');
+  const totEl = document.getElementById('pdfPremiumTotal');
+  if(iscEl) iscEl.value = isc.toLocaleString('en-US');
+  if(totEl) totEl.value = (net + isc).toLocaleString('en-US');
+}
 function applyPdfExtraction(quoteIndex, ex){
   const c = activeCase();
   const q = c.quotes[quoteIndex];
@@ -4264,8 +4406,8 @@ function applyPdfExtraction(quoteIndex, ex){
   const numFrom = (id, fb) => {
     const el = document.getElementById(id);
     if(!el) return fb;
-    const n = parseInt(String(el.value).replace(/[^0-9]/g,''),10);
-    return isNaN(n) ? undefined : n;
+    const n = parseFloat(String(el.value).replace(/,/g,'').replace(/[^0-9.\-]/g,''));
+    return isNaN(n) ? undefined : Math.round(n);
   };
   const _pn = numFrom('pdfPremiumNet', ex.premiumNet);
   const _pi = numFrom('pdfISC', ex.isc);
@@ -4363,13 +4505,28 @@ if(sidebarLogoEl) sidebarLogoEl.src = LOGO_SIDEBAR_PNG;
 /* ============================================================
    PRODUCCIÓN — Supabase: login + datos compartidos
    ============================================================ */
+function _errTxt(e){ return (e && (e.message || e.hint || e.details)) || (typeof e==='string'?e:JSON.stringify(e)); }
+function syncToast(msg, ok){
+  let t=document.getElementById('syncToast');
+  if(!t){ t=document.createElement('div'); t.id='syncToast'; t.style.cssText='position:fixed;bottom:14px;right:14px;z-index:950;padding:10px 14px;border-radius:10px;font-family:Inter,system-ui,sans-serif;font-size:12.5px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:360px;line-height:1.4'; document.body.appendChild(t); }
+  t.style.background = ok ? '#0E2A1E' : '#2A1315';
+  t.style.color = ok ? '#5FE0A8' : '#F19AA0';
+  t.style.border = '1px solid '+(ok?'#16a34a':'#dc2626');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h=setTimeout(function(){ t.style.display='none'; }, ok?1500:8000);
+}
 async function remoteSaveNow(){
   if(!sbClient || !currentUser) return;
   try{
-    await sbClient.from('app_config').upsert({ id:1, data: state.config, updated_by: currentUser.id, updated_at: new Date().toISOString() });
+    const r1 = await sbClient.from('app_config').upsert({ id:1, data: state.config, updated_by: currentUser.id, updated_at: new Date().toISOString() });
+    if(r1.error) throw r1.error;
     const c = state.cases.find(x=>x.id===state.activeCaseId);
-    if(c){ await sbClient.from('cases').upsert({ id:c.id, ref:c.ref||'', status:c.status||'', data:c, updated_by: currentUser.id, updated_at:new Date().toISOString() }); }
-  }catch(e){ console.warn('Guardado remoto falló (queda respaldo local):', e); }
+    if(c){
+      const r2 = await sbClient.from('cases').upsert({ id:c.id, ref:c.ref||'', status:c.status||'', data:c, updated_by: currentUser.id, updated_at:new Date().toISOString() });
+      if(r2.error) throw r2.error;
+    }
+    syncToast('Guardado en la nube \u2713', true);
+  }catch(e){ console.error('Guardado remoto falló:', e); syncToast('\u26A0 No guardó en la nube: '+_errTxt(e), false); }
 }
 function scheduleRemoteSave(){
   if(!sbClient || !currentUser) return;
@@ -4389,12 +4546,16 @@ async function loadRemote(){
       sbClient.from('app_config').select('data').eq('id',1).maybeSingle(),
       sbClient.from('cartera_trc').select('*')
     ]);
+    if(caseRes.error) throw caseRes.error;
+    if(cartRes.error) throw cartRes.error;
     state.cases = (caseRes.data||[]).map(x=>migrateCase(x.data));
     if(cfgRes && cfgRes.data && cfgRes.data.data) state.config = migrateConfig({ ...state.config, ...cfgRes.data.data });
-    if(cartRes && Array.isArray(cartRes.data)) CARTERA_DB = cartRes.data.map(mapCarteraRow);
+    if(Array.isArray(cartRes.data)) CARTERA_DB = cartRes.data.map(mapCarteraRow);
     state.activeCaseId = (state.cases[0] && state.cases[0].id) || null;
+    syncToast('Datos cargados de la nube \u2713', true);
   }catch(e){
-    console.warn('Carga remota falló, uso respaldo local:', e);
+    console.error('Carga remota falló:', e);
+    syncToast('\u26A0 No cargó de la nube: '+_errTxt(e)+' — ¿corriste schema.sql y cartera_seed.sql?', false);
     load();
   }
 }
