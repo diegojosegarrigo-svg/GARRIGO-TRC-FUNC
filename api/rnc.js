@@ -16,6 +16,34 @@ function hidden(html, name){
   return m ? m[1].replace(/&amp;/g, '&') : '';
 }
 
+async function consultar(raw){
+  const r1 = await fetch(DGII_URL, { headers: { 'user-agent': UA } });
+  if(!r1.ok) throw new Error('DGII respondió ' + r1.status);
+  const page = await r1.text();
+  const cookie = (r1.headers.getSetCookie ? r1.headers.getSetCookie() : [r1.headers.get('set-cookie') || ''])
+    .filter(Boolean).map(c => c.split(';')[0]).join('; ');
+  const form = new URLSearchParams();
+  for(const n of ['__EVENTTARGET', '__EVENTARGUMENT', '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION']) form.set(n, hidden(page, n));
+  form.set('ctl00$cphMain$txtRNCCedula', raw);
+  form.set('ctl00$cphMain$btnBuscarPorRNC', 'BUSCAR');
+  form.set('ctl00$cphMain$hidActiveTab', '');
+  const r2 = await fetch(DGII_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': UA, 'referer': DGII_URL, 'origin': 'https://www.dgii.gov.do', ...(cookie ? { cookie } : {}) },
+    body: form.toString()
+  });
+  if(!r2.ok) throw new Error('DGII respondió ' + r2.status);
+  const html = await r2.text();
+  const tbl = html.match(/id="cphMain_dvDatosContribuyentes"[\s\S]*?<\/table>/);
+  const data = {};
+  if(tbl){
+    const re = /<tr>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/g;
+    let m; while((m = re.exec(tbl[0]))) data[decode(m[1]).toLowerCase()] = decode(m[2]);
+  }
+  const info = decode((html.match(/id="cphMain_lblInformacion"[^>]*>([\s\S]*?)<\/span>/) || [])[1]);
+  return { data, info };
+}
+
 export default async function handler(req, res){
   res.setHeader('Cache-Control', 'no-store');
   const raw = String((req.query && req.query.rnc) || '').replace(/\D/g, '');
@@ -23,35 +51,16 @@ export default async function handler(req, res){
     return res.status(400).json({ error: 'El RNC debe tener 9 dígitos (o 11 si es cédula).' });
   }
   try{
-    const r1 = await fetch(DGII_URL, { headers: { 'user-agent': UA } });
-    if(!r1.ok) throw new Error('DGII respondió ' + r1.status);
-    const page = await r1.text();
-    const cookie = (r1.headers.getSetCookie ? r1.headers.getSetCookie() : [r1.headers.get('set-cookie') || ''])
-      .filter(Boolean).map(c => c.split(';')[0]).join('; ');
-
-    const form = new URLSearchParams();
-    for(const n of ['__EVENTTARGET', '__EVENTARGUMENT', '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION']) form.set(n, hidden(page, n));
-    form.set('ctl00$cphMain$txtRNCCedula', raw);
-    form.set('ctl00$cphMain$btnBuscarPorRNC', 'BUSCAR');
-    form.set('ctl00$cphMain$hidActiveTab', '');
-
-    const r2 = await fetch(DGII_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': UA, 'referer': DGII_URL, ...(cookie ? { cookie } : {}) },
-      body: form.toString()
-    });
-    if(!r2.ok) throw new Error('DGII respondió ' + r2.status);
-    const html = await r2.text();
-
-    const tbl = html.match(/id="cphMain_dvDatosContribuyentes"[\s\S]*?<\/table>/);
-    const data = {};
-    if(tbl){
-      const re = /<tr>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/g;
-      let m; while((m = re.exec(tbl[0]))) data[decode(m[1]).toLowerCase()] = decode(m[2]);
+    let out = await consultar(raw);
+    /* La DGII a veces responde un error genérico; se reintenta una vez */
+    if(!Object.keys(out.data).length && /ocurri[oó] un error/i.test(out.info)){
+      await new Promise(r => setTimeout(r, 700));
+      out = await consultar(raw);
     }
+    const data = out.data;
     if(!Object.keys(data).length){
-      const info = decode((html.match(/id="cphMain_lblInformacion"[^>]*>([\s\S]*?)<\/span>/) || [])[1]);
-      return res.status(404).json({ error: info || 'El RNC/Cédula no se encuentra inscrito como contribuyente.' });
+      if(/ocurri[oó] un error/i.test(out.info)) return res.status(503).json({ error: 'La DGII no pudo hacer la búsqueda en este momento. Intenta de nuevo en unos segundos.' });
+      return res.status(404).json({ error: out.info || 'El RNC/Cédula no se encuentra inscrito como contribuyente.' });
     }
     const pick = (...keys) => { for(const k of keys){ const f = Object.keys(data).find(x => x.startsWith(k)); if(f && data[f]) return data[f]; } return ''; };
     return res.status(200).json({
