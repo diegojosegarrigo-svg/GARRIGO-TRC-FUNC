@@ -29,47 +29,50 @@
 </script>
 <style>
 :root{
-  /* Paleta corporativa Garrigo Seguros */
+  /* Tema claro Garrigó: fondo crema con azul marino profundo; naranja solo como acento.
+     Marca: azul #004A88 · naranja #FF5200 · gris #918F8F */
   --grg-blue:#004A88;        /* Azul primario */
   --grg-blue-dk:#00335E;     /* Azul oscuro */
   --grg-blue-2:#0A5AA0;      /* Azul medio */
-  --grg-blue-lt:#3A7AC4;     /* Azul claro */
-  --grg-blue-bg:#0E2137;     /* Azul fondo (oscuro) */
+  --grg-blue-lt:#B9D0E8;     /* Borde azul suave */
+  --grg-blue-bg:#EAF0F6;     /* Fondo azul muy claro */
   --grg-orange:#FF5200;      /* Naranja acento */
-  --grg-orange-2:#FF6B3D;    /* Naranja claro */
-  --grg-orange-lt:#2A1608;   /* Naranja fondo (oscuro) */
-  --grg-gray:#918F8F;        /* Gris corporativo (SEGUROS) */
-  --grg-gray-lt:#C7C9CC;     /* Gris claro */
-  --grg-dark:#231F20;        /* Negro corporativo */
-  /* Aliases retro-compat (mantienen funcionando el resto del CSS) */
-  --navy-900:var(--grg-blue-dk);
-  --navy-800:var(--grg-blue);
-  --navy-700:var(--grg-blue);
-  --navy-600:var(--grg-blue-2);
-  --navy-500:var(--grg-blue-lt);
+  --grg-orange-2:#FF6B2C;    /* Naranja hover */
+  --grg-orange-lt:#FFF1E6;   /* Fondo naranja muy claro */
+  --grg-gray:#918F8F;        /* Gris corporativo */
+  --grg-gray-lt:#C7C9CC;
+  --grg-dark:#231F20;
+  /* Aliases usados por el resto del CSS */
+  --navy-900:#0A1E35;
+  --navy-800:#00335E;
+  --navy-700:#00335E;
+  --navy-600:#004A88;
+  --navy-500:#2F6DB0;
+  --navy-300:#9DBBDB;
   --gold-500:var(--grg-orange);
-  --gold-400:var(--grg-orange-2);
+  --gold-400:#FF8A55;
   --gold-300:#FFB89A;
-  --gold-100:var(--grg-orange-lt);
-  --ink-900:#EAF1F9;
-  --ink-700:#C4D0DD;
-  --ink-500:#8B9BAC;
-  --ink-300:#63707E;
-  --line:#263A4F;
-  --line-2:#182838;
-  --bg:#0A1521;
-  --white:#12212F;
-  --surface:#12212F;
-  --surface-2:#0F1C29;
-  --num:#7FB6EE;
-  --ok:#16a34a;
-  --warn:#d97706;
-  --bad:#dc2626;
-  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
-  --shadow:0 4px 16px rgba(0,0,0,.45);
-  --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+  --gold-100:#FFF3EC;
+  --ink-900:#1A2433;
+  --ink-700:#46505E;
+  --ink-500:#7A7F86;
+  --ink-300:#AFAEA8;
+  --line:#E4D9C6;
+  --line-2:#EFE6D6;
+  --bg:#F2EADB;
+  --white:#FDF8EF;
+  --surface:#FDF8EF;
+  --surface-2:#F8F1E5;
+  --num:#00335E;
+  --ok:#15803D;
+  --warn:#B45309;
+  --bad:#C0262D;
+  --shadow-sm:0 1px 2px rgba(40,30,15,.05),0 1px 3px rgba(40,30,15,.04);
+  --shadow:0 6px 20px rgba(40,30,15,.08);
+  --shadow-lg:0 24px 60px rgba(40,30,15,.20);
   --radius:12px;
-  --radius-lg:16px;
+  --radius-lg:14px;
+  --font-display:"Montserrat","Inter",system-ui,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -84,8 +87,8 @@ body{
 /* ===== LAYOUT ===== */
 .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
 .sidebar{
-  background:linear-gradient(180deg,var(--grg-blue) 0%,var(--grg-blue-dk) 100%);
-  color:#fff;
+  background:linear-gradient(180deg,#012A4F 0%,#001A33 100%);
+  color:#fff;border-right:1px solid rgba(0,0,0,.08);
   padding:24px 0;
   position:sticky;top:0;height:100vh;overflow-y:auto;
 }
@@ -142,37 +145,38 @@ body{
 }
 .nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
 .nav-section{
-  font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
-  color:rgba(255,255,255,.4);padding:14px 12px 6px;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600;
+  color:rgba(255,255,255,.45);padding:16px 12px 6px;
 }
 .nav-item{
   display:flex;align-items:center;gap:12px;
   padding:10px 12px;border-radius:10px;cursor:pointer;
-  color:rgba(255,255,255,.78);font-weight:500;font-size:13.5px;
-  transition:all .15s;
+  color:rgba(255,255,255,.80);font-weight:500;font-size:13.5px;
+  transition:background .15s,color .15s;
 }
-.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .nav-item.active{
-  background:linear-gradient(90deg,rgba(201,161,74,.18),rgba(201,161,74,.04));
-  color:var(--gold-300);
-  box-shadow:inset 3px 0 0 var(--gold-500);
+  background:rgba(255,255,255,.11);
+  color:#fff;font-weight:600;
+  box-shadow:inset 3px 0 0 var(--grg-orange);
 }
+.nav-item.active .nav-ico{color:var(--grg-orange);opacity:1}
 .nav-ico{
   width:18px;height:18px;display:inline-grid;place-items:center;opacity:.85;
 }
 .main{display:flex;flex-direction:column;min-width:0}
 .topbar{
-  background:var(--surface);border-bottom:1px solid var(--line);
+  background:rgba(253,248,239,.95);backdrop-filter:saturate(1.2) blur(8px);border-bottom:1px solid var(--line);
   padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:10;
 }
 .topbar-left{display:flex;flex-direction:column;gap:2px}
-.topbar h1{margin:0;font-size:18px;font-weight:700;color:var(--navy-900)}
+.topbar h1{margin:0;font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--navy-900);letter-spacing:-.2px}
 .topbar-sub{font-size:12px;color:var(--ink-500)}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .case-pill{
   display:inline-flex;align-items:center;gap:8px;
-  padding:6px 12px;background:var(--gold-100);color:var(--navy-800);
+  padding:6px 12px;background:#EDE6D9;color:#00335E;border:1px solid #E0D5C3;
   border-radius:999px;font-size:12px;font-weight:600;
 }
 .case-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--gold-500)}
@@ -184,16 +188,17 @@ body{
   font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
   transition:all .15s;text-decoration:none;line-height:1;
 }
-.btn-primary{background:var(--navy-700);color:#fff}
-.btn-primary:hover{background:var(--navy-800);box-shadow:var(--shadow)}
-.btn-gold{background:linear-gradient(135deg,var(--gold-500),var(--gold-400));color:var(--navy-900)}
-.btn-gold:hover{filter:brightness(1.05);box-shadow:0 6px 20px rgba(201,161,74,.35)}
-.btn-ghost{background:transparent;color:var(--navy-700);border-color:var(--line)}
-.btn-ghost:hover{background:var(--line-2)}
+.btn-primary{background:#00335E;color:#fff}
+.btn-primary:hover{background:#00223F;box-shadow:0 4px 14px rgba(0,35,63,.28)}
+.btn-gold{background:var(--grg-orange);color:#fff}
+.btn-gold:hover{background:#E84A00;box-shadow:0 4px 14px rgba(255,82,0,.28)}
+.btn-ghost{background:var(--surface);color:#00335E;border-color:var(--line)}
+.btn-ghost:hover{background:#F3EDE2;border-color:#DCCFBA}
+.btn:focus-visible,.nav-item:focus-visible,.tab:focus-visible{outline:2px solid var(--grg-blue);outline-offset:2px}
 .btn-sm{padding:6px 10px;font-size:12px}
 .btn-icon{padding:8px;width:34px;height:34px;justify-content:center}
-.btn-danger{background:#fee2e2;color:#991b1b}
-.btn-danger:hover{background:#fecaca}
+.btn-danger{background:#FDECEC;color:#A11D24;border-color:#F6CACC}
+.btn-danger:hover{background:#FADADB}
 /* ===== CARDS ===== */
 .card{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
@@ -203,7 +208,7 @@ body{
   display:flex;justify-content:space-between;align-items:flex-start;
   margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line-2);
 }
-.card-title{font-size:16px;font-weight:700;color:var(--navy-900);margin:0}
+.card-title{font-family:var(--font-display);font-size:15.5px;font-weight:700;color:var(--navy-900);margin:0;letter-spacing:-.1px}
 .card-subtitle{font-size:12px;color:var(--ink-500);margin-top:4px}
 /* ===== FORMULARIOS ===== */
 .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px}
@@ -215,11 +220,11 @@ body{
 .field .hint{font-size:11px;color:var(--ink-500);margin-top:2px}
 .input,.select,.textarea{
   font-family:inherit;font-size:13px;color:var(--ink-900);
-  padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;border:1px solid #DDD2C0;border-radius:10px;
   background:var(--surface);outline:none;transition:all .15s;width:100%;
 }
 .input:focus,.select:focus,.textarea:focus{
-  border-color:var(--navy-500);box-shadow:0 0 0 3px rgba(44,95,163,.12);
+  border-color:#2F5F8F;box-shadow:0 0 0 3px rgba(0,51,94,.14);
 }
 .textarea{resize:vertical;min-height:80px;line-height:1.5}
 .input[type="number"]{font-variant-numeric:tabular-nums}
@@ -276,8 +281,8 @@ body{
 /* ===== TABLAS ===== */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:middle}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-500);font-weight:700;background:var(--line-2)}
-tr:hover td{background:rgba(255,255,255,.04)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-500);font-weight:700;background:#F6F0E5}
+tr:hover td{background:#FBF6EE}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
 /* ===== BADGES & STATUS ===== */
@@ -292,19 +297,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .badge-ren{background:#fce7f3;color:#9d174d}
 /* ===== DASHBOARD ===== */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-row.kpi-row-3{grid-template-columns:repeat(3,1fr)}
 .kpi{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  padding:18px;box-shadow:var(--shadow-sm);
+  padding:18px;box-shadow:var(--shadow-sm);border-top:3px solid var(--grg-blue);
 }
+.kpi.kpi-alert{border-top-color:var(--grg-orange)}
+.kpi{border-top-color:#00335E}
 .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-500);font-weight:600}
-.kpi-value{font-size:24px;font-weight:700;color:var(--num);margin-top:6px}
+.kpi-value{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--navy-900);margin-top:6px;font-variant-numeric:tabular-nums}
 .kpi-sub{font-size:12px;color:var(--ink-500);margin-top:4px}
 /* ===== CLAUSE LIBRARY ===== */
 .clause{
   border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;
   background:var(--surface);transition:all .15s;
 }
-.clause.selected{border-color:var(--gold-400);background:var(--grg-orange-lt)}
+.clause.selected{border-color:#FFC7A8;background:#FFF8F4;box-shadow:inset 3px 0 0 var(--grg-orange)}
 .clause-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .clause-code{
   font-family:"Source Serif 4",Georgia,serif;font-weight:600;color:var(--navy-800);
@@ -321,7 +329,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px;
   transition:all .15s;
 }
-.insurer-card.selected{border-color:var(--navy-500);background:#f5f8fd}
+.insurer-card.selected{border-color:#C9D6E3;background:#F3F5F6;box-shadow:inset 3px 0 0 #00335E}
 .insurer-mark{
   width:42px;height:42px;border-radius:10px;display:grid;place-items:center;
   font-weight:700;color:#fff;font-size:13px;flex-shrink:0;
@@ -337,8 +345,47 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   position:sticky;left:0;background:var(--surface);border-right:1px solid var(--line);font-weight:600;color:var(--navy-800);
 }
 .compare-grid th:first-child{background:var(--line-2)}
-.best{background:#0E2A1E !important;color:#5FE0A8;font-weight:700}
-.worst{background:#2A1315 !important;color:#F19AA0}
+.best{background:#E9F7EF !important;color:#166534;font-weight:700}
+.worst{background:#FDEEEE !important;color:#A11D24}
+.cmp-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.6fr);gap:12px;margin:0 0 18px}
+.cmp-stat,.cmp-rec{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.cmp-rec{background:#0A1E35;border-color:#0A1E35;color:#E8EEF5;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.cmp-rec .cmp-stat-k{color:#FFB89A}
+.cmp-rec .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.cmp-rec .btn-primary{background:var(--grg-orange)}
+.cmp-stat-k{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-500)}
+.cmp-stat-v{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy-900);margin-top:4px;line-height:1.25}
+.cmp-stat-s{font-size:12px;color:var(--ink-500);margin-top:3px}
+.cmp-rec-t{font-size:13px;line-height:1.5}
+.cmp-rec-t strong{color:#fff}
+.compare-grid tr.cmp-group td{background:var(--line-2);font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--navy-900);letter-spacing:.2px;padding:8px 12px;border-right:none}
+.compare-grid tr.cmp-group td span{font-family:Inter,sans-serif;font-weight:500;color:var(--ink-500);margin-left:10px;font-size:11px}
+.cmp-sub{font-size:11px;color:var(--ink-500);font-weight:400;margin-top:2px}
+.cmp-c{text-align:center}
+.cmp-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:999px;padding:4px 10px;font:600 12px Inter,sans-serif;cursor:pointer}
+.cmp-chip span{font-weight:500;font-size:11px}
+.cmp-ok{background:#E9F7EF;color:#166534;border-color:#BFE3CC}
+.cmp-mod{background:#FFF6E5;color:#92400E;border-color:#F3D9A6}
+.cmp-bad{background:#FDEEEE;color:#A11D24;border-color:#F3C3C6}
+.cmp-unk{background:var(--surface-2);color:var(--ink-500);border-color:var(--line)}
+.cmp-chip:hover{filter:brightness(.97)}
+.cmp-chip:focus-visible{outline:2px solid var(--navy-800);outline-offset:2px}
+.cmp-tag{display:inline-block;background:#FDEEEE;color:#A11D24;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;margin:2px 2px 0 0}
+.cmp-okline{color:#166534;font-size:12px;font-weight:600}
+.cmp-diff{font-size:12px;font-weight:600;color:var(--ink-700);text-align:right;font-variant-numeric:tabular-nums}
+.cmp-diff span{color:var(--ink-500);font-weight:500}
+.cmp-diff-best{color:#166534}
+.cmp-score-pill{margin-left:auto;background:#0A1E35;color:#fff;border-radius:999px;padding:3px 9px;font:700 11px Inter,sans-serif;font-variant-numeric:tabular-nums}
+.cmp-break{font-size:10.5px;color:var(--ink-500);text-align:center;margin-top:4px}
+.cmp-more{margin-top:14px}
+.cmp-file{font-size:10.5px;font-weight:500;color:var(--ink-500);text-transform:none;letter-spacing:0;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-guess{font-style:italic;color:var(--ink-700)}
+.cmp-more summary{cursor:pointer;font-weight:600;color:var(--navy-800);font-size:13px}
+.cmp-weights{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2);font-size:12px;color:var(--ink-700)}
+.cmp-weights > span:first-child{font-weight:700;color:var(--navy-900)}
+.cmp-weights label{display:inline-flex;align-items:center;gap:6px}
+.cmp-weights .input{width:64px;padding:6px 8px;text-align:right}
+@media (max-width:1100px){.cmp-summary{grid-template-columns:1fr 1fr}}
 /* ===== PREVIEW ===== */
 .preview-wrap{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
@@ -412,7 +459,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .email-meta{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
 /* ===== MODAL ===== */
 .modal-bg{
-  position:fixed;inset:0;background:rgba(10,31,61,.6);
+  position:fixed;inset:0;background:rgba(14,42,71,.45);
   display:none;align-items:center;justify-content:center;z-index:100;
   backdrop-filter:blur(4px);
 }
@@ -429,7 +476,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .center{text-align:center}
 .sep{height:1px;background:var(--line);margin:18px 0}
 .section-title{
-  font-size:13px;font-weight:700;color:var(--navy-800);
+  font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--navy-900);
   margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line-2);
   display:flex;align-items:center;gap:8px;
 }
@@ -443,7 +490,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   .app{grid-template-columns:1fr}
   .sidebar{position:relative;height:auto;width:100%}
   .form-grid,.form-grid.cols-3,.form-grid.cols-4{grid-template-columns:1fr}
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .kpi-row,.kpi-row.kpi-row-3{grid-template-columns:repeat(2,1fr)}
   .bilingual{grid-template-columns:1fr}
 }
 /* print */
@@ -481,9 +528,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="nav-section">Documentos</div>
       <div class="nav-item" data-view="slip">
         <span class="nav-ico">▤</span> Quote Slip (ES/EN)
-      </div>
-      <div class="nav-item" data-view="cover">
-        <span class="nav-ico">⛬</span> Condiciones Particulares
       </div>
       <div class="nav-item" data-view="wording">
         <span class="nav-ico">▥</span> Wording
@@ -600,6 +644,9 @@ const CLAUSE_LIB = [
   { id:'mr113', code:'Endoso 113', cat:'Endosos Munich Re LATAM', title_es:'Transportes Nacionales (en Rep. Dominicana)', title_en:'Inland Transit (within Dominican Republic)',
     text_es:'Esta póliza se extiende a cubrir pérdida o daño a bienes asegurados durante el tránsito terrestre dentro del territorio dominicano, desde puerto/aduana o desde bodega del fabricante hasta el sitio del proyecto. Sub-límite por viaje: {{end113_limit}}.',
     text_en:'This policy is extended to cover loss or damage to insured property during inland transit within Dominican territory, from port/customs or from manufacturer\'s warehouse to the project site. Sub-limit per journey: {{end113_limit}}.' },
+  { id:'mr115', code:'Endoso 115', cat:'Endosos Munich Re LATAM', title_es:'Riesgo del Diseñador (Error de Diseño)', title_en:"Designer's Risk (Faulty Design)",
+    text_es:'No obstante lo establecido en las exclusiones de la Sección I, queda entendido y convenido que esta póliza se extiende a cubrir pérdida o daño a los bienes asegurados causados por error o defecto de diseño, cálculo o plano. El Asegurador no será responsable por el costo de reemplazar, reparar o rectificar el bien o la parte diseñada defectuosamente, ni por los gastos que se hubieran incurrido para corregir el error si se hubiese descubierto antes de la pérdida. Sub-límite por evento y en el agregado: {{end115_limit}} (mínimo 30% de la Suma Asegurada de la Sección I).',
+    text_en:"Notwithstanding the exclusions of Section I, it is understood and agreed that this policy is extended to cover loss or damage to the insured property caused by error or defect in design, calculation or plan. The Insurer shall not be liable for the cost of replacing, repairing or rectifying the defectively designed item or part, nor for the costs that would have been incurred to correct the error had it been discovered prior to the loss. Sub-limit any one event and in the aggregate: {{end115_limit}} (minimum 30% of the Section I Sum Insured)." },
   { id:'mr119', code:'Endoso 119', cat:'Endosos Munich Re LATAM', title_es:'Bienes Existentes', title_en:'Existing Property',
     text_es:'Esta póliza se extiende a cubrir daños a bienes existentes preexistentes en el sitio o adyacentes al mismo, propiedad del Asegurado o bajo su custodia, causados directamente por la ejecución de las obras aseguradas. Sub-límite: {{end119_limit}}. Excluye desgaste, deterioro pre-existente y mantenimiento.',
     text_en:'This policy is extended to cover damage to pre-existing property on or adjacent to the site, owned by or in the custody of the Insured, caused directly by the execution of the insured works. Sub-limit: {{end119_limit}}. Excludes wear and tear, pre-existing deterioration and maintenance.' },
@@ -715,6 +762,7 @@ const GARRIGO_BASE_CLAUSES = [
   'mr110',     // Inundación / Precipitaciones
   'mr112',     // Equipos Extintores de Incendio
   'mr113',     // Transportes Nacionales (mín. RD$1M)
+  'mr115',     // Error de Diseño (mín. 30% de la Sección I)
   'mr119',     // Bienes Existentes (mín. RD$1M — Endoso 119)
   'mr-rc-vib', // Vibración y Debilitamiento End. 120 (100% del RC)
   /* Exclusiones NMA/LMA/CL del mercado */
@@ -766,6 +814,7 @@ const PROJECT_TEMPLATES = {
         mr107:1000000,                    // Campamentos
         mr112:1000000,                    // Equipos Extintores
         mr113:1000000,                    // Transportes Nacionales
+        mr115:Math.round(si*0.30),       // Error de Diseño 30% Sección I
         mr119:1000000,                    // Bienes Existentes
         'mr-rc-vib':rc,                   // Vibración 100% del RC
       };
@@ -809,6 +858,7 @@ const PROJECT_TEMPLATES = {
         mr107:Math.max(GARRIGO_SUBLIMIT_MIN.mr107, 10000000),
         mr112:Math.max(GARRIGO_SUBLIMIT_MIN.mr112, 10000000),
         mr113:Math.max(GARRIGO_SUBLIMIT_MIN.mr113, 3000000),
+        mr115:Math.round(si*0.30),       // Error de Diseño 30% Sección I
         mr119:Math.max(GARRIGO_SUBLIMIT_MIN.mr119, 10000000),
         'mr-rc-vib':rc,                  // 100% del RC
       };
@@ -850,6 +900,7 @@ const PROJECT_TEMPLATES = {
         mr107:20000000,
         mr112:20000000,
         mr113:10000000,
+        mr115:Math.round(si*0.30),       // Error de Diseño 30% Sección I
         mr119:50000000,
         'mr-rc-vib':rc,                  // 100% del RC
       };
@@ -907,10 +958,10 @@ const state = {
     email:'info@garrigo.com.do',
     website:'[www.garrigo.com.do](https://www.garrigo.com.do)',
     license:'',  // opcional: registro Sup. Seguros si aplica
-    commissionDefault: 20,
     iscRate: 16,
     fxRate: 60.00,
     extractAliases: {},
+    scoreWeights: { price:60, deductibles:40 },
   },
 };
 /* ---------- PERSISTENCIA ---------- */
@@ -932,6 +983,7 @@ function migrateConfig(cfg){
   };
   if(placeholders.brokerName.includes(cfg.brokerName)) cfg.brokerName = 'Garrigo Reasesores, SRL';
   if(cfg.subtitle === undefined) cfg.subtitle = 'Corredores de Seguros · Consultoría';
+  if(!cfg.scoreWeights || cfg.scoreWeights.coverage !== undefined) cfg.scoreWeights = { price:60, deductibles:40 };
   if(placeholders.rnc.includes(cfg.rnc)) cfg.rnc = '130-238202';
   if(placeholders.license.includes(cfg.license)) cfg.license = '';
   if(placeholders.address.includes(cfg.address)) cfg.address = 'Calle Jacinto Ignacio Mañon 48, Edificio V&M, 4to. piso, Suite 404, Santo Domingo, República Dominicana';
@@ -1029,6 +1081,7 @@ function blankCase(){
       mr107:'',  // Campamentos
       mr112:'',  // Equipos extintores
       mr113:'',  // Transportes nacionales
+      mr115:'',  // Error de Diseño (mín. 30% Sección I)
       mr119:'',  // Bienes existentes
       'mr-rc-vib':'', // RC vibración
     },
@@ -1047,7 +1100,6 @@ function blankCase(){
     quotes: ['banreservas','universal','mapfre','sura','colonial','crecer'].map(id => ({
       insurerId: id,
       rate: '', premiumNet: '', isc: '', premiumTotal: '',
-      commission: state.config.commissionDefault,
       deductibles_proposed: '',
       clauses_accepted: [], clauses_rejected: [], clauses_modified: [],
       exclusions_added: '', capacity: '', notes: ''
@@ -1109,6 +1161,14 @@ function migrateCase(c){
   if(!c.cession) c.cession = { beneficiary:'', amount:'' };
   if(!c.coinsurance) c.coinsurance = [];
   if(!c.placement) c.placement = { premiumNet:'', isc:'', total:'', notes:'' };
+  /* Casos llenados en Modo Rápido: completar los campos del modo avanzado */
+  if(c.sums && c.coverages){
+    const _si = +(c.coverages.A && c.coverages.A.sum) || 0;
+    const _oth = ['supplies','cpm','temp','debris','fees','extra'].reduce((a,k)=>a+(+c.sums[k]||0),0);
+    if(_si > 0 && !(+c.sums.works) && _oth < _si) c.sums.works = _si - _oth;
+    if(!(+c.sums.liability_event) && c.coverages.EF && +c.coverages.EF.sum_event) c.sums.liability_event = +c.coverages.EF.sum_event;
+    if(!(+c.sums.liability_agg) && c.coverages.EF && +c.coverages.EF.sum_agg) c.sums.liability_agg = +c.coverages.EF.sum_agg;
+  }
   /* Eliminar cláusulas obsoletas que ya no existen en la biblioteca */
   const validIds = new Set(CLAUSE_LIB.map(cl => cl.id));
   c.clauses = (c.clauses||[]).filter(x => validIds.has(x.id));
@@ -1128,6 +1188,12 @@ function migrateCase(c){
   if(mr003 && !mr003.selected && !c._mr003Migrated){
     mr003.selected = true;
     c._mr003Migrated = true;  /* Flag para que solo se aplique una vez */
+  }
+  /* End. 115 Error de Diseño: nunca por debajo del 30% de la Sección I */
+  if(c.endorsement_sublimits && c.coverages && c.coverages.A && +c.coverages.A.sum){
+    const _m115 = Math.round(+c.coverages.A.sum * 0.30);
+    if(!(+c.endorsement_sublimits.mr115) || +c.endorsement_sublimits.mr115 < _m115) c.endorsement_sublimits.mr115 = _m115;
+    if(c._lastSIForEnd115 === undefined) c._lastSIForEnd115 = +c.coverages.A.sum;
   }
   /* End. 003 sub-límite = 100% del valor asegurado (Cobertura A) */
   if(c.endorsement_sublimits && !c.endorsement_sublimits.mr003 && c.coverages?.A?.sum){
@@ -1204,6 +1270,7 @@ function seedDemoData(){
     mr107:10000000,      // Campamentos y Almacenes
     mr112:10000000,      // Equipos Extintores
     mr113:3000000,       // Transportes Nacionales
+    mr115:153711600,     // Error de Diseño 30% Sección I
     mr119:10000000,      // Bienes Existentes
     'mr-rc-vib':50000000,// RC Vibración
   };
@@ -1232,28 +1299,28 @@ function seedDemoData(){
   });
   // Cotizaciones de muestra recibidas — valores en RD$ acordes al slip real local
   c.quotes = [
-    { insurerId:'universal', rate:5.25, premiumNet:2689953, isc:430393, premiumTotal:3120346, commission:20,
+    { insurerId:'universal', rate:5.25, premiumNet:2689953, isc:430393, premiumTotal:3120346,
       deductibles_proposed:'Sec. I Catastróficos 2% SI · Otros Riesgos RD$300,000 · Sec. II TPL RD$175,000',
       clauses_accepted:['End. 001','End. 002','End. 004','End. 006','End. 008','End. 013','End. 102','End. 107','End. 110','End. 112','End. 113','End. 119','NMA 2842','LMA 3100','LMA 5393','LMA 5394'],
       clauses_rejected:[], clauses_modified:['End. 004 ampliado a 6 meses'],
       exclusions_added:'ALOP/DSU, R.C. Decenal, R.C. Contractual, E&O, D&O, errores de diseño, RC durante mantenimiento, CPE, transporte, desgaste, robo sin violencia.',
       capacity:'Retención 35% · Coaseguro 20% con Seguros Reservas · Facultativo Munich Re 45%',
       notes:'Líder del coaseguro. Wording más completo del mercado. Cubre todos los endosos LATAM estándar.' },
-    { insurerId:'mapfre', rate:5.05, premiumNet:2587478, isc:413996, premiumTotal:3001474, commission:18,
+    { insurerId:'mapfre', rate:5.05, premiumNet:2587478, isc:413996, premiumTotal:3001474,
       deductibles_proposed:'Sec. I Catastróficos 2.5% SI · Otros Riesgos RD$350,000 · Sec. II TPL RD$200,000',
       clauses_accepted:['End. 001','End. 002','End. 006','End. 008','End. 102','End. 110','End. 112','End. 113','NMA 2842','LMA 3100','LMA 5393'],
       clauses_rejected:['End. 004','End. 013','End. 119'], clauses_modified:[],
       exclusions_added:'ALOP/DSU, R.C. Decenal, errores diseño, CPE, transporte fuera de sitio, exclusión adicional de subsidencia gradual.',
       capacity:'Retención 40% · Facultativo Munich Re 60%',
       notes:'Precio competitivo pero rechaza mantenimiento ampliado y bienes existentes. Deducibles más altos.' },
-    { insurerId:'colonial', rate:5.45, premiumNet:2792427, isc:446788, premiumTotal:3239215, commission:22,
+    { insurerId:'colonial', rate:5.45, premiumNet:2792427, isc:446788, premiumTotal:3239215,
       deductibles_proposed:'Sec. I Catastróficos 2% SI · Otros Riesgos RD$250,000 · Sec. II TPL RD$150,000',
       clauses_accepted:['End. 001','End. 002','End. 004','End. 006','End. 008','End. 010','End. 013','End. 102','End. 107','End. 110','End. 112','End. 113','End. 119','NMA 2842','LMA 3100','LMA 5393','LMA 5394'],
       clauses_rejected:[], clauses_modified:[],
       exclusions_added:'Sólo exclusiones estándar de mercado (sin recortes adicionales).',
       capacity:'Retención 35% · Facultativo Swiss Re 65%',
       notes:'Wording más amplio (incluye End. 004 ampliado, End. 010 escombros nat-cat, End. 013 off-site, End. 119 bienes existentes). Deducibles más bajos.' },
-    { insurerId:'sura', rate:5.15, premiumNet:2638666, isc:422187, premiumTotal:3060853, commission:20,
+    { insurerId:'sura', rate:5.15, premiumNet:2638666, isc:422187, premiumTotal:3060853,
       deductibles_proposed:'Sec. I Catastróficos 2.25% SI · Otros Riesgos RD$300,000 · Sec. II TPL RD$175,000',
       clauses_accepted:['End. 001','End. 002','End. 006','End. 008','End. 013','End. 102','End. 110','End. 112','End. 113','NMA 2842','LMA 3100','LMA 5393','LMA 5394'],
       clauses_rejected:['End. 004','End. 119'], clauses_modified:['End. 113 — sub-límite reducido a RD$1.5M'],
@@ -1287,7 +1354,6 @@ function render(){
     clauses:['Cláusulas y Condiciones','Selección y edición de cláusulas Munich Re / LMA / RD'],
     panel:['Panel de Aseguradoras','Define a qué aseguradoras se envía la solicitud'],
     slip:['Quote Slip','Solicitud de cotización bilingüe ES/EN — para enviar a aseguradoras'],
-    cover:['Condiciones Particulares','Cover letter formato Munich Re LATAM — al estilo local'],
     wording:['Wording de Referencia','Wording completo bilingüe basado en Munich Re LATAM (TRC/TRM)'],
     proposal:['Propuesta al Cliente','Documento ejecutivo en español para el asegurado'],
     compare:['Comparador de Cotizaciones','Análisis lado a lado de respuestas recibidas'],
@@ -1295,6 +1361,7 @@ function render(){
     emails:['Emails a Aseguradoras','Genera correos personalizados con slip adjunto'],
     config:['Configuración','Datos del corredor y parámetros globales'],
   };
+  if(state.view === 'cover') state.view = 'slip';  /* Condiciones Particulares eliminadas: las emite la aseguradora */
   const [t,s] = titles[state.view] || ['—','—'];
   document.getElementById('viewTitle').textContent = t;
   document.getElementById('viewSub').textContent = s;
@@ -1305,7 +1372,6 @@ function render(){
   else if(state.view === 'clauses') content.innerHTML = viewClauses(c);
   else if(state.view === 'panel') content.innerHTML = viewPanel(c);
   else if(state.view === 'slip') content.innerHTML = viewSlip(c);
-  else if(state.view === 'cover') content.innerHTML = viewCover(c);
   else if(state.view === 'wording') content.innerHTML = viewWording(c);
   else if(state.view === 'proposal') content.innerHTML = viewProposal(c);
   else if(state.view === 'compare') content.innerHTML = viewCompare(c);
@@ -1317,27 +1383,27 @@ function render(){
    DASHBOARD
    ============================================================ */
 const TRC_CARTERA = [
-  {cliente:'FIDEICOMISO COLINAS DE SAN ISIDRO',bien:'PROYECTO RESIDENCIAL COLINAS DE SAN ISIDRO 6 - ETAPA 1 AUTOPISTA DE SAN ISIDRO, SANTO DOMINGO ESTE',poliza:'1-2-813-0091308',aseguradora:'LA COLONIAL, S. A.',moneda:'DOP',vigStart:'3/5/2026',vigEnd:'8/31/2027',valor:984818000.0,primaNetaAnual:3531681.0,primaBrutaAnual:4096749.96,comision:353168.1,lat:18.49,lng:-69.68,provincia:'Santo Domingo Este',geo:'aprox'},
-  {cliente:'CONSTRUCTORA DESARROLLO CIVIL CODECI, S.R.L.',bien:'Hato del yaque Santiago',poliza:'6623250001779',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'8/1/2025',vigEnd:'1/14/2027',valor:1107950000.0,primaNetaAnual:5650545.01,primaBrutaAnual:6554632.21,comision:565054.5,lat:19.42,lng:-70.73,provincia:'Santiago',geo:'exacto'},
-  {cliente:'FIDEICOMISO BRISAS DEL PRADO',bien:'AVE. ECOLÓGICA PRÓXIMO A CIUDAD JUAN BOSCH, AUT. SAN ISIDRO SANTO DOMINGO ESTE',poliza:'6623260001877',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'6/24/2026',vigEnd:'6/30/2027',valor:930508763.32,primaNetaAnual:4624628.56,primaBrutaAnual:5364569.13,comision:462462.86,lat:18.52,lng:-69.75,provincia:'Santo Domingo Este (Ciudad Juan Bosch)',geo:'aprox'},
-  {cliente:'FIDEICOMISO CORALES DEL CARIBE ETAPA II',bien:'MARGINAL AUTOPISTA LAS AMERICAS KM. 22 AL LADO Zona Franca Las Americas Santo Domingo ESTE',poliza:'6623240001683',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'5/31/2026',vigEnd:'9/30/2026',valor:445000000.0,primaNetaAnual:2765675.0,primaBrutaAnual:3208183.0,comision:276567.5,lat:18.49,lng:-69.68,provincia:'Santo Domingo Este',geo:'aprox'},
-  {cliente:'CONSTRUCTORA LUBA, S.R. L.',bien:'Santiago',poliza:'1-57-36',aseguradora:'SEGUROS CRECER',moneda:'DOP',vigStart:'6/30/2026',vigEnd:'10/31/2026',valor:238798182.0,primaNetaAnual:420000.0,primaBrutaAnual:487200.0,comision:42000.0,lat:19.4517,lng:-70.697,provincia:'Santiago',geo:'aprox'},
-  {cliente:'FIDEICOMISO INMOBILIARIO Y DE GARANTIA EPIC PUNTA CANA II',bien:'EPIC PUNTA CANA II LVP',poliza:'TRCO-2424',aseguradora:'SEGUROS SURA',moneda:'DOP',vigStart:'6/29/2026',vigEnd:'4/29/2029',valor:865800000.0,primaNetaAnual:5281380.0,primaBrutaAnual:6126400.8,comision:528138.0,lat:18.582,lng:-68.4055,provincia:'La Altagracia (Punta Cana)',geo:'aprox'},
-  {cliente:'INMOBILIARIA ROTE SA',bien:'OFICINAS CATADOR MAX HENRIQUEZ URENA ESQ VIRGILIO DIAZ',poliza:'TRCO-2413',aseguradora:'SEGUROS SURA',moneda:'DOP',vigStart:'5/5/2026',vigEnd:'5/5/2027',valor:42941139.23,primaNetaAnual:222778.63,primaBrutaAnual:258423.21,comision:22277.86,lat:18.4779,lng:-69.937,provincia:'Distrito Nacional',geo:'aprox'},
-  {cliente:'FIDEICOMISO INMOBILIARIO DE BAJO COSTO Y DE GARANTIA LP 12',bien:'Residencial LP12 Avenida Ecologica',poliza:'7368-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'6/18/2026',vigEnd:'6/18/2029',valor:880900000.0,primaNetaAnual:5725850.0,primaBrutaAnual:6641986.0,comision:572585.0,lat:18.53,lng:-69.8,provincia:'Santo Domingo Este (Av. Ecológica)',geo:'aprox'},
-  {cliente:'FIDEICOMISO INMOBILIARIO Y DE BAJO COSTO Y DE GARANTIA FGL LVP 1',bien:'LVP1 Avenida Jacobo Majluta Santo Domingo Norte',poliza:'7303-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'2/18/2026',vigEnd:'2/28/2029',valor:1241597000.0,primaNetaAnual:7139182.75,primaBrutaAnual:8281451.99,comision:713918.28,lat:18.576,lng:-69.92,provincia:'Santo Domingo Norte',geo:'aprox'},
-  {cliente:'FIDEICOMISO LADERAS DEL ESTE',bien:'Laderas Del este Carretera mella KM 22, El toro, San Antonio, Guerra',poliza:'11-7153-1',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'5/9/2025',vigEnd:'11/9/2026',valor:512372000.0,primaNetaAnual:2689953.0,primaBrutaAnual:3120345.48,comision:268995.3,lat:18.55,lng:-69.6,provincia:'Santo Domingo Este (Guerra)',geo:'aprox'},
-  {cliente:'FIDEICOMISO BRISAS CITY CENTER',bien:'Brisas City Center 2 Av Ecologica',poliza:'6623240001713',aseguradora:'MAPFRE BHD SEGUROS',moneda:'USD',vigStart:'4/30/2026',vigEnd:'12/8/2026',valor:23633000.0,primaNetaAnual:93929.01,primaBrutaAnual:108957.65,comision:9392.9,lat:18.53,lng:-69.8,provincia:'Santo Domingo Este (Av. Ecológica)',geo:'aprox'},
-  {cliente:'HACPEN SRL',bien:'REMODELACION BLUEMALL SANTO DOMINGO',poliza:'1980-01-05',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'3/4/2026',vigEnd:'9/13/2026',valor:939947.0,primaNetaAnual:4699.74,primaBrutaAnual:5451.7,comision:469.97,lat:18.4667,lng:-69.9412,provincia:'Distrito Nacional',geo:'aprox'},
-  {cliente:'HACPEN SRL',bien:'SANTO DOMINGO',poliza:'1-57-74',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'11/24/2025',vigEnd:'11/24/2026',valor:3000000.0,primaNetaAnual:12000.0,primaBrutaAnual:13920.0,comision:1200.0,lat:18.4861,lng:-69.9312,provincia:'Santo Domingo',geo:'aprox'},
-  {cliente:'HACPEN SRL',bien:'SANTO DOMINGO',poliza:'1-57-86',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'7/24/2026',vigEnd:'4/30/2027',valor:913873.53,primaNetaAnual:4112.69,primaBrutaAnual:4770.72,comision:411.27,lat:18.4861,lng:-69.9312,provincia:'Santo Domingo',geo:'aprox'},
-  {cliente:'LIMERT CORPORATION, S.R.L.',bien:'FARIFIELD BY MARRIOT MARGINAL AV LAS AMERICAS',poliza:'2-2-811-0015834',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'5/31/2026',vigEnd:'12/31/2026',valor:7994129.42,primaNetaAnual:55164.33,primaBrutaAnual:63990.62,comision:5516.43,lat:18.47,lng:-69.63,provincia:'Santo Domingo Este',geo:'aprox'},
-  {cliente:'MARKETING & MANAGEMENT GROUP',bien:'VILLA JUANILLO 33 CAP CANA',poliza:'2-2-811-0016363',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'4/24/2025',vigEnd:'8/31/2026',valor:4410000.0,primaNetaAnual:32992.38,primaBrutaAnual:38271.16,comision:3299.24,lat:18.47,lng:-68.38,provincia:'La Altagracia (Cap Cana)',geo:'aprox'},
-  {cliente:'PANORAMA LUXURY, SRL',bien:'VISTA CANA PUNTACANA',poliza:'',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'4/24/2026',vigEnd:'5/31/2027',valor:47086829.67,primaNetaAnual:158211.74,primaBrutaAnual:183525.62,comision:15821.17,lat:18.582,lng:-68.4055,provincia:'La Altagracia (Punta Cana)',geo:'aprox'},
-  {cliente:'ARCHLABS, S.R.L.',bien:'ZONA COLONIAL , DISTRITO NACIONAL',poliza:'TRCO-2326',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'7/21/2025',vigEnd:'7/31/2026',valor:1116600.0,primaNetaAnual:5768.5,primaBrutaAnual:6691.46,comision:576.85,lat:18.4735,lng:-69.8843,provincia:'Distrito Nacional',geo:'exacto'},
-  {cliente:'FIDEICOMISO PARQUE DEL ESTE RESIDENCES',bien:'PARQUE DEL ESTE AVENIDA HIPODROMO PROXIMO A CIUDAD JUAN BOSCH',poliza:'TRCO-2172',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'7/14/2026',vigEnd:'3/31/2028',valor:34000000.0,primaNetaAnual:187321.79,primaBrutaAnual:217293.28,comision:18732.18,lat:18.52,lng:-69.75,provincia:'Santo Domingo Este (Ciudad Juan Bosch)',geo:'aprox'},
-  {cliente:'INGENIERÍA TERRAMARE, SRL',bien:'DISTRITO NACIONAL',poliza:'TRCO-2303',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'6/12/2025',vigEnd:'5/31/2029',valor:24843536.72,primaNetaAnual:181070.23,primaBrutaAnual:210041.47,comision:18107.02,lat:18.4795,lng:-69.889,provincia:'Distrito Nacional',geo:'aprox'},
-  {cliente:'FIDEICOMISO IRREVOCABLE DE ADMINISTRACION INVERSION Y DESARROLLO INMOBILIARIO SOTAVENTO',bien:'Avenida Jacobo Majluta #19 The Six, Altos de Arroyo Hondo',poliza:'7023-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'USD',vigStart:'9/3/2024',vigEnd:'8/31/2026',valor:18314529.5,primaNetaAnual:113937.0,primaBrutaAnual:132166.92,comision:11393.7,lat:18.4779,lng:-69.937,provincia:'Distrito Nacional',geo:'aprox'}
+  {cliente:'FIDEICOMISO COLINAS DE SAN ISIDRO',bien:'PROYECTO RESIDENCIAL COLINAS DE SAN ISIDRO 6 - ETAPA 1 AUTOPISTA DE SAN ISIDRO, SANTO DOMINGO ESTE',poliza:'1-2-813-0091308',aseguradora:'LA COLONIAL, S. A.',moneda:'DOP',vigStart:'3/5/2026',vigEnd:'8/31/2027',valor:984818000.0,primaNetaAnual:3531681.0,primaBrutaAnual:4096749.96,lat:18.49,lng:-69.68,provincia:'Santo Domingo Este',geo:'aprox'},
+  {cliente:'CONSTRUCTORA DESARROLLO CIVIL CODECI, S.R.L.',bien:'Hato del yaque Santiago',poliza:'6623250001779',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'8/1/2025',vigEnd:'1/14/2027',valor:1107950000.0,primaNetaAnual:5650545.01,primaBrutaAnual:6554632.21,lat:19.42,lng:-70.73,provincia:'Santiago',geo:'exacto'},
+  {cliente:'FIDEICOMISO BRISAS DEL PRADO',bien:'AVE. ECOLÓGICA PRÓXIMO A CIUDAD JUAN BOSCH, AUT. SAN ISIDRO SANTO DOMINGO ESTE',poliza:'6623260001877',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'6/24/2026',vigEnd:'6/30/2027',valor:930508763.32,primaNetaAnual:4624628.56,primaBrutaAnual:5364569.13,lat:18.52,lng:-69.75,provincia:'Santo Domingo Este (Ciudad Juan Bosch)',geo:'aprox'},
+  {cliente:'FIDEICOMISO CORALES DEL CARIBE ETAPA II',bien:'MARGINAL AUTOPISTA LAS AMERICAS KM. 22 AL LADO Zona Franca Las Americas Santo Domingo ESTE',poliza:'6623240001683',aseguradora:'MAPFRE BHD SEGUROS',moneda:'DOP',vigStart:'5/31/2026',vigEnd:'9/30/2026',valor:445000000.0,primaNetaAnual:2765675.0,primaBrutaAnual:3208183.0,lat:18.49,lng:-69.68,provincia:'Santo Domingo Este',geo:'aprox'},
+  {cliente:'CONSTRUCTORA LUBA, S.R. L.',bien:'Santiago',poliza:'1-57-36',aseguradora:'SEGUROS CRECER',moneda:'DOP',vigStart:'6/30/2026',vigEnd:'10/31/2026',valor:238798182.0,primaNetaAnual:420000.0,primaBrutaAnual:487200.0,lat:19.4517,lng:-70.697,provincia:'Santiago',geo:'aprox'},
+  {cliente:'FIDEICOMISO INMOBILIARIO Y DE GARANTIA EPIC PUNTA CANA II',bien:'EPIC PUNTA CANA II LVP',poliza:'TRCO-2424',aseguradora:'SEGUROS SURA',moneda:'DOP',vigStart:'6/29/2026',vigEnd:'4/29/2029',valor:865800000.0,primaNetaAnual:5281380.0,primaBrutaAnual:6126400.8,lat:18.582,lng:-68.4055,provincia:'La Altagracia (Punta Cana)',geo:'aprox'},
+  {cliente:'INMOBILIARIA ROTE SA',bien:'OFICINAS CATADOR MAX HENRIQUEZ URENA ESQ VIRGILIO DIAZ',poliza:'TRCO-2413',aseguradora:'SEGUROS SURA',moneda:'DOP',vigStart:'5/5/2026',vigEnd:'5/5/2027',valor:42941139.23,primaNetaAnual:222778.63,primaBrutaAnual:258423.21,lat:18.4779,lng:-69.937,provincia:'Distrito Nacional',geo:'aprox'},
+  {cliente:'FIDEICOMISO INMOBILIARIO DE BAJO COSTO Y DE GARANTIA LP 12',bien:'Residencial LP12 Avenida Ecologica',poliza:'7368-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'6/18/2026',vigEnd:'6/18/2029',valor:880900000.0,primaNetaAnual:5725850.0,primaBrutaAnual:6641986.0,lat:18.53,lng:-69.8,provincia:'Santo Domingo Este (Av. Ecológica)',geo:'aprox'},
+  {cliente:'FIDEICOMISO INMOBILIARIO Y DE BAJO COSTO Y DE GARANTIA FGL LVP 1',bien:'LVP1 Avenida Jacobo Majluta Santo Domingo Norte',poliza:'7303-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'2/18/2026',vigEnd:'2/28/2029',valor:1241597000.0,primaNetaAnual:7139182.75,primaBrutaAnual:8281451.99,lat:18.576,lng:-69.92,provincia:'Santo Domingo Norte',geo:'aprox'},
+  {cliente:'FIDEICOMISO LADERAS DEL ESTE',bien:'Laderas Del este Carretera mella KM 22, El toro, San Antonio, Guerra',poliza:'11-7153-1',aseguradora:'SEGUROS UNIVERSAL',moneda:'DOP',vigStart:'5/9/2025',vigEnd:'11/9/2026',valor:512372000.0,primaNetaAnual:2689953.0,primaBrutaAnual:3120345.48,lat:18.55,lng:-69.6,provincia:'Santo Domingo Este (Guerra)',geo:'aprox'},
+  {cliente:'FIDEICOMISO BRISAS CITY CENTER',bien:'Brisas City Center 2 Av Ecologica',poliza:'6623240001713',aseguradora:'MAPFRE BHD SEGUROS',moneda:'USD',vigStart:'4/30/2026',vigEnd:'12/8/2026',valor:23633000.0,primaNetaAnual:93929.01,primaBrutaAnual:108957.65,lat:18.53,lng:-69.8,provincia:'Santo Domingo Este (Av. Ecológica)',geo:'aprox'},
+  {cliente:'HACPEN SRL',bien:'REMODELACION BLUEMALL SANTO DOMINGO',poliza:'1980-01-05',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'3/4/2026',vigEnd:'9/13/2026',valor:939947.0,primaNetaAnual:4699.74,primaBrutaAnual:5451.7,lat:18.4667,lng:-69.9412,provincia:'Distrito Nacional',geo:'aprox'},
+  {cliente:'HACPEN SRL',bien:'SANTO DOMINGO',poliza:'1-57-74',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'11/24/2025',vigEnd:'11/24/2026',valor:3000000.0,primaNetaAnual:12000.0,primaBrutaAnual:13920.0,lat:18.4861,lng:-69.9312,provincia:'Santo Domingo',geo:'aprox'},
+  {cliente:'HACPEN SRL',bien:'SANTO DOMINGO',poliza:'1-57-86',aseguradora:'SEGUROS CRECER',moneda:'USD',vigStart:'7/24/2026',vigEnd:'4/30/2027',valor:913873.53,primaNetaAnual:4112.69,primaBrutaAnual:4770.72,lat:18.4861,lng:-69.9312,provincia:'Santo Domingo',geo:'aprox'},
+  {cliente:'LIMERT CORPORATION, S.R.L.',bien:'FARIFIELD BY MARRIOT MARGINAL AV LAS AMERICAS',poliza:'2-2-811-0015834',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'5/31/2026',vigEnd:'12/31/2026',valor:7994129.42,primaNetaAnual:55164.33,primaBrutaAnual:63990.62,lat:18.47,lng:-69.63,provincia:'Santo Domingo Este',geo:'aprox'},
+  {cliente:'MARKETING & MANAGEMENT GROUP',bien:'VILLA JUANILLO 33 CAP CANA',poliza:'2-2-811-0016363',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'4/24/2025',vigEnd:'8/31/2026',valor:4410000.0,primaNetaAnual:32992.38,primaBrutaAnual:38271.16,lat:18.47,lng:-68.38,provincia:'La Altagracia (Cap Cana)',geo:'aprox'},
+  {cliente:'PANORAMA LUXURY, SRL',bien:'VISTA CANA PUNTACANA',poliza:'',aseguradora:'SEGUROS RESERVAS',moneda:'USD',vigStart:'4/24/2026',vigEnd:'5/31/2027',valor:47086829.67,primaNetaAnual:158211.74,primaBrutaAnual:183525.62,lat:18.582,lng:-68.4055,provincia:'La Altagracia (Punta Cana)',geo:'aprox'},
+  {cliente:'ARCHLABS, S.R.L.',bien:'ZONA COLONIAL , DISTRITO NACIONAL',poliza:'TRCO-2326',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'7/21/2025',vigEnd:'7/31/2026',valor:1116600.0,primaNetaAnual:5768.5,primaBrutaAnual:6691.46,lat:18.4735,lng:-69.8843,provincia:'Distrito Nacional',geo:'exacto'},
+  {cliente:'FIDEICOMISO PARQUE DEL ESTE RESIDENCES',bien:'PARQUE DEL ESTE AVENIDA HIPODROMO PROXIMO A CIUDAD JUAN BOSCH',poliza:'TRCO-2172',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'7/14/2026',vigEnd:'3/31/2028',valor:34000000.0,primaNetaAnual:187321.79,primaBrutaAnual:217293.28,lat:18.52,lng:-69.75,provincia:'Santo Domingo Este (Ciudad Juan Bosch)',geo:'aprox'},
+  {cliente:'INGENIERÍA TERRAMARE, SRL',bien:'DISTRITO NACIONAL',poliza:'TRCO-2303',aseguradora:'SEGUROS SURA',moneda:'USD',vigStart:'6/12/2025',vigEnd:'5/31/2029',valor:24843536.72,primaNetaAnual:181070.23,primaBrutaAnual:210041.47,lat:18.4795,lng:-69.889,provincia:'Distrito Nacional',geo:'aprox'},
+  {cliente:'FIDEICOMISO IRREVOCABLE DE ADMINISTRACION INVERSION Y DESARROLLO INMOBILIARIO SOTAVENTO',bien:'Avenida Jacobo Majluta #19 The Six, Altos de Arroyo Hondo',poliza:'7023-11-01',aseguradora:'SEGUROS UNIVERSAL',moneda:'USD',vigStart:'9/3/2024',vigEnd:'8/31/2026',valor:18314529.5,primaNetaAnual:113937.0,primaBrutaAnual:132166.92,lat:18.4779,lng:-69.937,provincia:'Distrito Nacional',geo:'aprox'}
 ];
 
 /* ============================================================
@@ -1386,12 +1452,11 @@ function caseToCarteraRec(c){
   const ins=(typeof DEFAULT_INSURERS!=='undefined')?DEFAULT_INSURERS.find(i=>i.id===(sel&&sel.insurerId)):null;
   const q=(c.quotes||[]).find(x=>+x.premiumNet>0)||null;
   const primaNeta=q?(+q.premiumNet||0):0;
-  const comision=q?(q.commission!=null?+q.commission:Math.round(primaNeta*0.10)):0;
   return { cliente:(c.insured&&c.insured.name)||c.ref||'Caso', bien:(desc||loc||'—').slice(0,140), poliza:c.ref||'—',
     aseguradora: ins?ins.name:(c.status==='Colocado'?'Colocado (sin aseguradora)':'En gestión'),
     moneda:(c.header&&c.header.currency)||'DOP',
     vigStart:(c.period&&c.period.constStart)?fmtDate(c.period.constStart):'', vigEnd:(c.period&&c.period.constEnd)?fmtDate(c.period.constEnd):'',
-    valor:siTotal(c), primaNetaAnual:primaNeta, comision:comision, lat:lat, lng:lng, provincia:prov, geo:geoc, source:'caso', status:c.status };
+    valor:siTotal(c), primaNetaAnual:primaNeta, lat:lat, lng:lng, provincia:prov, geo:geoc, source:'caso', status:c.status };
 }
 function carteraRecords(){
   const cs=(state.cases||[]).filter(c => (c.insured&&c.insured.name) || siTotal(c)>0 || (c.interest&&c.interest.location));
@@ -1399,7 +1464,6 @@ function carteraRecords(){
 }
 function _carEq(r){ return r.moneda==='USD' ? (r.valor||0)*CARTERA_FX : (r.valor||0); }
 function _carPrimaEq(r){ return r.moneda==='USD' ? (r.primaNetaAnual||0)*CARTERA_FX : (r.primaNetaAnual||0); }
-function _carComEq(r){ return r.moneda==='USD' ? (r.comision||0)*CARTERA_FX : (r.comision||0); }
 function _carRegion(r){
   const p=(r.provincia||'');
   if(/Altagracia|Punta Cana|Cap Cana/i.test(p)) return 'La Altagracia (Este)';
@@ -1435,7 +1499,6 @@ function initCarteraMap(){
         '<tr><td style="color:#888;padding:1px 6px 1px 0">Póliza</td><td>'+r.poliza+'</td></tr>'+
         '<tr><td style="color:#888;padding:1px 6px 1px 0">Suma aseg.</td><td><b>'+sym+' '+Math.round(r.valor).toLocaleString('en-US')+'</b></td></tr>'+
         '<tr><td style="color:#888;padding:1px 6px 1px 0">Prima neta</td><td>'+sym+' '+Math.round(r.primaNetaAnual||0).toLocaleString('en-US')+'</td></tr>'+
-        '<tr><td style="color:#888;padding:1px 6px 1px 0">Comisión 10%</td><td style="color:#FF5200"><b>'+sym+' '+Math.round(r.comision||0).toLocaleString('en-US')+'</b></td></tr>'+
         '<tr><td style="color:#888;padding:1px 6px 1px 0">Vigencia</td><td>'+r.vigStart+' → '+r.vigEnd+'</td></tr>'+
         '<tr><td style="color:#888;padding:1px 6px 1px 0">Zona</td><td>'+r.provincia+(r.geo==='sin_ubicar'?' <em>(por confirmar)</em>':'')+'</td></tr>'+
         '</table></div>'
@@ -1465,8 +1528,7 @@ function carteraSection(){
   const sumDOP = R.filter(r=>r.moneda==='DOP').reduce((a,r)=>a+r.valor,0);
   const sumUSD = R.filter(r=>r.moneda==='USD').reduce((a,r)=>a+r.valor,0);
   const primaTot = R.reduce((a,r)=>a+_carPrimaEq(r),0);
-  const comTot = R.reduce((a,r)=>a+_carComEq(r),0);
-  const groupBy = keyFn => { const g={}; R.forEach(r=>{ const k=keyFn(r); g[k]=g[k]||{n:0,val:0,prima:0,com:0}; g[k].n++; g[k].val+=_carEq(r); g[k].prima+=_carPrimaEq(r); g[k].com+=_carComEq(r); }); return Object.entries(g).sort((a,b)=>b[1].val-a[1].val); };
+  const groupBy = keyFn => { const g={}; R.forEach(r=>{ const k=keyFn(r); g[k]=g[k]||{n:0,val:0,prima:0}; g[k].n++; g[k].val+=_carEq(r); g[k].prima+=_carPrimaEq(r); }); return Object.entries(g).sort((a,b)=>b[1].val-a[1].val); };
   const byIns = groupBy(r=>canonInsurer(r.aseguradora));
   const byReg = groupBy(_carRegion);
   const maxIns = Math.max.apply(null, byIns.map(x=>x[1].val).concat([1]));
@@ -1478,7 +1540,6 @@ function carteraSection(){
       <td class="num" style="color:var(--num);font-weight:700">${_carRD(v.val)}</td>
       <td style="min-width:120px">${bar(v.val,maxIns,'#004A88')}</td>
       <td class="num">${_carRD(v.prima)}</td>
-      <td class="num" style="color:#FF7A3D;font-weight:700">${_carRD(v.com)}</td>
     </tr>`).join('');
   const regRows = byReg.map(([k,v]) => `<tr>
       <td style="font-weight:600">${k}</td>
@@ -1501,17 +1562,16 @@ function carteraSection(){
       </div>
     </div>
 
-    <div class="kpi-row">
+    <div class="kpi-row kpi-row-3">
       <div class="kpi"><div class="kpi-label">Pólizas TRC activas</div><div class="kpi-value">${R.length}</div><div class="kpi-sub">${nDOP} RD$ · ${nUSD} US$</div></div>
       <div class="kpi"><div class="kpi-label">Suma asegurada</div><div class="kpi-value" style="font-size:16px">RD$ ${Math.round(sumDOP).toLocaleString('en-US')}</div><div class="kpi-sub">+ US$ ${Math.round(sumUSD).toLocaleString('en-US')}</div></div>
       <div class="kpi"><div class="kpi-label">Prima neta anual</div><div class="kpi-value" style="font-size:17px">${_carRD(primaTot)}</div><div class="kpi-sub">RD$ equiv. (US$×${CARTERA_FX})</div></div>
-      <div class="kpi kpi-alert"><div class="kpi-label">Comisión (10%)</div><div class="kpi-value" style="font-size:17px">${_carRD(comTot)}</div><div class="kpi-sub">RD$ equiv.</div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><div><h2 class="card-title">Por aseguradora</h2><div class="card-subtitle">Suma asegurada, prima neta y comisión (RD$ equivalente)</div></div></div>
+      <div class="card-header"><div><h2 class="card-title">Por aseguradora</h2><div class="card-subtitle">Suma asegurada y prima neta (RD$ equivalente)</div></div></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Aseguradora</th><th class="num">Pólizas</th><th class="num">Suma aseg.</th><th></th><th class="num">Prima neta</th><th class="num">Comisión 10%</th></tr></thead>
+        <thead><tr><th>Aseguradora</th><th class="num">Pólizas</th><th class="num">Suma aseg.</th><th></th><th class="num">Prima neta</th></tr></thead>
         <tbody>${insRows}</tbody>
       </table></div>
     </div>
@@ -1522,7 +1582,7 @@ function carteraSection(){
         <thead><tr><th>Región</th><th class="num">Pólizas</th><th class="num">Suma aseg.</th><th></th></tr></thead>
         <tbody>${regRows}</tbody>
       </table></div>
-      <p class="muted" style="font-size:11px;margin-top:8px">Montos combinados en RD$ equivalente usan US$×${CARTERA_FX}. Ubicaciones aproximadas por proyecto; las marcadas "por confirmar" se pueden ajustar. Comisión = 10% de la prima neta anual.</p>
+      <p class="muted" style="font-size:11px;margin-top:8px">Montos combinados en RD$ equivalente usan US$×${CARTERA_FX}. Ubicaciones aproximadas por proyecto; las marcadas "por confirmar" se pueden ajustar.</p>
     </div>
   `;
 }
@@ -1705,13 +1765,41 @@ function uploadProjectImage(input){
       const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
       cv.getContext('2d').drawImage(img,0,0,w,h);
       try{ c.projectImage = cv.toDataURL('image/jpeg', 0.82); }catch(err){ c.projectImage = e.target.result; }
-      c.updatedAt=new Date().toISOString(); save(); render();
+      c.updatedAt=new Date().toISOString(); save();
+      ensureProjectBanner(c).then(function(){ render(); });
     };
     img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
-function removeProjectImage(){ const c=activeCase(); if(!c) return; c.projectImage=''; c.updatedAt=new Date().toISOString(); save(); render(); }
+function removeProjectImage(){ const c=activeCase(); if(!c) return; c.projectImage=''; delete BANNER_CACHE[c.id]; c.updatedAt=new Date().toISOString(); save(); render(); }
+/* Foto del proyecto para el Quote Slip: recorte panorámico centrado (16:7),
+   para que se vea igual en pantalla, PDF y Word. */
+function makeProjectBanner(dataUrl){
+  return new Promise(resolve => {
+    if(!dataUrl) return resolve('');
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const W = 1600, H = 700, r = W / H;
+        let sw = img.width, sh = Math.round(img.width / r), sx = 0, sy = Math.round((img.height - sh) / 2);
+        if(sh > img.height){ sh = img.height; sw = Math.round(img.height * r); sy = 0; sx = Math.round((img.width - sw) / 2); }
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        cv.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+        resolve(cv.toDataURL('image/jpeg', 0.85));
+      }catch(e){ resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+const BANNER_CACHE = {};  /* id del caso -> { src, banner } (solo en memoria, no se guarda) */
+function projectBannerSrc(c){ const b = BANNER_CACHE[c.id]; return (b && b.src === c.projectImage) ? b.banner : ''; }
+async function ensureProjectBanner(c){
+  if(!c || !c.projectImage || projectBannerSrc(c)) return;
+  const banner = await makeProjectBanner(c.projectImage);
+  BANNER_CACHE[c.id] = { src: c.projectImage, banner: banner };
+}
 function requiredMissing(c){
   const m=[];
   if(!(c.insured&&c.insured.name)) m.push('Asegurado');
@@ -1811,7 +1899,7 @@ function viewRisk(c){
             </select></div>
           <div class="field"><label>Ref. interna</label><input class="input" value="${escapeHtml(c.ref)}" onchange="updField('ref',this.value)"></div>
           <div class="field full"><label>Asegurado (razón social)</label><input class="input" list="insuredList" value="${escapeHtml(c.insured.name)}" onchange="updPath('insured.name',this.value);autofillInsured(this.value);renderHelper()" placeholder="FASA Constructores, S.R.L."><datalist id="insuredList">${insuredDirectory().map(i=>'<option value="'+escapeHtml(i.name)+'">').join('')}</datalist></div>
-          <div class="field"><label>RNC</label><input class="input" value="${escapeHtml(c.insured.rnc)}" onchange="updPath('insured.rnc',this.value)" placeholder="1-30-XXXXX-X"></div>
+          <div class="field"><label>RNC <span class="hint">(completa los datos desde la DGII)</span></label>${rncFieldHtml(c)}</div>
           <div class="field"><label>Contratista principal</label><input class="input" value="${escapeHtml(c.insured.contractor)}" onchange="updPath('insured.contractor',this.value)"></div>
           <div class="field full"><label>Obra Asegurada — descripción</label><textarea class="textarea" rows="2" onchange="updPath('interest.description',this.value)" placeholder="2da Etapa Proyecto Viviendas...">${escapeHtml(c.interest.description)}</textarea></div>
           <div class="field full"><label>Ubicación de la obra</label><input class="input" value="${escapeHtml(c.interest.location)}" onchange="updPath('interest.location',this.value);refreshMapaObra()" placeholder="Sector, Municipio, Provincia"></div>
@@ -1870,6 +1958,7 @@ function viewRisk(c){
                 <tr><td style="padding:3px 4px">Gastos Extraordinarios / Flete Expreso</td><td style="text-align:right;font-weight:600">mín. RD$ 1,000,000</td></tr>
                 <tr><td style="padding:3px 4px">Gastos por Flete Aéreo</td><td style="text-align:right;font-weight:600">mín. RD$ 500,000</td></tr>
                 <tr><td style="padding:3px 4px">Transportes Nacionales</td><td style="text-align:right;font-weight:600">mín. RD$ 1,000,000</td></tr>
+                <tr><td style="padding:3px 4px">Error de Diseño (End. 115)</td><td style="text-align:right;font-weight:600">mín. 30% de la Sección I</td></tr>
                 <tr><td style="padding:3px 4px">Bienes Existentes (End. 119)</td><td style="text-align:right;font-weight:600">mín. RD$ 1,000,000</td></tr>
                 <tr><td style="padding:3px 4px">Prueba de Equipo Nuevo</td><td style="text-align:right;font-weight:600">30 días</td></tr>
                 <tr><td style="padding:3px 4px">Vibración / Debilitamiento (End. 120)</td><td style="text-align:right;font-weight:600">100% del límite de RC</td></tr>
@@ -1916,7 +2005,7 @@ function viewRisk(c){
       <div class="section-title">2. El Asegurado / The Insured</div>
       <div class="form-grid">
         <div class="field full"><label>Razón social</label><input class="input" value="${escapeHtml(c.insured.name)}" onchange="updPath('insured.name',this.value)"></div>
-        <div class="field"><label>RNC</label><input class="input" value="${escapeHtml(c.insured.rnc)}" onchange="updPath('insured.rnc',this.value)"></div>
+        <div class="field"><label>RNC <span class="hint">(completa los datos desde la DGII)</span></label>${rncFieldHtml(c)}</div>
         <div class="field"><label>Actividad</label><input class="input" value="${escapeHtml(c.insured.activity)}" onchange="updPath('insured.activity',this.value)"></div>
         <div class="field full"><label>Dirección</label><input class="input" value="${escapeHtml(c.insured.address)}" onchange="updPath('insured.address',this.value)"></div>
         <div class="field"><label>Principal</label><input class="input" value="${escapeHtml(c.insured.principal)}" onchange="updPath('insured.principal',this.value)"></div>
@@ -1995,6 +2084,7 @@ function viewRisk(c){
         <div class="field"><label>End. 107 — Campamentos / Almacenes</label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(c.endorsement_sublimits.mr107)}" onchange="updMoney2('endorsement_sublimits','mr107',this)"></div>
         <div class="field"><label>End. 112 — Equipos Extintores</label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(c.endorsement_sublimits.mr112)}" onchange="updMoney2('endorsement_sublimits','mr112',this)"></div>
         <div class="field"><label>End. 113 — Transportes Nacionales</label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(c.endorsement_sublimits.mr113)}" onchange="updMoney2('endorsement_sublimits','mr113',this)"></div>
+        <div class="field"><label>End. 115 — Error de Diseño <span class="hint">(mín. 30% Sección I)</span></label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(end115Limit(c))}" onchange="updEnd115(this)"></div>
         <div class="field"><label>End. 119 — Bienes Existentes</label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(c.endorsement_sublimits.mr119)}" onchange="updMoney2('endorsement_sublimits','mr119',this)"></div>
         <div class="field"><label>RC Vibración / Debilitamiento</label><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(c.endorsement_sublimits['mr-rc-vib'])}" onchange="updMoney2('endorsement_sublimits','mr-rc-vib',this)"></div>
       </div>
@@ -2053,7 +2143,6 @@ function viewRisk(c){
       <div class="sep"></div>
       <div class="row">
         <button class="btn btn-primary" onclick="state.view='slip';save();render()">Ver Quote Slip →</button>
-        <button class="btn btn-gold" onclick="state.view='cover';save();render()">★ Condiciones Particulares</button>
         <button class="btn btn-ghost" onclick="state.view='clauses';save();render()">Editar cláusulas individuales</button>
       </div>
     </div>
@@ -2072,22 +2161,153 @@ function syncCoverages(){
     /* End. 003 Obras Recibidas siempre al 100% del SI */
     if(!c.endorsement_sublimits) c.endorsement_sublimits = {};
     c.endorsement_sublimits.mr003 = si;
+    syncEnd115(c, c._lastSIForEnd115);
+    c._lastSIForEnd115 = si;
+    const others = _siOthers(c);
+    if(others < si) c.sums.works = si - others;
   }
   c.updatedAt = new Date().toISOString();
   save();
 }
 function renderHelper(){ /* placeholder noop — para extensiones futuras */ }
+/* ============================================================
+   RNC → DGII: consulta automática del contribuyente (api/rnc.js)
+   ============================================================ */
+const DGII_UI = {};  /* estado temporal de la consulta (no se guarda) */
+function rncFieldHtml(c){
+  const ui = DGII_UI[c.id] || {};
+  const d = c.insured.dgii;
+  let st = '';
+  if(ui.msg){
+    st = '<div class="hint" style="margin-top:4px;color:'+(ui.err?'#dc2626':'var(--ink-500)')+'">'+escapeHtml(ui.msg)+'</div>';
+  } else if(d && d.nombre){
+    const ok = (d.estado||'').toUpperCase()==='ACTIVO';
+    st = '<div class="hint" style="margin-top:4px;color:'+(ok?'#16a34a':'#dc2626')+'">'+(ok?'✓':'⚠')+' DGII: '+escapeHtml(d.estado||'—')+
+         (d.regimen?' · Régimen '+escapeHtml(d.regimen):'')+(d.nombreComercial?' · '+escapeHtml(d.nombreComercial):'')+'</div>';
+  }
+  return '<div class="row" style="gap:6px"><input class="input" value="'+escapeHtml(c.insured.rnc||'')+'" placeholder="1-30-XXXXX-X" style="flex:1" '+
+         'onchange="updPath(\'insured.rnc\',this.value);lookupRNC(this.value)" onkeydown="if(event.key===\'Enter\'){this.blur();}">'+
+         '<button class="btn btn-ghost btn-sm" type="button" title="Buscar en la DGII" onclick="lookupRNC(activeCase()&&activeCase().insured.rnc)">🔍 DGII</button></div>'+st;
+}
+async function lookupRNC(v){
+  const c = activeCase(); if(!c) return;
+  const digits = String(v||'').replace(/\D/g,'');
+  if(!digits) return;
+  if(digits.length!==9 && digits.length!==11){ DGII_UI[c.id]={msg:'El RNC debe tener 9 dígitos (cédula: 11).', err:true}; render(); return; }
+  if(typeof LOCAL_DEV!=='undefined' && LOCAL_DEV){ DGII_UI[c.id]={msg:'La consulta DGII funciona en la versión publicada (Vercel), no en modo local.', err:true}; render(); return; }
+  DGII_UI[c.id]={msg:'Consultando DGII…', err:false}; render();
+  try{
+    const r = await fetch('/api/rnc?rnc='+digits);
+    let j={}; try{ j = await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+    const cc = state.cases.find(x=>x.id===c.id) || c;
+    cc.insured.rnc = j.rnc || cc.insured.rnc;
+    if(j.nombre) cc.insured.name = j.nombre;
+    if(j.actividad) cc.insured.activity = j.actividad;
+    cc.insured.dgii = j;
+    delete DGII_UI[cc.id];
+    cc.updatedAt = new Date().toISOString();
+    save(); render();
+    syncToast('DGII: '+(j.nombre||'datos cargados')+' ✓', true);
+  }catch(e){
+    DGII_UI[c.id] = { msg:'⚠ '+(e.message||e), err:true }; render();
+  }
+}
+/* End. 115 Error de Diseño: sub-límite mínimo = 30% de la Sección I (Cobertura A) */
+const END115_MIN_PCT = 0.30;
+function end115Min(c){ return Math.round((+(c && c.coverages && c.coverages.A && c.coverages.A.sum) || 0) * END115_MIN_PCT); }
+function end115Limit(c){ const v = +((c && c.endorsement_sublimits && c.endorsement_sublimits.mr115) || 0); return Math.max(v, end115Min(c)); }
+/* Al cambiar la Sección I: si el sub-límite era el 30% anterior (o quedó por debajo), se ajusta al nuevo 30% */
+function syncEnd115(c, oldA){
+  if(!c) return;
+  if(!c.endorsement_sublimits) c.endorsement_sublimits = {};
+  const cur = +c.endorsement_sublimits.mr115 || 0, min = end115Min(c);
+  const oldMin = Math.round((+oldA || 0) * END115_MIN_PCT);
+  if(!cur || cur < min || cur === oldMin){
+    c.endorsement_sublimits.mr115 = min;
+    document.querySelectorAll('input[onchange^="updEnd115"]').forEach(el => { el.value = fmtMoneyInput(min); });
+  }
+}
+function updEnd115(input){
+  const c = activeCase(); if(!c) return;
+  const n = parseMoneyInput(input.value), min = end115Min(c);
+  const v = Math.max(n, min);
+  updPath2('endorsement_sublimits','mr115', v);
+  input.value = v > 0 ? v.toLocaleString('en-US') : '';
+  if(n < min) syncToast('⚠ End. 115 Error de Diseño: mínimo 30% de la Sección I ('+min.toLocaleString('en-US')+')', false);
+}
+/* Rellena los {{campos}} de las cláusulas con los montos del caso */
+function fillClauseTokens(text, c){
+  if(!text || text.indexOf('{{') === -1) return text || '';
+  const ccy = (c.header && c.header.currency) || 'DOP';
+  const es = c.endorsement_sublimits || {};
+  const money = v => (+v > 0) ? fmtMoney(+v, ccy) : '';
+  const map = {
+    srcc_limit: money(es.mr001), end003_limit: money(es.mr003 || (c.coverages && c.coverages.A && c.coverages.A.sum)),
+    end006_limit: money(es.mr006), end010_limit: money(es.mr010), end013_limit: money(es.mr013),
+    end102_limit: money(es.mr102), end107_limit: money(es.mr107), end112_limit: money(es.mr112),
+    end113_limit: money(es.mr113), end115_limit: money(end115Limit(c)), end119_limit: money(es.mr119),
+    vib_limit: money(es['mr-rc-vib']),
+    ext_maint_months: (c.period && c.period.maintMonths) ? String(c.period.maintMonths) : '',
+    cession_beneficiary: (c.cession && c.cession.beneficiary) || '', cession_amount: money(c.cession && c.cession.amount)
+  };
+  let out = text.replace(/USD\s*\{\{srcc_limit\}\}/g, '{{srcc_limit}}')
+                .replace(/\s*\(\{\{end006_pct\}\}%[^)]*\)/g, '');
+  return out.replace(/\{\{(\w+)\}\}/g, (m, k) => (map[k] ? map[k] : 'por definir / to be agreed'));
+}
+/* Filas de coberturas para Propuesta y Wording */
+function coverageRows(c){
+  const cv = (c && c.coverages) || {};
+  const g = cv.G || {};
+  return [
+    { code:'A', desc:'Básica (incendio, rayo, explosión, robo violento)', sum:+(cv.A&&cv.A.sum)||0 },
+    { code:'B', desc:'Terremoto, Maremoto, Erupción Volcánica', sum:+(cv.B&&cv.B.sum)||0 },
+    { code:'C', desc:'Ciclón, Huracán, Inundación, Deslizamiento', sum:+(cv.C&&cv.C.sum)||0 },
+    { code:'D', desc:'Daños durante Mantenimiento', sum:+(cv.D&&cv.D.sum)||0 },
+    { code:'E + F', desc:'Responsabilidad Civil Extracontractual a Terceros (por evento)', sum:+(cv.EF&&cv.EF.sum_event)||0 },
+    { code:'G', desc:'Remoción de Escombros ('+(g.pct||10)+'% del siniestro, tope máx.)', sum:+g.max||0 }
+  ];
+}
 function siTotal(c){
   return (+c.sums.works||0)+(+c.sums.supplies||0)+(+c.sums.cpm||0)+(+c.sums.temp||0)+(+c.sums.debris||0)+(+c.sums.fees||0)+(+c.sums.extra||0);
 }
 /* helpers de actualización */
-function updField(k, v){ const c=activeCase(); if(!c)return; c[k]=v; c.updatedAt=new Date().toISOString(); save(); if(k==='status') render(); }
+function updField(k, v){ const c=activeCase(); if(!c)return; c[k]=v; c.updatedAt=new Date().toISOString(); save(); syncTwinInputs(k, v); if(k==='status') render(); }
 function updPath(path, v){
   const c=activeCase(); if(!c)return;
   const parts = path.split('.');
   let obj=c; for(let i=0;i<parts.length-1;i++) obj=obj[parts[i]];
   obj[parts[parts.length-1]] = v;
   c.updatedAt=new Date().toISOString(); save();
+  syncTwinInputs(path, v);
+}
+/* Modo Rápido <-> Avanzado: cuando un dato cambia, actualiza en pantalla
+   todos los campos que muestran ese mismo dato (sin redibujar la página). */
+function syncTwinInputs(path, v){
+  const key = "('" + path + "'";
+  document.querySelectorAll('input,select,textarea').forEach(el => {
+    const oc = el.getAttribute('onchange') || '';
+    if(oc.indexOf(key) === -1) return;
+    if(el.type === 'checkbox'){ el.checked = !!v; return; }
+    if(el.type === 'file') return;
+    const val = el.classList.contains('money-input') ? fmtMoneyInput(v) : (v == null ? '' : String(v));
+    if(el.value !== val) el.value = val;
+  });
+}
+/* Sección I y RC: el Modo Rápido usa coverages.*, el avanzado y los documentos usan sums.*
+   Estas reglas mantienen ambos iguales. */
+const SI_PARTS = ['works','supplies','cpm','temp','debris','fees','extra'];
+function _siOthers(c){ return SI_PARTS.filter(k => k!=='works').reduce((a,k)=>a+(+c.sums[k]||0),0); }
+function linkSumsFromCoverages(c){
+  const si = +c.coverages.A.sum || 0;
+  if(si > 0){ const others = _siOthers(c); if(others < si) updPath('sums.works', si - others); }
+}
+function linkCoverageAFromSums(c){
+  const oldA = +c.coverages.A.sum || 0, total = siTotal(c);
+  updPath('coverages.A.sum', total);
+  ['B','C','D'].forEach(k => { const cur = +c.coverages[k].sum || 0; if(!cur || cur === oldA) updPath('coverages.'+k+'.sum', total); });
+  if(c.endorsement_sublimits && (!+c.endorsement_sublimits.mr003 || +c.endorsement_sublimits.mr003 === oldA)) updPath2('endorsement_sublimits','mr003', total);
+  syncEnd115(c, oldA);
 }
 function updDed(i,k,v){ const c=activeCase(); c.deductibles[i][k]=v; save(); }
 function updPath2(parent, key, v){ const c=activeCase(); if(!c[parent]) c[parent]={}; c[parent][key]=v; c.updatedAt=new Date().toISOString(); save(); }
@@ -2096,6 +2316,14 @@ function updMoney(path, input){
   const n = parseMoneyInput(input.value);
   updPath(path, n);
   input.value = n > 0 ? n.toLocaleString('en-US') : '';
+  const c = activeCase(); if(!c) return;
+  const k = path.split('.')[1];
+  if(path.indexOf('sums.') === 0 && SI_PARTS.indexOf(k) !== -1) linkCoverageAFromSums(c);
+  else if(path === 'coverages.A.sum'){ linkSumsFromCoverages(c); syncEnd115(c, c._lastSIForEnd115); c._lastSIForEnd115 = +c.coverages.A.sum || 0; }
+  else if(path === 'sums.liability_event') updPath('coverages.EF.sum_event', n);
+  else if(path === 'sums.liability_agg') updPath('coverages.EF.sum_agg', n);
+  else if(path === 'coverages.EF.sum_event') updPath('sums.liability_event', n);
+  else if(path === 'coverages.EF.sum_agg') updPath('sums.liability_agg', n);
 }
 function updMoney2(parent, key, input){
   const n = parseMoneyInput(input.value);
@@ -2113,6 +2341,8 @@ function updMoneyRC(input){
   const n = parseMoneyInput(input.value);
   updPath('coverages.EF.sum_event', n);
   updPath('coverages.EF.sum_agg', n);
+  updPath('sums.liability_event', n);
+  updPath('sums.liability_agg', n);
   input.value = n > 0 ? n.toLocaleString('en-US') : '';
 }
 /* Variante para cotizaciones del comparador */
@@ -2120,7 +2350,7 @@ function updMoneyQuote(i, k, input){
   const c = activeCase();
   const n = parseMoneyInput(input.value);
   c.quotes[i][k] = n;
-  if(k === 'premiumNet'){ c.quotes[i].commission = Math.round(n * 0.10); save(); render(); return; }
+  if(k === 'premiumNet'){ save(); render(); return; }
   save();
   input.value = n > 0 ? n.toLocaleString('en-US') : '';
 }
@@ -2211,6 +2441,7 @@ function selectAllPanel(v){ const c=activeCase(); c.panel.forEach(p=>p.selected=
    VISTA: QUOTE SLIP (preview)
    ============================================================ */
 function viewSlip(c){
+  if(c.projectImage && !projectBannerSrc(c)){ ensureProjectBanner(c).then(function(){ if(state.view==='slip') render(); }); }
   const targetId = c.slipTarget || '';
   const targetIns = targetId ? DEFAULT_INSURERS.find(i => i.id === targetId) : null;
   const panelEntry = targetId ? c.panel.find(p => p.insurerId === targetId) : null;
@@ -2300,6 +2531,35 @@ function docFooter(){
     ${cfg.license ? '<br>'+escapeHtml(cfg.license) : ''}
   </div>`;
 }
+/* Portada del proyecto en el Quote Slip */
+function slipHeroInfo(c){
+  const desc = (c.interest && c.interest.description) || c.ref || '';
+  return {
+    title: desc.length > 95 ? desc.slice(0, 92).replace(/[\s,;:]+\S*$/, '').trim() + '…' : desc,
+    place: [(c.interest && c.interest.location) || '', (RATE_BENCHMARKS[c.interest && c.interest.workType] || {}).label || ''].filter(Boolean).join('  ·  '),
+    si: (+c.coverages.A.sum > 0) ? fmtMoney(c.coverages.A.sum, c.header.currency) : ''
+  };
+}
+function slipHeroHtml(c){
+  if(!c.projectImage) return '';
+  const src = projectBannerSrc(c) || c.projectImage;
+  const h = slipHeroInfo(c);
+  return `
+    <div style="position:relative;overflow:hidden;border-radius:6pt;margin:0 0 4pt;background:#004A88">
+      <img src="${src}" alt="Foto del proyecto" style="display:block;width:100%;height:auto;aspect-ratio:16/7;object-fit:cover">
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:34pt 16pt 12pt;background:linear-gradient(to top, rgba(0,51,94,.94) 0%, rgba(0,74,136,.78) 55%, rgba(0,74,136,0) 100%);color:#fff;font-family:'Inter',Arial,sans-serif">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:14pt;flex-wrap:wrap">
+          <div style="min-width:0;flex:1 1 260px">
+            <div style="font-size:7.5pt;font-weight:700;letter-spacing:2pt;text-transform:uppercase;color:#FFB89A;margin-bottom:3pt">Proyecto / Project</div>
+            <div style="font-family:'Montserrat',Arial,sans-serif;font-size:14pt;font-weight:800;line-height:1.2;color:#fff">${escapeHtml(h.title)}</div>
+            ${h.place ? `<div style="font-size:9pt;color:#DCE8F5;margin-top:4pt">${escapeHtml(h.place)}</div>` : ''}
+          </div>
+          ${h.si ? `<div style="text-align:right;flex:0 0 auto"><div style="font-size:7.5pt;font-weight:700;letter-spacing:1.5pt;text-transform:uppercase;color:#FFB89A">Suma asegurada Sección I</div><div style="font-family:'Montserrat',Arial,sans-serif;font-size:13pt;font-weight:800;color:#fff;margin-top:2pt">${h.si}</div></div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="height:3pt;background:#FF5200;border-radius:2pt;margin:0 0 14pt"></div>`;
+}
 function renderSlipDoc(c){
   return `${docHeader(c, 'Solicitud de Cotización TRC', '')}${renderSlipBody(c)}${docFooter()}`;
 }
@@ -2319,6 +2579,7 @@ function renderSlipBody(c){
   ` : '';
   return `
     ${targetBlock}
+    ${slipHeroHtml(c)}
     <h2><span class="doc-section-num">1</span> El Asegurado</h2>
     <dl class="kv">
       <dt>Razón social</dt><dd>${escapeHtml(c.insured.name)}</dd>
@@ -2375,6 +2636,7 @@ function renderSlipBody(c){
             ['mr107','End. 107','Campamentos y Almacenes', c.endorsement_sublimits?.mr107],
             ['mr112','End. 112','Equipos Extintores', c.endorsement_sublimits?.mr112],
             ['mr113','End. 113','Transportes Nacionales', c.endorsement_sublimits?.mr113],
+            ['mr115','End. 115','Error de Diseño <span style="font-size:8.5pt;color:var(--ink-500)">(mín. 30% Sección I)</span>', end115Limit(c)],
             ['mr119','End. 119','Bienes Existentes', c.endorsement_sublimits?.mr119],
             ['mr-rc-vib','RC','Vibración / Debilitamiento', c.endorsement_sublimits?.['mr-rc-vib']],
           ].filter(([id,code,desc,val]) => id === 'mr003' || (val && +val > 0));
@@ -2548,166 +2810,10 @@ function renderWordingBody(c){
       return `
         <h3>${idx+1}. ${cl.code} — ${cl.title_es} / ${cl.title_en}</h3>
         <div class="bilingual">
-          <div>${nl2br(sel.text_es)}</div>
-          <div>${nl2br(sel.text_en)}</div>
+          <div>${nl2br(fillClauseTokens(sel.text_es, c))}</div>
+          <div>${nl2br(fillClauseTokens(sel.text_en, c))}</div>
         </div>`;
     }).join('')}
-  `;
-}
-/* ============================================================
-   VISTA: CONDICIONES PARTICULARES (Cover Letter formato local)
-   Replica el formato emitido por Universal, MAPFRE, Colonial, etc.
-   ============================================================ */
-function viewCover(c){
-  return `
-    <div class="preview-wrap">
-      <div class="preview-toolbar">
-        <div class="row">
-          <strong>${escapeHtml(c.ref)} — Condiciones Particulares</strong>
-          <span class="badge badge-emit">Formato Munich Re LATAM · Español</span>
-        </div>
-        <div class="row">
-          <button class="btn btn-ghost btn-sm" onclick="exportDocx('cover')">⬇ Word</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportPdf('cover')">⬇ PDF</button>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Imprimir</button>
-        </div>
-      </div>
-      <div class="preview-body">
-        <div class="doc" id="docCover">${renderCoverDoc(c)}</div>
-      </div>
-    </div>
-  `;
-}
-function renderCoverDoc(c){
-  return `${docHeader(c,'Condiciones Particulares','')}${renderCoverBody(c)}${docFooter()}`;
-}
-function renderCoverBody(c){
-  const ccy = c.header.currency;
-  const M = v => fmtMoney(v, ccy);
-  const sym = ccy === 'DOP' ? 'RD$' : 'USD';
-  /* Helper para renderizar fila de "field: value" estilo Universal */
-  const row = (label, value) => `
-    <tr>
-      <td class="cl-label">${label}</td>
-      <td class="cl-value">${value}</td>
-    </tr>`;
-  /* Compone descripción del Interés (Sección I + Sección II) */
-  const interesText = `
-    <p><u>Sección I – Todo Riesgo Construcción (Coberturas A, B y C)</u><br>
-    ${escapeHtml(c.interest.workScope || 'Respecto a Daños Físicos a Todos los Materiales y/o Suministros y cualesquiera Trabajos Suplementarios y/o Asociados relacionados a la construcción y/o elevación de la Obra.')}</p>
-    <p><u>Sección II – Responsabilidad Civil a Terceros (Coberturas E y F)</u><br>
-    Indemnizar al Asegurado por la responsabilidad legal derivada de lesión corporal o muerte accidental a terceros y/o daños a la propiedad ajena derivada de o en conexión con la ejecución del Proyecto Asegurado.</p>
-  `;
-  /* Sumas / Límites — formato local: en RD$ usualmente */
-  const sumasText = `
-    <p><u>Sección I – Todo Riesgo Construcción (Coberturas A, B y C)</u><br>
-    ${sym} ${fmtNum(c.coverages.A.sum || c.sums.works)}</p>
-    <p><u>Sección II – Responsabilidad Civil Terceros (Coberturas E y F)</u><br>
-    ${sym} ${fmtNum(c.coverages.EF.sum_event || c.sums.liability_event)} cualquier accidente u ocurrencia y/o serie de accidentes u ocurrencias derivadas de un evento dentro del período Asegurado.</p>
-  `;
-  /* Condiciones — tabla de coberturas estándar Garrigo */
-  const selectedEndorsements = c.clauses.filter(x => {
-    const cl = CLAUSE_LIB.find(l => l.id === x.id);
-    return x.selected && cl && cl.cat === 'Endosos Munich Re LATAM';
-  });
-  const condicionesText = `
-    <p><strong>Formato: ${escapeHtml(c.formato || 'Muenchener')} ${c.formato === 'Swiss Re' ? '' : '(Munich Re)'}</strong></p>
-    <p>${escapeHtml(c.header.policyStandard||'De acuerdo a la Póliza Standard de Munich Re-Latinoamérica')} incluyendo, pero no limitado a:</p>
-    <p><strong><u>Cobertura "A"</u>:</strong> Básica — 100% del valor de la obra (${sym} ${fmtNum(c.coverages.A.sum)})</p>
-    <p><strong><u>Cobertura "B"</u>:</strong> Terremoto, Temblor, Maremoto y Erupción Volcánica — 100%</p>
-    <p><strong><u>Cobertura "C"</u>:</strong> Ciclón, Huracán, Tempestad, Vientos, Inundación, Desbordamiento y Alza de Nivel de Aguas, Enfangamiento, Hundimiento o Deslizamiento del Terreno, Derrumbes y Desprendimiento de Tierra o Rocas — 100%</p>
-    <p><strong><u>Cobertura "D"</u>:</strong> Daños a consecuencia del cumplimiento del Contrato de Mantenimiento Amplio ${c.period.maintMonths||12} meses.</p>
-    <p><strong><u>Cobertura "E" y "F"</u>:</strong> Responsabilidad Civil Extracontractual incluyendo RC Cruzada — ${sym} ${fmtNum(c.coverages.EF.sum_event)} cualquier accidente u ocurrencia.</p>
-    <p><strong><u>Cobertura "G"</u>:</strong> Remoción de Escombros ${c.coverages.G.pct||10}% del valor asegurado de daños materiales, máximo ${sym} ${fmtNum(c.coverages.G.max)}</p>
-    ${selectedEndorsements.map(sel => {
-      const cl = CLAUSE_LIB.find(l => l.id === sel.id);
-      const code = cl.code; // ej "Endoso 001"
-      const title = cl.title_es;
-      const subKey = sel.id;
-      const sub = c.endorsement_sublimits?.[subKey];
-      const subText = sub ? ` ${sym} ${fmtNum(sub)}` : '';
-      return `<p>${escapeHtml(code)} ${escapeHtml(title)}${subText}</p>`;
-    }).join('')}
-    <p style="font-size:9.5pt;color:var(--ink-500);font-style:italic;margin-top:8px">Prueba de Equipo Nuevo: ${escapeHtml(c.period.testingNote||'30 días para equipos nuevos')}.</p>
-  `;
-  /* Condiciones adicionales — texto libre */
-  const adicionalesText = c.additional_conditions ? nl2br(c.additional_conditions) : '<em>No aplican condiciones adicionales específicas.</em>';
-  /* Exclusiones — todas las NMA/LMA/CL/Exclusiones de mercado seleccionadas */
-  const selectedExclusions = c.clauses.filter(x => {
-    const cl = CLAUSE_LIB.find(l => l.id === x.id);
-    return x.selected && cl && (cl.cat === 'Exclusiones NMA / LMA / CL (Londres)' || cl.cat === 'Exclusiones de mercado RD');
-  });
-  const exclusionesText = selectedExclusions.length === 0
-    ? '<em>Exclusiones generales estándar de la póliza.</em>'
-    : selectedExclusions.map(sel => {
-        const cl = CLAUSE_LIB.find(l => l.id === sel.id);
-        return `<p>${escapeHtml(cl.code)} ${escapeHtml(cl.title_es)}</p>`;
-      }).join('');
-  /* Deducibles formateados */
-  const deduciblesText = c.deductibles.map(d =>
-    `<p><u>${escapeHtml(d.section)} – ${escapeHtml(d.type)}</u><br>• ${escapeHtml(d.value)}</p>`
-  ).join('');
-  /* Prima */
-  const premium = c.placement?.premiumNet || '—';
-  const primaText = `${sym} ${fmtNum(premium)} más ISC`;
-  /* Cesión */
-  const cesionText = c.cession?.beneficiary
-    ? `${escapeHtml(c.cession.beneficiary)}<br>${sym} ${fmtNum(c.cession.amount)}`
-    : '<em>Sin cesión.</em>';
-  /* Coaseguro al pie */
-  const coaseguroBlock = (c.coinsurance && c.coinsurance.length > 0) ? `
-    <div style="margin-top:32px;padding-top:18px;border-top:1px dashed var(--ink-300)">
-      <p style="text-align:center;font-family:Inter,sans-serif;font-weight:700;color:var(--grg-blue);letter-spacing:1px;font-size:10pt">
-        ------ DISTRIBUCIÓN PORCENTUAL DEL COASEGURO ------
-      </p>
-      <table style="margin-top:12px;width:80%;margin-left:auto;margin-right:auto">
-        <thead><tr><th>NOMBRE</th><th style="text-align:center">PORC.</th><th>PARTICIPACIÓN</th></tr></thead>
-        <tbody>
-          ${c.coinsurance.map(co => `
-            <tr>
-              <td>${escapeHtml(co.insurer)}</td>
-              <td style="text-align:center;font-weight:700">${(+co.percent||0).toFixed(2)}</td>
-              <td style="border-bottom:1px solid var(--ink-700)">&nbsp;</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>
-  ` : '';
-  return `
-    <style>
-      .cl-table{width:100%;border-collapse:collapse;margin-top:8px}
-      .cl-table td{border:none;padding:8px 10px;vertical-align:top}
-      .cl-label{font-family:Inter,sans-serif;font-weight:700;color:var(--grg-blue);width:180px;font-size:10.5pt}
-      .cl-value{font-family:Source Serif 4,Georgia,serif;font-size:11pt;line-height:1.5}
-      .cl-value p{margin:0 0 8px 0}
-      .cl-value p:last-child{margin-bottom:0}
-    </style>
-    <p style="text-align:center;font-weight:700;text-transform:uppercase;font-family:Inter,sans-serif;color:var(--grg-blue);letter-spacing:1.5px;font-size:12pt;margin:8px 0 20px">
-      Condiciones Particulares
-    </p>
-    <p style="font-style:italic;color:var(--ink-700);font-size:10.5pt;line-height:1.6">
-      QUEDA MUTUAMENTE ENTENDIDO Y CONVENIDO QUE: A partir del ${fmtDate(c.header.dateIssue)}, las condiciones aplicables a la presente póliza son las que se presentan a continuación:
-    </p>
-    <table class="cl-table">
-      ${row('Póliza No.:',          `<strong>${escapeHtml(c.header.policyNo || c.ref)}</strong>`)}
-      ${row('Tipo Póliza:',         `Todo Riesgo Construcción y/o Montaje`)}
-      ${row('Asegurado:',           escapeHtml(c.insured.name))}
-      ${row('Vigencia:',            `${(c.period.constStart && c.period.constEnd) ? 'Del '+fmtDate(c.period.constStart)+' al '+fmtDate(c.period.constEnd)+'. Inicia y termina a las '+escapeHtml(c.header.startTime||'4:00 P.M. Hora Local') : '<strong>Duración de la obra:</strong> '+(c.period.constMonths||12)+' meses (fechas exactas se establecerán al inicio de la póliza)'}<br><strong>Mantenimiento:</strong> ${c.period.maintMonths} meses<br><strong>Prueba:</strong> ${escapeHtml(c.period.testingNote || (c.period.testingWeeks+' semanas para equipos nuevos'))}`)}
-      ${row('Obra Asegurada:',      escapeHtml(c.interest.description))}
-      ${row('Ubicación de la Obra:',escapeHtml(c.interest.location))}
-      ${row('Interés:',             interesText)}
-      ${row('Sumas / Límites Asegurados:', sumasText)}
-      ${row('Condiciones:',         condicionesText)}
-      ${row('Condiciones Adicionales:', adicionalesText)}
-      ${row('Exclusiones:',         exclusionesText)}
-      ${row('Deducibles:',          deduciblesText)}
-      ${row('Prima:',               primaText)}
-      ${row('Endoso de Cesión:',    cesionText)}
-    </table>
-    <p style="margin-top:32px;text-align:justify;font-style:italic;color:var(--ink-700);font-size:10pt">
-      En testimonio de lo cual, las partes firman las presentes Condiciones Particulares en Santo Domingo, Distrito Nacional, República Dominicana, a los ${new Date(c.header.dateIssue).getDate()} días del mes de ${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][new Date(c.header.dateIssue).getMonth()]} de ${new Date(c.header.dateIssue).getFullYear()}.
-    </p>
-    ${coaseguroBlock}
   `;
 }
 /* ============================================================
@@ -2726,43 +2832,161 @@ function calcRate(q, c){
 function fmtRate(r){ return r > 0 ? r.toFixed(2)+' ‰' : '—'; }
 /* ============================================================
    SCORING & RECOMENDACIÓN AUTOMÁTICA
-   Pondera: Precio 40% · Cobertura 35% · Deducibles 25%
+   Una sola fórmula para Comparador y Propuesta. Pesos en Configuración
+   Solo primas y deducibles (por defecto Precio 60% · Deducibles 40%).
    ============================================================ */
+/* ---------- Lo pedido en el Slip vs. lo que cotizó cada aseguradora ---------- */
+const SUBLIMIT_ROWS = [
+  ['mr001','End. 001','SRCC — Huelga y Motín'], ['mr003','End. 003','Obras Recibidas'], ['mr006','End. 006','Gastos Extras / Flete Aéreo'],
+  ['mr013','End. 013','Bienes fuera de sitio'], ['mr102','End. 102','Cables subterráneos'], ['mr107','End. 107','Campamentos y almacenes'],
+  ['mr112','End. 112','Equipos extintores'], ['mr113','End. 113','Transportes nacionales'], ['mr115','End. 115','Error de Diseño'],
+  ['mr119','End. 119','Bienes existentes'], ['mr-rc-vib','End. 120','RC Vibración']
+];
+function scoreWeights(){
+  const w = (state.config && state.config.scoreWeights) || {};
+  const p = Math.max(0, w.price === undefined ? 60 : +w.price || 0), d = Math.max(0, w.deductibles === undefined ? 40 : +w.deductibles || 0);
+  const t = p + d || 100;
+  return { price: p / t, deductibles: d / t, raw: { price: p, deductibles: d } };
+}
+/* Endosos que se pidieron en el Slip (los seleccionados del bloque Munich Re) */
+function requestedEndorsements(c){
+  return (c.clauses || []).filter(x => x.selected).map(x => {
+    const cl = CLAUSE_LIB.find(l => l.id === x.id);
+    if(!cl || !/^Endosos Munich/.test(cl.cat)) return null;
+    const code = x.id === 'mr-rc-vib' ? 'End. 120' : cl.code.replace('Endoso', 'End.');
+    return { id: x.id, code: code, title: cl.title_es };
+  }).filter(Boolean);
+}
+function requestedSublimit(c, id){
+  if(id === 'mr115') return end115Limit(c);
+  if(id === 'mr003') return +(c.endorsement_sublimits && c.endorsement_sublimits.mr003) || +c.coverages.A.sum || 0;
+  return +((c.endorsement_sublimits || {})[id]) || 0;
+}
+/* Analiza una cotización contra lo pedido */
+function quoteVsSlip(q, c){
+  const req = requestedEndorsements(c);
+  const rows = req.map(r => {
+    const status = getAcceptanceStatus(q, r.code);
+    const want = requestedSublimit(c, r.id);
+    const got = +((q.endorsement_sublimits || {})[r.id]) || 0;
+    const low = status !== 'rejected' && want > 0 && got > 0 && got < want;
+    return { ...r, status: status, want: want, got: got, low: low };
+  });
+  const by = st => rows.filter(x => x.status === st);
+  const missing = rows.filter(x => x.status !== 'accepted');
+  return { rows: rows, accepted: by('accepted'), rejected: by('rejected'), modified: by('modified'), unknown: by('unknown'),
+           missing: missing, low: rows.filter(x => x.low), total: rows.length };
+}
+/* Convierte un deducible en un número comparable: % si lo trae, si no el monto */
+function dedMeasure(t){
+  const s = String(t || '').toLowerCase();
+  const pct = s.match(/(\d+(?:[.,]\d+)?)\s*%/);
+  const amt = s.match(/(?:rd\$|us\$|usd|dop|\$)?\s*([\d][\d,.]{3,})/);
+  return { pct: pct ? parseFloat(pct[1].replace(',', '.')) : null, amt: amt ? parseMoneyInput(amt[1]) : null };
+}
+/* -1 = mejor (más bajo) que lo pedido · 0 = igual · 1 = peor · null = no comparable */
+function dedCompare(asked, offered){
+  if(!asked || !offered) return null;
+  const a = dedMeasure(asked), o = dedMeasure(offered);
+  const cmp = (x, y) => Math.abs(x - y) < 1e-9 ? 0 : (y < x ? -1 : 1);
+  if(a.pct != null && o.pct != null){ const r = cmp(a.pct, o.pct); if(r !== 0) return r; }
+  if(a.amt != null && o.amt != null) return cmp(a.amt, o.amt);
+  if(a.pct != null && o.pct != null) return 0;
+  return null;
+}
+/* Si no se escribió el deducible de un grupo, se intenta sacar del texto de la cotización */
+/* Los tres deducibles que se comparan: Catastrófico · Otros riesgos · Daños a terceros (RC) */
+const DED_KINDS = [
+  { k:'cat',   label:'Deducible catastrófico',      short:'Catastrófico',  find:/catastr|terremoto|hurac[aá]n|cicl[oó]n|inundaci|tembl|fen[oó]meno|naturales|\bAOG\b|nat\s*cat/i, group:/catastr|\(b|b y c|b,\s*c|terremoto|hurac/i },
+  { k:'otros', label:'Otros riesgos',               short:'Otros riesgos', find:/otros\s+riesgos|dem[aá]s\s+riesgos|todo\s+otro|cualquier\s+otr|otras\s+p[eé]rdidas|\bAOP\b|otros\s+eventos/i, group:/otros|\(a\)/i },
+  { k:'rc',    label:'Daños a terceros (RC)',       short:'RC terceros',   find:/\btpl\b|\brc\b|responsabilidad\s+civil|terceros|da[ñn]os\s+a\s+terceros|secci[oó]n\s+ii|sec\.?\s*ii/i, group:/\brc\b|tercer|tpl|secci[oó]n ii/i }
+];
+/* Separa un texto de deducibles en los tres campos */
+function splitDeductibles(text){
+  const out = { cat:'', otros:'', rc:'' };
+  const t = String(text || ''); if(!t.trim()) return out;
+  const parts = t.split(/\s*[·;\n|•]\s*/).map(x => x.trim()).filter(Boolean);
+  const clean = (x, k) => {
+    let v = x.replace(/^deducibles?\s*[:\-–]?\s*/i, '').replace(/^sec(ci[oó]n)?\.?\s*(i{1,2})\b\s*[:\-–]?\s*/i, '');
+    const lead = { cat: /^(deducibles?\s+)?(catastr[oó]fic[oa]s?|riesgos\s+catastr[oó]ficos|terremoto[^:]*?|fen[oó]menos\s+naturales)\s*[:\-–]?\s*/i,
+                   otros: /^(deducibles?\s+)?(otros\s+riesgos|dem[aá]s\s+riesgos|todo\s+otro\s+riesgo|aop)\s*[:\-–]?\s*/i,
+                   rc: /^(deducibles?\s+)?(tpl|rc|responsabilidad\s+civil|da[ñn]os\s+a\s+terceros|terceros)\s*[:\-–]?\s*/i }[k];
+    v = v.replace(/^[^:\d]{0,45}:\s*/, '');   /* "Terremoto y huracán: 2%…" → "2%…" */
+    v = v.replace(lead, '');
+    /* corta texto que no es del deducible y viene pegado después del monto */
+    const tail = v.match(/\d\s+([A-ZÁÉÍÓÚ][a-záéíóúñ]+)\b/);
+    if(tail && !/^(Por|M[ií]n|M[ií]nimo|M[aá]x|M[aá]ximo|Del|De|Cada|Sobre|En|Para|Y|O)$/.test(tail[1])) v = v.slice(0, tail.index + 1);
+    v = v.split(/\.\s+(?=[A-ZÁÉÍÓÚÑ][a-záéíóúñ])/)[0];   /* hasta el final de la frase */
+    if(v.length > 120) v = v.slice(0, 120).replace(/\s+\S*$/, '') + '…';
+    return v.trim();
+  };
+  ['rc','otros','cat'].forEach(k => {
+    const def = DED_KINDS.find(d => d.k === k);
+    const i = parts.findIndex(x => def.find.test(x));
+    if(i !== -1){ out[k] = clean(parts[i], k); parts.splice(i, 1); }
+  });
+  return out;
+}
+/* Lo pedido en el Slip para cada tipo (de los grupos de deducibles del caso) */
+function askedDeductible(c, k){
+  const def = DED_KINDS.find(d => d.k === k);
+  const g = (c.deductibles || []).find(g => def.group.test((g.type || '') + ' ' + (g.type ? '' : (g.section || ''))));
+  return g ? (g.value || '') : '';
+}
+/* Lo que ofrece la cotización: campo propio, o sacado del texto */
+function quoteDeductible(q, k){
+  const own = (q.deductibles3 || {})[k];
+  if(own !== undefined && own !== null && own !== '') return { v: own, guessed: false };
+  const g = splitDeductibles(q.deductibles_proposed)[k];
+  return { v: g || '', guessed: !!g };
+}
+function composeDeductibles(d){
+  return DED_KINDS.map(x => d[x.k] ? `${x.short}: ${d[x.k]}` : '').filter(Boolean).join(' · ');
+}
+function dedGuess(q, g){
+  const txt = String(q.deductibles_proposed || ''); if(!txt) return '';
+  const parts = txt.split(/\s*[·;\n|]\s*/).map(x => x.trim()).filter(Boolean);
+  const key = ((g.type || '') + ' ' + (g.type ? '' : (g.section || ''))).toLowerCase();
+  let test = null;
+  if(/otros/.test(key)) test = /otros|dem[aá]s|todo otro|cualquier otro/i;
+  else if(/catastr|terremoto|hurac|\(b|b y c|b, c/.test(key)) test = /catastr|terremoto|hurac|cicl|inund|tembl/i;
+  else if(/\brc\b|tercer|tpl|secci[oó]n ii/.test(key)) test = /tpl|\brc\b|terceros|secci[oó]n ii|sec\.?\s*ii/i;
+  else if(/mantenim/.test(key)) test = /mantenim/i;
+  else if(/prueba|t&c/.test(key)) test = /prueba|testing/i;
+  if(!test) return '';
+  const hit = parts.find(x => test.test(x));
+  return hit ? hit.replace(/^sec(ci[oó]n)?\.?\s*(i{1,2})\s+/i, '') : '';
+}
+function dedOffered(q, gi, g){ const v = (q.deductibles_by_group || {})[gi]; return (v !== undefined && v !== '') ? v : dedGuess(q, g); }
 function scoreQuotes(c){
   const quotes = activeQuotes(c);
   if(quotes.length === 0) return [];
-  /* Normalización del precio: mejor (más barato) = 100, peor = 0 */
+  const W = scoreWeights();
   const prices = quotes.map(q => +q.premiumTotal || 0);
   const minP = Math.min(...prices.filter(p => p > 0)) || 0;
   const maxP = Math.max(...prices) || 1;
-  /* Total de cláusulas que el estándar Garrigo espera (referencia para cobertura) */
-  const standardClausesTotal = 18;
+  const groups = c.deductibles || [];
   return quotes.map(q => {
-    /* Score Precio (40%): cuanto menor la prima, mejor */
+    /* Precio: la más barata = 100, la más cara = 0 */
     const priceScore = maxP === minP ? 100 : Math.round(((maxP - +q.premiumTotal) / (maxP - minP)) * 100);
-    /* Score Cobertura (35%): % de cláusulas aceptadas vs estándar */
-    const acceptedCount = (q.clauses_accepted || []).length;
-    const rejectedCount = (q.clauses_rejected || []).length;
-    const modifiedCount = (q.clauses_modified || []).length;
-    const coverageRaw = Math.min(100, (acceptedCount / standardClausesTotal) * 100);
-    const rejectionPenalty = Math.min(30, rejectedCount * 6); /* hasta -30 puntos */
-    const modificationPenalty = Math.min(15, modifiedCount * 3);
-    const coverageScore = Math.max(0, Math.round(coverageRaw - rejectionPenalty - modificationPenalty));
-    /* Score Deducibles (25%): heurística sobre el texto del deducible propuesto.
-       Mejor si menciona porcentajes bajos (1.5-2%) y montos absolutos chicos.
-       Peor si menciona porcentajes altos (>2.5%) o montos absolutos grandes. */
-    const dedText = (q.deductibles_proposed || '').toLowerCase();
-    let dedScore = 60; /* base */
-    if(/1\.5%|1,5%/.test(dedText)) dedScore += 20;
-    else if(/2%|2\.0%|2,0%/.test(dedText)) dedScore += 10;
-    else if(/2\.5%|2,5%/.test(dedText)) dedScore -= 5;
-    else if(/3%|3\.0%|3,0%/.test(dedText)) dedScore -= 15;
-    if(/exclus/.test(dedText)) dedScore -= 5;
-    dedScore = Math.max(0, Math.min(100, dedScore));
-    const totalScore = Math.round(priceScore * 0.40 + coverageScore * 0.35 + dedScore * 0.25);
+    /* Deducibles: por grupo contra lo pedido; si no hay, lectura del texto de la cotización */
+    let dedScore = null;
+    const cmps = DED_KINDS.map(d => dedCompare(askedDeductible(c, d.k), quoteDeductible(q, d.k).v)).filter(x => x !== null);
+    if(cmps.length){
+      dedScore = Math.round(cmps.reduce((a, r) => a + (r < 0 ? 100 : r === 0 ? 85 : 45), 0) / cmps.length);
+    } else {
+      const dedText = (q.deductibles_proposed || '').toLowerCase();
+      dedScore = 60;
+      if(/1\.5%|1,5%/.test(dedText)) dedScore += 20;
+      else if(/2%|2\.0%|2,0%/.test(dedText)) dedScore += 10;
+      else if(/2\.5%|2,5%/.test(dedText)) dedScore -= 5;
+      else if(/3%|3\.0%|3,0%/.test(dedText)) dedScore -= 15;
+      if(/exclus/.test(dedText)) dedScore -= 5;
+      dedScore = Math.max(0, Math.min(100, dedScore));
+    }
+    const totalScore = Math.round(priceScore * W.price + dedScore * W.deductibles);
     return {
-      q, totalScore, priceScore, coverageScore, dedScore,
-      acceptedCount, rejectedCount, modificationPenalty,
+      q, totalScore, priceScore, dedScore,
       isBestPrice:  +q.premiumTotal === minP && minP > 0,
       isWorstPrice: +q.premiumTotal === maxP && quotes.length > 1 && maxP !== minP,
     };
@@ -2866,6 +3090,7 @@ const COVERAGE_MATRIX_ROWS = [
   { code:'End. 110',     title:'Medidas de Seguridad por Inundación',                        category:'endoso' },
   { code:'End. 112',     title:'Equipos Extintores de Incendio',                             category:'endoso' },
   { code:'End. 113',     title:'Transportes Nacionales',                                     category:'endoso' },
+  { code:'End. 115',     title:'Error de Diseño — mín. 30% de la Sección I',                 category:'endoso' },
   { code:'End. 119',     title:'Bienes Existentes',                                          category:'endoso' },
   { code:'RC Vibración', title:'End. 120 — RC por Vibración y Debilitamiento',               category:'endoso' },
 ];
@@ -2887,27 +3112,23 @@ function autoRecommend(){
   const reasons = [];
   if(winner.priceScore >= 80) reasons.push('una de las primas más competitivas del mercado');
   else if(winner.priceScore >= 50) reasons.push('una prima razonable dentro del rango cotizado');
-  if(winner.coverageScore >= 80) reasons.push('el wording más amplio del panel (incluye los principales endosos del estándar Garrigo sin recortes)');
-  else if(winner.coverageScore >= 65) reasons.push(`cobertura sólida con ${winner.acceptedCount} cláusulas aceptadas`);
-  if(winner.rejectedCount === 0) reasons.push('aceptación íntegra del estándar Garrigo sin cláusulas rechazadas');
-  else if(winner.rejectedCount <= 1) reasons.push('mínimas observaciones al estándar Garrigo');
   if(winner.dedScore >= 75) reasons.push('deducibles bajos y competitivos');
   /* Composición del texto */
   const reasonsText = reasons.length > 0
     ? reasons.length === 1 ? reasons[0] : reasons.slice(0,-1).join(', ') + ' y ' + reasons.slice(-1)
-    : 'el mejor balance ponderado entre precio, cobertura y deducibles';
+    : 'el mejor balance entre prima y deducibles';
   const secondPlace = scored[1];
   let competitorNote = '';
   if(secondPlace){
     const secondIns = DEFAULT_INSURERS.find(i => i.id === secondPlace.q.insurerId);
     const priceDiff = (+secondPlace.q.premiumTotal) - (+winner.q.premiumTotal);
     if(priceDiff > 0){
-      competitorNote = ` La opción más cercana, ${secondIns?.name||'la segunda'}, presenta una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} superior${winner.coverageScore > secondPlace.coverageScore ? ' y con menor cobertura' : ''}.`;
+      competitorNote = ` La opción más cercana, ${secondIns?.name||'la segunda'}, presenta una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} superior${winner.dedScore > secondPlace.dedScore ? ' y con deducibles más altos' : ''}.`;
     } else if(priceDiff < 0){
-      competitorNote = ` Aunque ${secondIns?.name||'la segunda opción'} ofrece una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} inferior, la diferencia se compensa por la cobertura más amplia y el menor número de exclusiones de ${ins?.name||'la recomendada'}.`;
+      competitorNote = ` Aunque ${secondIns?.name||'la segunda opción'} ofrece una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} inferior, la diferencia se compensa por los deducibles más bajos de ${ins?.name||'la recomendada'}.`;
     }
   }
-  const text = `Recomendamos a ${ins?.name || winner.q.insurerId} por ofrecer ${reasonsText}.${competitorNote} Score técnico Garrigo: ${winner.totalScore}/100 (Precio ${winner.priceScore}/100, Cobertura ${winner.coverageScore}/100, Deducibles ${winner.dedScore}/100).`;
+  const text = `Recomendamos a ${ins?.name || winner.q.insurerId} por ofrecer ${reasonsText}.${competitorNote} Score técnico Garrigo: ${winner.totalScore}/100 (Precio ${winner.priceScore}/100, Deducibles ${winner.dedScore}/100).`;
   c.proposal.selectedInsurer = winner.q.insurerId;
   c.proposal.recommendation = text;
   c.updatedAt = new Date().toISOString();
@@ -3050,7 +3271,7 @@ function viewProposal(c){
       </div>
       ${scored.length > 0 ? `
         <div class="section-title">Score técnico Garrigo</div>
-        <p class="muted" style="font-size:11.5px;margin-top:-4px">Ponderación: <strong>Precio 40% · Cobertura 35% · Deducibles 25%</strong>. Ranking de mejor a peor:</p>
+        <p class="muted" style="font-size:11.5px;margin-top:-4px">Ponderación: <strong>Precio ${scoreWeights().raw.price}% · Deducibles ${scoreWeights().raw.deductibles}%</strong>. Ranking de mejor a peor:</p>
         <div class="table-wrap" style="margin-bottom:14px">
           <table>
             <thead>
@@ -3058,7 +3279,6 @@ function viewProposal(c){
                 <th style="width:30px"></th>
                 <th>Aseguradora</th>
                 <th style="text-align:center;width:80px">Precio</th>
-                <th style="text-align:center;width:90px">Cobertura</th>
                 <th style="text-align:center;width:90px">Deducibles</th>
                 <th style="text-align:center;width:90px">Total</th>
                 <th style="width:60px"></th>
@@ -3072,7 +3292,6 @@ function viewProposal(c){
                   <td style="text-align:center;font-weight:700;color:${i===0?'var(--gold-500)':'var(--ink-500)'}">${i===0?'★':'#'+(i+1)}</td>
                   <td><div style="display:flex;align-items:center;gap:8px"><span class="insurer-mark" style="background:${ins?.color||'#666'};width:20px;height:20px;font-size:9px">${ins?.short||'?'}</span><strong>${ins?ins.name:s.q.insurerId}</strong></div></td>
                   <td>${scoreBar(s.priceScore)}</td>
-                  <td>${scoreBar(s.coverageScore)}</td>
                   <td>${scoreBar(s.dedScore)}</td>
                   <td style="text-align:center;font-size:14px;font-weight:800;color:${s.totalScore>=80?'var(--ok)':s.totalScore>=60?'var(--grg-blue)':s.totalScore>=40?'var(--warn)':'var(--bad)'}">${s.totalScore}</td>
                   <td>${isSel?'<span class="badge badge-coloc">★ Elegida</span>':`<button class="btn btn-ghost btn-sm" onclick="pickInsurer('${s.q.insurerId}')">Elegir</button>`}</td>
@@ -3180,69 +3399,165 @@ function renderProposalBody(c){
    VISTA: COMPARADOR DE COTIZACIONES
    ============================================================ */
 function viewCompare(c){
-  // identificar mejor/peor por precio
-  const prices = c.quotes.map(q => +q.premiumTotal||Infinity);
-  const min = Math.min(...prices), max = Math.max(...prices);
+  const ccy = c.header.currency, sym = ccy === 'USD' ? 'US$' : 'RD$';
+  const M = v => (+v > 0) ? sym + ' ' + Math.round(+v).toLocaleString('en-US') : '—';
+  const insOf = id => DEFAULT_INSURERS.find(i => i.id === id);
+  const nameOf = id => { const i = insOf(id); return i ? i.name : id; };
+  const scored = scoreQuotes(c);
+  const scoreOf = q => scored.find(s => s.q === q);
+  const priced = c.quotes.filter(q => +q.premiumTotal > 0);
+  const minP = priced.length ? Math.min(...priced.map(q => +q.premiumTotal)) : 0;
+  const maxP = priced.length ? Math.max(...priced.map(q => +q.premiumTotal)) : 0;
+  const W = scoreWeights().raw;
+  const ncol = c.quotes.length;
+  const group = (title, note) => `<tr class="cmp-group"><td colspan="${ncol + 1}">${title}${note ? `<span>${note}</span>` : ''}</td></tr>`;
+
+  /* ---- Resumen ---- */
+  let summary = '';
+  if(scored.length){
+    const cheapest = scored.slice().sort((a, b) => (+a.q.premiumTotal) - (+b.q.premiumTotal))[0];
+    const best = scored[0];
+    const diff = (+best.q.premiumTotal) - (+cheapest.q.premiumTotal);
+    const pct = cheapest.q.premiumTotal > 0 ? diff / cheapest.q.premiumTotal * 100 : 0;
+    const same = best.q === cheapest.q;
+    let rec;
+    if(same){
+      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> es la más barata y la mejor puntuada${best.dedScore >= 85 ? ', con deducibles iguales o mejores que lo pedido' : ''}.`;
+    } else {
+      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> cuesta ${M(diff)} (${pct.toFixed(1)}%) más que ${escapeHtml(nameOf(cheapest.q.insurerId))}, pero con mejores deducibles.`;
+    }
+    const isSel = c.proposal && c.proposal.selectedInsurer === best.q.insurerId;
+    summary = `
+      <div class="cmp-summary">
+        <div class="cmp-stat"><div class="cmp-stat-k">Más barata</div><div class="cmp-stat-v">${escapeHtml(nameOf(cheapest.q.insurerId))}</div><div class="cmp-stat-s">${M(cheapest.q.premiumTotal)} prima total</div></div>
+        <div class="cmp-stat"><div class="cmp-stat-k">Mejor puntuada</div><div class="cmp-stat-v">${escapeHtml(nameOf(best.q.insurerId))}</div><div class="cmp-stat-s">${best.totalScore}/100 · Precio ${best.priceScore} · Deducibles ${best.dedScore}</div></div>
+        <div class="cmp-stat"><div class="cmp-stat-k">Rango de primas</div><div class="cmp-stat-v">${M(maxP - minP)}</div><div class="cmp-stat-s">${minP ? ((maxP - minP) / minP * 100).toFixed(1) : '0'}% entre la más barata y la más cara</div></div>
+        <div class="cmp-rec"><div class="cmp-stat-k">Recomendación</div><div class="cmp-rec-t">${rec}</div>
+          <button class="btn ${isSel ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="useInProposal('${best.q.insurerId}')">${isSel ? '✓ Elegida para la Propuesta' : 'Usar en la Propuesta'}</button></div>
+      </div>`;
+  }
+
+  /* ---- Deducibles (tres campos) ---- */
+  const dedRows = DED_KINDS.map(d => {
+    const asked = askedDeductible(c, d.k);
+    return `<tr><td><strong>${d.label}</strong><div class="cmp-sub">Pedido: ${escapeHtml(asked || '—')}</div></td>${c.quotes.map((q, qi) => {
+      const o = quoteDeductible(q, d.k);
+      const r = dedCompare(asked, o.v);
+      const cls = r === null ? '' : r < 0 ? 'best' : r === 0 ? '' : 'worst';
+      return `<td class="${cls}"><input class="input${o.guessed ? ' cmp-guess' : ''}" value="${escapeHtml(o.v)}" placeholder="No indicado" title="${o.guessed ? 'Tomado del texto de la cotización. Corrígelo si hace falta.' : ''}" onchange="updQuoteDed3(${qi},'${d.k}',this.value)"></td>`;
+    }).join('')}</tr>`;
+  }).join('');
+
   return `
     <div class="card">
       <div class="card-header">
         <div>
           <h2 class="card-title">Comparador de cotizaciones recibidas</h2>
-          <div class="card-subtitle">Captura manual o sube PDF de cada cotización — la herramienta detecta primas, deducibles y coberturas automáticamente.</div>
+          <div class="card-subtitle">Sube el PDF de cada aseguradora o escribe los datos. Se comparan primas y deducibles; los deducibles, contra lo que pediste en el Slip.</div>
         </div>
         <button class="btn btn-gold btn-sm" onclick="addQuote()">+ Agregar cotización</button>
       </div>
+      ${summary}
       <div class="compare-grid">
         <table>
           <thead>
             <tr>
               <th>Concepto</th>
-              ${c.quotes.map((q,idx) => { const ins=DEFAULT_INSURERS.find(i=>i.id===q.insurerId); return `<th style="min-width:160px">
+              ${c.quotes.map((q, idx) => { const ins = insOf(q.insurerId); const sc = scoreOf(q); return `<th style="min-width:180px">
                 <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px">
                   <div style="display:flex;align-items:center;gap:8px">
-                    <span class="insurer-mark" style="background:${ins?.color||'#666'};width:24px;height:24px;font-size:10px">${ins?.short||'?'}</span>
-                    <strong style="font-size:12px">${ins?ins.name:q.insurerId}</strong>
+                    <span class="insurer-mark" style="background:${ins?.color || '#666'};width:24px;height:24px;font-size:10px">${ins?.short || '?'}</span>
+                    <strong style="font-size:12px">${ins ? ins.name : q.insurerId}</strong>
                   </div>
-                  <div style="display:flex;gap:4px">
-                    <button class="btn btn-primary btn-sm" onclick="triggerPdfUpload(${idx})" title="Subir PDF de cotización" style="padding:4px 8px;font-size:11px">📄 Importar PDF</button>
+                  ${q.extraction ? `<div class="cmp-file" title="${escapeHtml(q.extraction.filename || '')}">📎 ${escapeHtml((q.extraction.filename || 'PDF leído').slice(0, 34))}</div>` : ''}
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <button class="btn btn-primary btn-sm" onclick="triggerPdfUpload(${idx})" title="Subir PDF de cotización" style="padding:4px 8px;font-size:11px">📄 ${q.extraction ? 'Otro PDF' : 'Importar PDF'}</button>
+                    <button class="btn btn-ghost btn-sm" onclick="reopenQuoteReview(${idx})" title="${q.extraction ? 'Abrir lo leído del PDF y corregirlo' : 'Escribir o corregir los datos de esta cotización'}" style="padding:4px 8px;font-size:11px">✎ Revisar</button>
                     <button class="btn btn-ghost btn-sm" onclick="rmQuote('${q.insurerId}')" title="Quitar" style="padding:4px 8px;font-size:11px">×</button>
+                    ${sc ? `<span class="cmp-score-pill">${sc.totalScore}</span>` : ''}
                   </div>
                 </div>
               </th>`; }).join('')}
             </tr>
           </thead>
           <tbody>
-            <tr><td>Tasa ‰ <span class="hint" style="font-weight:400;color:var(--ink-500)">(calculada)</span></td>${c.quotes.map(q => `<td style="background:var(--line-2);text-align:right;font-weight:700;color:var(--grg-blue);font-variant-numeric:tabular-nums">${fmtRate(calcRate(q,c))}</td>`).join('')}</tr>
-            <tr><td>Prima neta</td>${c.quotes.map((q,i)=>`<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumNet)}" onchange="updMoneyQuote(${i},'premiumNet',this)"></td>`).join('')}</tr>
-            <tr><td>ISC 16%</td>${c.quotes.map((q,i)=>`<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.isc)}" onchange="updMoneyQuote(${i},'isc',this)"></td>`).join('')}</tr>
-            <tr><td><strong>Prima total</strong></td>${c.quotes.map((q,i)=>`<td class="${(+q.premiumTotal===min&&c.quotes.length>1)?'best':((+q.premiumTotal===max&&c.quotes.length>1)?'worst':'')}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumTotal)}" onchange="updMoneyQuote(${i},'premiumTotal',this)"></td>`).join('')}</tr>
-            <tr><td>Comisión (10%)</td>${c.quotes.map((q,i)=>`<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.commission!=null&&q.commission!==''?q.commission:Math.round((q.premiumNet||0)*0.10))}" onchange="updMoneyQuote(${i},'commission',this)"></td>`).join('')}</tr>
-            <tr><td>Deducibles propuestos</td>${c.quotes.map((q,i)=>`<td><textarea class="textarea" rows="3" onchange="updQuote(${i},'deductibles_proposed',this.value)">${escapeHtml(q.deductibles_proposed||'')}</textarea></td>`).join('')}</tr>
-            <tr><td>Cláusulas aceptadas</td>${c.quotes.map((q,i)=>`<td><textarea class="textarea" rows="3" onchange="updQuoteList(${i},'clauses_accepted',this.value)">${(q.clauses_accepted||[]).join(', ')}</textarea></td>`).join('')}</tr>
-            <tr><td>Cláusulas rechazadas</td>${c.quotes.map((q,i)=>`<td><textarea class="textarea" rows="2" onchange="updQuoteList(${i},'clauses_rejected',this.value)">${(q.clauses_rejected||[]).join(', ')}</textarea></td>`).join('')}</tr>
-            <tr><td><strong>Score</strong></td>${c.quotes.map(q => `<td class="num"><strong>${scoreQuote(q,c)}/10</strong></td>`).join('')}</tr>
+            ${group('Prima')}
+            <tr><td>Tasa ‰ <span class="hint" style="font-weight:400;color:var(--ink-500)">(calculada)</span></td>${c.quotes.map(q => `<td style="text-align:right;font-weight:700;color:var(--navy-800);font-variant-numeric:tabular-nums">${fmtRate(calcRate(q, c))}</td>`).join('')}</tr>
+            <tr><td>Prima neta</td>${c.quotes.map((q, i) => `<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumNet)}" onchange="updMoneyQuote(${i},'premiumNet',this)"></td>`).join('')}</tr>
+            <tr><td>ISC ${state.config.iscRate || 16}%</td>${c.quotes.map((q, i) => `<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.isc)}" onchange="updMoneyQuote(${i},'isc',this)"></td>`).join('')}</tr>
+            <tr><td><strong>Prima total</strong></td>${c.quotes.map((q, i) => `<td class="${(+q.premiumTotal === minP && priced.length > 1) ? 'best' : ((+q.premiumTotal === maxP && priced.length > 1) ? 'worst' : '')}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumTotal)}" onchange="updMoneyQuote(${i},'premiumTotal',this)"></td>`).join('')}</tr>
+            <tr><td>Contra la más barata</td>${c.quotes.map(q => { const t = +q.premiumTotal; if(!t || !minP) return '<td class="cmp-sub">—</td>'; if(t === minP) return '<td class="cmp-diff cmp-diff-best">La más barata</td>'; const d = t - minP; return `<td class="cmp-diff">+${M(d)} <span>(+${(d / minP * 100).toFixed(1)}%)</span></td>`; }).join('')}</tr>
+            ${group('Deducibles', 'Verde: más bajo que lo pedido · Rojo: más alto')}
+            ${dedRows}
+            ${group('Puntuación', `Precio ${W.price}% · Deducibles ${W.deductibles}%`)}
+            <tr class="cmp-score-row"><td><strong>Total</strong><div class="cmp-sub">de 100</div></td>${c.quotes.map(q => { const sc = scoreOf(q); return sc ? `<td>${scoreBar(sc.totalScore)}<div class="cmp-break">Precio ${sc.priceScore} · Deducibles ${sc.dedScore}</div></td>` : '<td class="cmp-sub">Falta la prima</td>'; }).join('')}</tr>
           </tbody>
         </table>
       </div>
-      <p class="muted" style="margin-top:10px;font-size:12px">Score automático: combina precio (40%), cobertura amplia/cláusulas aceptadas (40%) y deducibles bajos (20%).</p>
+      <div class="cmp-weights">
+        <span>Pesos de la puntuación</span>
+        <label>Precio <input class="input" type="number" min="0" max="100" value="${W.price}" onchange="setScoreWeight('price',this.value)">%</label>
+        <label>Deducibles <input class="input" type="number" min="0" max="100" value="${W.deductibles}" onchange="setScoreWeight('deductibles',this.value)">%</label>
+        <span class="cmp-sub">Se usan aquí y en la Propuesta. Si no suman 100 se ajustan en proporción.</span>
+      </div>
     </div>
   `;
 }
-function scoreQuote(q, c){
-  if(!c.quotes.length) return 0;
-  const prices = c.quotes.map(x => +x.premiumTotal||0).filter(x=>x>0);
-  const minP = Math.min(...prices), maxP = Math.max(...prices);
-  const priceScore = prices.length<2 ? 5 : (10 - ((+q.premiumTotal - minP) / (maxP - minP || 1)) * 10);
-  const covScore = Math.min(10, (q.clauses_accepted?.length || 0) / 1.5);
-  const dedScore = (q.clauses_rejected?.length || 0) === 0 ? 10 : Math.max(4, 10 - (q.clauses_rejected.length * 2));
-  const total = priceScore*0.4 + covScore*0.4 + dedScore*0.2;
-  return total.toFixed(1);
+/* Estado de un endoso en una cotización: clic para pasar a la siguiente marca */
+function cycleEndoStatus(qi, code){
+  const c = activeCase(); const q = c.quotes[qi]; if(!q) return;
+  const order = ['accepted','rejected','modified','unknown'];
+  const cur = getAcceptanceStatus(q, code);
+  const next = order[(order.indexOf(cur) + 1) % order.length];
+  const target = normalizeEndoCode(code);
+  const strip = list => (list || []).filter(x => normalizeEndoCode(x) !== target);
+  q.clauses_accepted = strip(q.clauses_accepted); q.clauses_rejected = strip(q.clauses_rejected); q.clauses_modified = strip(q.clauses_modified);
+  if(next === 'accepted') q.clauses_accepted.push(code);
+  if(next === 'rejected') q.clauses_rejected.push(code);
+  if(next === 'modified') q.clauses_modified.push(code);
+  save(); render();
 }
+function updQuoteSublimit(qi, id, input){
+  const c = activeCase(); const q = c.quotes[qi]; if(!q) return;
+  const n = parseMoneyInput(input.value);
+  q.endorsement_sublimits = q.endorsement_sublimits || {};
+  if(n > 0) q.endorsement_sublimits[id] = n; else delete q.endorsement_sublimits[id];
+  save(); render();
+}
+function updQuoteDed3(qi, k, v){
+  const c = activeCase(); const q = c.quotes[qi]; if(!q) return;
+  q.deductibles3 = Object.assign({ cat:'', otros:'', rc:'' }, q.deductibles3 || {});
+  DED_KINDS.forEach(d => { if(!q.deductibles3[d.k]) q.deductibles3[d.k] = quoteDeductible(q, d.k).v; });
+  q.deductibles3[k] = String(v || '').trim();
+  q.deductibles_proposed = composeDeductibles(q.deductibles3);
+  save(); render();
+}
+function updQuoteDed(qi, gi, v){
+  const c = activeCase(); const q = c.quotes[qi]; if(!q) return;
+  q.deductibles_by_group = q.deductibles_by_group || {};
+  q.deductibles_by_group[gi] = String(v || '').trim();
+  save(); render();
+}
+function setScoreWeight(k, v){
+  state.config.scoreWeights = state.config.scoreWeights || { price:60, deductibles:40 };
+  state.config.scoreWeights[k] = Math.max(0, Math.min(100, +v || 0));
+  save(); render();
+}
+function useInProposal(insurerId){
+  const c = activeCase(); if(!c) return;
+  c.proposal = c.proposal || {};
+  c.proposal.selectedInsurer = insurerId;
+  c.updatedAt = new Date().toISOString();
+  save(); render();
+  syncToast('Elegida para la Propuesta: ' + (((DEFAULT_INSURERS.find(i => i.id === insurerId)) || {}).name || insurerId), true);
+}
+/* Compatibilidad: puntuación de una sola cotización (0-100) */
+function scoreQuote(q, c){ const s = scoreQuotes(c).find(x => x.q === q); return s ? s.totalScore : '—'; }
 function addQuote(){
   const c = activeCase();
   const used = c.quotes.map(q => q.insurerId);
   const next = DEFAULT_INSURERS.find(i => !used.includes(i.id));
-  c.quotes.push({ insurerId: next?.id || 'otro', rate:0, premiumNet:0, isc:0, premiumTotal:0, commission:state.config.commissionDefault, deductibles_proposed:'', clauses_accepted:[], clauses_rejected:[], clauses_modified:[], exclusions_added:'', capacity:'', notes:'' });
+  c.quotes.push({ insurerId: next?.id || 'otro', rate:0, premiumNet:0, isc:0, premiumTotal:0, deductibles_proposed:'', clauses_accepted:[], clauses_rejected:[], clauses_modified:[], exclusions_added:'', capacity:'', notes:'' });
   save(); render();
 }
 function rmQuote(insurerId){
@@ -3406,6 +3721,8 @@ function viewConfig(){
             ${DEFAULT_INSURERS.map(i=>`<option value="${i.id}" ${state._extInsurer===i.id?'selected':''}>${escapeHtml(i.name)}</option>`).join('')}
           </select></div>
       </div>
+      <p class="muted" style="font-size:11.5px;margin:-4px 0 10px">El lector también aprende solo: cada vez que aplicas una cotización revisada, guarda aquí las etiquetas que usó esa aseguradora.</p>
+      ${state._extInsurer ? (()=>{ const L = learnedFor(state._extInsurer); return `<div class="row" style="margin:0 0 10px;font-size:12px;color:var(--ink-700)"><span>${L.docs ? `Entrenado con ${L.docs} cotización(es) · ${L.count} etiqueta(s)` : 'Aún sin cotizaciones leídas de esta aseguradora'}</span>${L.count ? `<button class="btn btn-ghost btn-sm" onclick="forgetLearning('${state._extInsurer}')">Olvidar lo aprendido</button>` : ''}</div>`; })() : ''}
       ${state._extInsurer ? (()=>{ const al=(state.config.extractAliases||{})[state._extInsurer]||{}; const F=[['premiumNet','Prima neta'],['isc','ISC'],['premiumTotal','Prima total'],['sumSeccionI','Suma aseg. Sec. I'],['sumSeccionII','Suma aseg. Sec. II']]; return '<div class="form-grid cols-2">'+F.map(([k,lab])=>`<div class="field"><label>${lab} — etiquetas</label><input class="input" value="${escapeHtml((al[k]||[]).join(', '))}" onchange="setExtractAlias('${state._extInsurer}','${k}',this.value)" placeholder="Ej: ${lab}, ${lab} anual"></div>`).join('')+'</div>'; })() : ''}
       <div class="sep"></div>
       <div class="row">
@@ -3563,6 +3880,25 @@ function renderWordSlip(c){
       </td></tr>
     </table>`;
   }
+  /* Portada del proyecto (foto + franja azul) */
+  if(c.projectImage){
+    const h = slipHeroInfo(c);
+    out += `<table style="width:100%;border-collapse:collapse;margin:0 0 12pt">
+      <tr><td colspan="2" style="padding:0;border:none"><img src="${projectBannerSrc(c) || c.projectImage}" width="680" style="display:block;width:680px;height:auto;border:0" alt="Foto del proyecto" /></td></tr>
+      <tr>
+        <td style="background:${W_BLUE};padding:8pt 12pt;border:none;vertical-align:middle">
+          <div style="font-family:Arial,sans-serif;font-size:7.5pt;font-weight:700;letter-spacing:1.5pt;color:#FFB89A">PROYECTO / PROJECT</div>
+          <div style="font-family:Arial,sans-serif;font-size:13pt;font-weight:700;color:#ffffff;margin-top:2pt">${escapeHtml(h.title)}</div>
+          ${h.place ? `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#DCE8F5;margin-top:2pt">${escapeHtml(h.place)}</div>` : ''}
+        </td>
+        ${h.si ? `<td style="background:${W_BLUE};padding:8pt 12pt;border:none;text-align:right;vertical-align:middle;width:32%">
+          <div style="font-family:Arial,sans-serif;font-size:7.5pt;font-weight:700;letter-spacing:1pt;color:#FFB89A">SUMA ASEGURADA SECCIÓN I</div>
+          <div style="font-family:Arial,sans-serif;font-size:12pt;font-weight:700;color:#ffffff;margin-top:2pt">${h.si}</div>
+        </td>` : `<td style="background:${W_BLUE};border:none"></td>`}
+      </tr>
+      <tr><td colspan="2" style="background:${W_ORANGE};height:3pt;padding:0;border:none;font-size:0;line-height:0">&nbsp;</td></tr>
+    </table>`;
+  }
   /* 1. El Asegurado */
   out += wH2('1', 'El Asegurado');
   out += wKv([
@@ -3620,6 +3956,7 @@ function renderWordSlip(c){
     ['mr107','End. 107','Campamentos y Almacenes', c.endorsement_sublimits?.mr107],
     ['mr112','End. 112','Equipos Extintores', c.endorsement_sublimits?.mr112],
     ['mr113','End. 113','Transportes Nacionales', c.endorsement_sublimits?.mr113],
+    ['mr115','End. 115','Error de Diseño (mín. 30% Sección I)', end115Limit(c)],
     ['mr119','End. 119','Bienes Existentes', c.endorsement_sublimits?.mr119],
     ['mr-rc-vib','RC','Vibración / Debilitamiento', c.endorsement_sublimits?.['mr-rc-vib']],
   ];
@@ -3717,6 +4054,19 @@ function renderWordProposal(c){
   </ol>`;
   return out;
 }
+/* Colores para documentos Word/PDF (papel blanco): la app usa tema oscuro,
+   así que cada variable CSS se traduce a su color "de imprenta". */
+const CSS_VAR_TO_HEX = {
+  '--grg-blue':'#004A88', '--grg-blue-dk':'#00335E', '--grg-blue-2':'#0A5AA0', '--grg-blue-lt':'#3A7AC4',
+  '--grg-blue-bg':'#EAF1F9', '--grg-orange':'#FF5200', '--grg-orange-2':'#FF6B3D', '--grg-orange-lt':'#FFF1EA',
+  '--grg-gray':'#918F8F', '--grg-gray-lt':'#C7C9CC', '--grg-dark':'#231F20',
+  '--navy-900':'#00335E', '--navy-800':'#004A88', '--navy-700':'#004A88', '--navy-600':'#0A5AA0', '--navy-500':'#3A7AC4',
+  '--gold-500':'#FF5200', '--gold-400':'#FF6B3D', '--gold-300':'#FFB89A', '--gold-100':'#FFF1EA',
+  '--ink-900':'#1a1f2e', '--ink-700':'#374151', '--ink-500':'#6b7280', '--ink-300':'#9ca3af',
+  '--line':'#d0d4dc', '--line-2':'#eef1f5', '--bg':'#ffffff', '--white':'#ffffff',
+  '--surface':'#ffffff', '--surface-2':'#f7f8fa', '--num':'#004A88',
+  '--ok':'#16a34a', '--warn':'#d97706', '--bad':'#dc2626'
+};
 function htmlToWordCompatible(html){
   /* 1. Sustituir CSS variables por colores hex concretos */
   let out = html;
@@ -3760,8 +4110,7 @@ async function exportDocx(type){
     }
     let body = '', title = '', titleEs = '', titleEn = '';
     /* Usar renderers DEDICADOS para Word cuando estén disponibles */
-    if(type==='slip'){ body = renderWordSlip(c); title = `Slip-${c.ref}`; titleEs='Solicitud de Cotización TRC'; titleEn=''; }
-    else if(type==='cover'){ body = renderCoverBody(c); title = `CondParticulares-${c.ref}`; titleEs='Condiciones Particulares'; titleEn=''; }
+    if(type==='slip'){ await ensureProjectBanner(c); body = renderWordSlip(c); title = `Slip-${c.ref}`; titleEs='Solicitud de Cotización TRC'; titleEn=''; }
     else if(type==='wording'){ body = renderWordingBody(c); title = `Wording-${c.ref}`; titleEs='Wording de Referencia TRC'; titleEn='CAR/EAR Reference Wording'; }
     else if(type==='proposal'){ body = renderWordProposal(c); title = `Propuesta-${c.ref}`; titleEs='Propuesta de Seguro TRC'; titleEn=''; }
     else { alert('Tipo de documento no reconocido: '+type); return; }
@@ -3784,8 +4133,8 @@ async function exportDocx(type){
 }
 async function exportPdf(type){
   const c = activeCase(); if(!c) return;
-  const idMap = { slip:'docSlip', cover:'docCover', wording:'docWording', proposal:'docProposal' };
-  const nameMap = { slip:'Slip', cover:'CondParticulares', wording:'Wording', proposal:'Propuesta' };
+  const idMap = { slip:'docSlip', wording:'docWording', proposal:'docProposal' };
+  const nameMap = { slip:'Slip', wording:'Wording', proposal:'Propuesta' };
   const el = document.getElementById(idMap[type]);
   if(!el){ alert('Vista no disponible'); return; }
   /* Esperar a que el logo PNG embebido termine de decodificarse */
@@ -3895,7 +4244,7 @@ function extractEndosesFromSection(secText){
   if(!secText) return { codes: [], sublimits: {} };
   /* Patrón: "Endoso NNN [descripción 0-180 chars] [opcional: RD$ XXX.XXX.XXX]"
      Termina antes del próximo "Endoso", "Cobertura" o salto de párrafo doble. */
-  const endRe = /endoso\s*(\d{1,3})\b\s*([^\n]{0,200}?)(?:(RD\$|US\$|\$)\s*([\d,.]+))?(?=\s*endoso\s|\s*cobertura\s|\s*\n\s*\n|$)/gi;
+  const endRe = /endoso\s*(\d{1,3})\b\s*([^\n]{0,200}?)(?:(RD\$|US\$|\$)\s*([\d,.]+))?(?=\s*endoso\s|\s*cobertura\s|\s*\n|$)/gi;
   let m;
   while((m = endRe.exec(secText)) !== null){
     const num = m[1].padStart(3,'0');
@@ -3922,7 +4271,7 @@ function extractEndosesFromSection(secText){
   if(/srcc|huelga.{0,20}motin/i.test(secText)){
     out.codes.add('End. 001 SRCC');
     /* Si hay monto cerca de SRCC, capturarlo */
-    const srccM = secText.match(/(?:srcc|huelga[^.\n]{0,40}motin)[^.\n]{0,60}(RD\$|US\$|\$)\s*([\d,.]+)/i);
+    const srccM = secText.match(/(?:srcc|huelga[^.\n]{0,40}motin)(?:(?!endoso)[^.\n]){0,60}(RD\$|US\$|\$)\s*([\d,.]+)/i);
     if(srccM){ const val = parseMoneyInput(srccM[2]); if(val>0 && !out.sublimits.mr001) out.sublimits.mr001 = val; }
   }
   /* Cross liability por nombre */
@@ -4193,9 +4542,99 @@ function fillMissingPremium(extracted){
   }
   return extracted;
 }
+/* ============================================================
+   LECTOR QUE APRENDE POR ASEGURADORA
+   Cada vez que se aplica una cotización, se guarda cómo llama esa
+   aseguradora a cada campo (la etiqueta junto al número correcto).
+   La próxima lectura de esa aseguradora usa esas etiquetas.
+   ============================================================ */
+const LEARN_FIELDS = [['premiumNet','Prima neta'],['isc','ISC'],['premiumTotal','Prima total'],['sumSeccionI','Suma Sec. I'],['sumSeccionII','Suma Sec. II']];
+/* Lee un número escrito como 2,689,953.00 · 2.689.953,00 · 2689953 */
+function parseAnyNumber(tok){
+  let t = String(tok).trim();
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+  else t = t.replace(/,/g, '');
+  const n = parseFloat(t); return isNaN(n) ? null : n;
+}
+/* Busca el número en el texto del PDF (aunque tenga centavos) y devuelve la etiqueta que lo precede en la misma línea */
+function findLabelForValue(text, value){
+  const target = Math.round(+value); if(!text || !target) return null;
+  const re = /\d[\d.,]*\d|\d/g; let m;
+  while((m = re.exec(text)) !== null){
+    const n = parseAnyNumber(m[0]);
+    if(n === null || Math.round(n) !== target) continue;
+    const i = m.index;
+    const lineStart = Math.max(text.lastIndexOf('\n', i), i - 70);
+    let lab = text.slice(lineStart + 1, i)
+      .replace(/(RD\$|US\$|USD|DOP|\$)\s*$/i, '').replace(/[:=\-–\s.]+$/, '')
+      .replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/, '').replace(/\s+/g, ' ').trim();
+    const words = lab.split(' '); if(words.length > 6) lab = words.slice(-6).join(' ');
+    if(lab.length >= 3 && /[A-Za-zÁÉÍÓÚáéíóú]{3}/.test(lab)) return lab;
+  }
+  return null;
+}
+function learnedFor(insurerId){
+  const al = ((state.config.extractAliases || {})[insurerId]) || {};
+  const n = LEARN_FIELDS.reduce((a, [f]) => a + ((al[f] || []).length), 0);
+  const lr = ((state.config.extractLearning || {})[insurerId]) || {};
+  return { aliases: al, count: n, docs: lr.docs || 0, last: lr.last || '' };
+}
+/* Guarda lo aprendido de una cotización ya revisada por el usuario */
+function learnFromReview(insurerId, text, finalVals, isNewDoc){
+  if(!insurerId || !text) return 0;
+  state.config.extractAliases = state.config.extractAliases || {};
+  const al = state.config.extractAliases[insurerId] = state.config.extractAliases[insurerId] || {};
+  let learned = 0;
+  LEARN_FIELDS.forEach(([f]) => {
+    const v = finalVals[f]; if(!(+v > 0)) return;
+    const lab = findLabelForValue(text, v); if(!lab) return;
+    al[f] = al[f] || [];
+    const i = al[f].findIndex(x => x.toLowerCase() === lab.toLowerCase());
+    if(i > 0) al[f].splice(i, 1);
+    if(i !== 0){ al[f].unshift(lab); learned++; }
+    al[f] = al[f].slice(0, 6);
+  });
+  state.config.extractLearning = state.config.extractLearning || {};
+  const lr = state.config.extractLearning[insurerId] = state.config.extractLearning[insurerId] || { docs: 0 };
+  if(isNewDoc !== false) lr.docs = (lr.docs || 0) + 1;
+  lr.last = new Date().toISOString();
+  save();
+  return learned;
+}
+function forgetLearning(insurerId){
+  if(state.config.extractAliases) delete state.config.extractAliases[insurerId];
+  if(state.config.extractLearning) delete state.config.extractLearning[insurerId];
+  save(); render(); syncToast('Se borró lo aprendido de esta aseguradora', true);
+}
+/* Une la lectura con IA con lo que el lector local y lo aprendido encuentran */
+function mergeWithLocal(ex, text, insurerId){
+  let local = null;
+  try{ local = extractQuoteFields(text, insurerId); }catch(e){ return ex; }
+  if(!local) return ex;
+  ex._warnings = ex._warnings || []; ex._matches = ex._matches || {};
+  LEARN_FIELDS.forEach(([f, lab]) => {
+    const learned = local._matches && local._matches[f] === 'Plantilla aseguradora';
+    if(learned && +local[f] > 0){
+      if(+ex[f] > 0 && Math.round(+ex[f]) !== Math.round(+local[f])){
+        ex._warnings.push(`ℹ ${lab}: la IA leyó ${Math.round(+ex[f]).toLocaleString('en-US')}; según lo aprendido de esta aseguradora es ${Math.round(+local[f]).toLocaleString('en-US')}. Se usó el aprendido.`);
+      }
+      ex[f] = +local[f]; ex._matches[f] = 'Aprendido de esta aseguradora';
+    } else if(!(+ex[f] > 0) && +local[f] > 0){
+      ex[f] = +local[f]; ex._matches[f] = local._matches[f] || 'Lector local';
+    }
+  });
+  if(local.endorsement_sublimits && Object.keys(local.endorsement_sublimits).length){
+    ex.endorsement_sublimits = { ...local.endorsement_sublimits, ...(ex.endorsement_sublimits || {}) };
+  }
+  if(!ex.clauses_rejected_text && local.clauses_rejected_text) ex.clauses_rejected_text = local.clauses_rejected_text;
+  if(!ex.deductibles_proposed && local.deductibles_proposed) ex.deductibles_proposed = local.deductibles_proposed;
+  return ex;
+}
 /* Trigger del input file por cada columna del comparador */
-async function aiExtract(text, insurer){
-  const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insurer||'' }) });
+async function aiExtract(text, insurer, insurerId){
+  const L = insurerId ? learnedFor(insurerId) : null;
+  const hints = L && L.count ? { labels: L.aliases, note: 'Etiquetas que usa esta aseguradora para cada campo, aprendidas de cotizaciones anteriores revisadas.' } : undefined;
+  const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insurer||'', hints:hints }) });
   let data; try{ data = await resp.json(); }catch(e){ throw new Error('Respuesta inválida del servidor'); }
   if(!resp.ok) throw new Error(data && data.error ? data.error : ('HTTP '+resp.status));
   return data || {};
@@ -4205,7 +4644,11 @@ function aiToExtracted(ai){
   ['premiumNet','isc','premiumTotal','sumSeccionI','sumSeccionII'].forEach(f => {
     if(ai[f]!=null && ai[f]!=='' && !isNaN(+ai[f])){ r[f] = +ai[f]; r._matches[f] = 'Leído con IA'; }
   });
-  if(ai.deductibles) r.deductibles_proposed = String(ai.deductibles);
+  if(ai.deductibles && typeof ai.deductibles === 'object'){
+    const d = ai.deductibles;
+    r.deductibles3 = { cat: d.catastrophic || d.catastrofico || d.cat || '', otros: d.other || d.otros || '', rc: d.liability || d.rc || d.tpl || '' };
+    r.deductibles_proposed = composeDeductibles(r.deductibles3);
+  } else if(ai.deductibles) r.deductibles_proposed = String(ai.deductibles);
   if(Array.isArray(ai.clausesAccepted)){ r.clauses_accepted = ai.clausesAccepted; r.clauses_accepted_text = ai.clausesAccepted.join('\n'); }
   if(ai.currency) r._aiCurrency = ai.currency;
   return r;
@@ -4228,8 +4671,8 @@ function triggerPdfUpload(quoteIndex){
       const _insName = ((typeof DEFAULT_INSURERS!=='undefined' && DEFAULT_INSURERS.find(i=>i.id===_insId))||{}).name || '';
       let extracted;
       try {
-        const ai = await aiExtract(text, _insName);
-        extracted = fillMissingPremium(aiToExtracted(ai));
+        const ai = await aiExtract(text, _insName, _insId);
+        extracted = fillMissingPremium(mergeWithLocal(aiToExtracted(ai), text, _insId));
       } catch(e) {
         console.warn('IA no disponible, uso extractor local:', e);
         extracted = fillMissingPremium(extractQuoteFields(text, _insId));
@@ -4259,6 +4702,8 @@ function showPdfLoadingModal(filename){
 }
 function showPdfReviewModal(quoteIndex, ex, fullText, filename){
   const c = activeCase();
+  fullText = fullText || '';
+  window._pdfReview = { text: fullText, insurerId: (c.quotes[quoteIndex] || {}).insurerId, filename: filename || '', ex: ex };
   const ins = DEFAULT_INSURERS.find(i => i.id === c.quotes[quoteIndex]?.insurerId);
   const sym = c.header.currency === 'DOP' ? 'RD$' : 'USD';
   const M = v => v ? sym + ' ' + Number(v).toLocaleString('en-US') : '<em style="color:var(--ink-300)">no detectado</em>';
@@ -4271,6 +4716,7 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
   const rawInt = v => (v===null||v===undefined||v==='')?'':Number(v).toLocaleString('en-US');
   const confOf = (field, val) => {
     if(val===null||val===undefined||val===''||val===0) return ['falta','#dc2626'];
+    if(ex._reopen) return ['guardado','#00335E'];
     if(ex._matches && ex._matches[field]) return ['detectado','#16a34a'];
     return ['calculado','#d97706'];
   };
@@ -4294,11 +4740,12 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
   const sublimitsEntries = Object.entries(sublimits).filter(([id,v]) => v > 0);
   const modal = document.getElementById('modal');
   document.getElementById('modalContent').innerHTML = `
-    <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">📄 Cotización extraída
+    <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${ex._reopen ? '✎ Revisar cotización' : '📄 Cotización extraída'}
       <span class="badge badge-comp" style="font-size:10px">${escapeHtml(ins?.name||'')}</span>
       ${ex._structured?`<span class="badge badge-coloc" style="font-size:10px">Extracción estructurada</span>`:''}
     </h3>
-    <p class="muted" style="font-size:12px;margin-top:-6px">Archivo: ${escapeHtml(filename)} · Secciones detectadas: ${(ex._sections||[]).join(', ')||'<em>ninguna</em>'}</p>
+    ${(()=>{ const L = learnedFor((c.quotes[quoteIndex]||{}).insurerId); return L.docs ? `<div style="background:#EEF4EA;border:1px solid #C9DDBF;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:#2F5A1E">Lector entrenado con ${L.docs} cotización(es) de ${escapeHtml(ins?.name||'esta aseguradora')} · ${L.count} etiqueta(s) aprendida(s).</div>` : `<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:var(--ink-700)">Primera lectura de ${escapeHtml(ins?.name||'esta aseguradora')}. Revisa y corrige los montos: al aplicar, el lector aprende cómo los llama esta aseguradora.</div>`; })()}
+    <p class="muted" style="font-size:12px;margin-top:-6px">${ex._reopen ? `Datos actuales de la cotización${ex._fromDate ? ' · leída del PDF el ' + escapeHtml(ex._fromDate) : ''}${filename ? ' · Archivo: ' + escapeHtml(filename) : ''}` : `Archivo: ${escapeHtml(filename)} · Secciones detectadas: ${(ex._sections||[]).join(', ')||'<em>ninguna</em>'}`}</p>
     ${ex._scanned ? `<div style="background:#fee2e2;border:1px solid #ef4444;border-left:4px solid #dc2626;border-radius:8px;padding:10px 14px;margin:10px 0">
       <div style="font-size:11px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">⚠ PDF escaneado o de imagen</div>
       <div style="font-size:12px;color:#7f1d1d">Se extrajo muy poco texto (${fullText.replace(/\s+/g,'').length} caracteres). La lectura automática será muy incompleta — revisa y captura los valores manualmente abajo.</div>
@@ -4355,12 +4802,16 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
         <p style="font-size:10.5px;color:var(--ink-500);margin-top:4px">Estos sub-límites se guardarán por aseguradora — la matriz comparativa los usará al exportar la Propuesta.</p>
       </div>
     ` : ''}
-    ${ex.deductibles_proposed ? `
-      <div style="margin:12px 0">
-        <div style="font-size:11px;font-weight:700;color:var(--grg-blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Deducibles detectados</div>
-        <textarea class="textarea" id="pdfDeducibles" rows="3" style="font-size:12px">${escapeHtml(ex.deductibles_proposed)}</textarea>
-      </div>
-    ` : ''}
+    ${(() => {
+      const d3 = ex.deductibles3 || splitDeductibles(ex.deductibles_proposed);
+      return `<div style="margin:12px 0">
+        <div style="font-size:11px;font-weight:700;color:var(--grg-blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Deducibles ${ex.deductibles_proposed && !ex._reopen ? 'detectados' : ''}</div>
+        <div class="form-grid cols-3" style="gap:10px">
+          ${DED_KINDS.map(d => `<div class="field"><label>${d.label}</label><input class="input" id="pdfDed_${d.k}" value="${escapeHtml(d3[d.k] || '')}" placeholder="${d.k === 'cat' ? 'Ej: 2% del valor, mín. RD$ 500,000' : d.k === 'otros' ? 'Ej: RD$ 300,000 por evento' : 'Ej: RD$ 175,000 por evento'}"></div>`).join('')}
+        </div>
+        ${ex.deductibles_proposed ? `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;color:var(--ink-500)">Texto original de deducibles</summary><div style="font-size:11.5px;color:var(--ink-700);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:4px;white-space:pre-wrap">${escapeHtml(ex.deductibles_proposed)}</div></details>` : ''}
+      </div>`;
+    })()}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0">
       ${ex.clauses_accepted_text ? `
         <div>
@@ -4375,16 +4826,33 @@ function showPdfReviewModal(quoteIndex, ex, fullText, filename){
         </div>
       ` : '<div></div>'}
     </div>
+    ${fullText ? `
     <details style="margin-top:12px">
       <summary style="cursor:pointer;font-size:12px;color:var(--ink-500)">▸ Ver texto completo extraído del PDF (${fullText.length} caracteres)</summary>
       <pre style="background:var(--line-2);padding:10px;border-radius:6px;font-size:10px;max-height:240px;overflow:auto;white-space:pre-wrap;font-family:monospace;margin-top:6px">${escapeHtml(fullText.slice(0,8000))}${fullText.length>8000?'\n\n[...truncado a 8000 caracteres]':''}</pre>
-    </details>
+    </details>` : ''}
     <div class="row" style="margin-top:18px;justify-content:flex-end;gap:8px">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick='applyPdfExtraction(${quoteIndex}, ${JSON.stringify(ex).replace(/'/g,"\\'")})'>Aplicar a cotización</button>
+      <button class="btn btn-primary" onclick="applyPdfExtraction(${quoteIndex}, window._pdfReview.ex)">${ex._reopen ? 'Guardar cambios' : 'Aplicar a cotización'}</button>
     </div>
   `;
   modal.classList.add('open');
+}
+/* Volver a abrir la revisión de una cotización (con o sin PDF leído) */
+function reopenQuoteReview(qi){
+  const c = activeCase(); const q = c && c.quotes[qi]; if(!q) return;
+  const x = q.extraction || {};
+  const ex = Object.assign({ _matches:{}, _warnings:[], _sections:[] }, JSON.parse(JSON.stringify(x.ex || {})));
+  ex._reopen = true;
+  ex._warnings = [];
+  if(x.at){ try{ ex._fromDate = new Date(x.at).toLocaleDateString('es-DO', { day:'2-digit', month:'short', year:'numeric' }); }catch(e){} }
+  ['premiumNet','isc','premiumTotal','sumSeccionI','sumSeccionII'].forEach(f => { ex[f] = +q[f] || ''; });
+  ex.deductibles_proposed = q.deductibles_proposed || '';
+  ex.deductibles3 = DED_KINDS.reduce((o, d) => { o[d.k] = quoteDeductible(q, d.k).v; return o; }, {});
+  ex.clauses_accepted = (q.clauses_accepted || []).slice(); ex.clauses_accepted_text = ex.clauses_accepted.join('\n');
+  ex.clauses_rejected = (q.clauses_rejected || []).slice(); ex.clauses_rejected_text = ex.clauses_rejected.join('\n');
+  ex.endorsement_sublimits = Object.assign({}, q.endorsement_sublimits || {});
+  showPdfReviewModal(qi, ex, x.text || '', x.filename || '');
 }
 function recalcPdfPrima(){
   const netEl = document.getElementById('pdfPremiumNet');
@@ -4416,9 +4884,12 @@ function applyPdfExtraction(quoteIndex, ex){
   if(_pi) q.isc = _pi;
   if(_pt) q.premiumTotal = _pt;
   /* Deducibles */
-  const dedEl = document.getElementById('pdfDeducibles');
-  if(dedEl) q.deductibles_proposed = dedEl.value.trim();
-  else if(ex.deductibles_proposed) q.deductibles_proposed = ex.deductibles_proposed;
+  if(document.getElementById('pdfDed_cat')){
+    q.deductibles3 = {};
+    DED_KINDS.forEach(d => { q.deductibles3[d.k] = (document.getElementById('pdfDed_' + d.k).value || '').trim(); });
+    const composed = composeDeductibles(q.deductibles3);
+    if(composed || !ex._reopen) q.deductibles_proposed = composed || ex.deductibles_proposed || '';
+  } else if(ex.deductibles_proposed) q.deductibles_proposed = ex.deductibles_proposed;
   /* Aceptados (textarea editable) */
   const clEl = document.getElementById('pdfClauses');
   if(clEl){
@@ -4442,12 +4913,25 @@ function applyPdfExtraction(quoteIndex, ex){
   const _s2 = numFrom('pdfSumII', ex.sumSeccionII);
   if(_s1) q.sumSeccionI = _s1;
   if(_s2) q.sumSeccionII = _s2;
+  /* Aprender de esta cotización revisada */
+  let _learned = 0;
+  try{
+    const rv = window._pdfReview || {};
+    _learned = learnFromReview(q.insurerId, rv.text, { premiumNet:_pn, isc:_pi, premiumTotal:_pt, sumSeccionI:_s1, sumSeccionII:_s2 }, !ex._reopen);
+  }catch(e){ console.warn('No se pudo aprender de la cotización', e); }
   const sec = (ex._sections||[]).length;
   const warnCount = (ex._warnings||[]).length;
-  q.notes = (q.notes ? q.notes + ' · ' : '') + `Importado PDF (${sec} secciones${warnCount?', '+warnCount+' warn':''})`;
+  if(!ex._reopen){
+    q.notes = (q.notes ? q.notes + ' · ' : '') + `Importado PDF (${sec} secciones${warnCount?', '+warnCount+' warn':''})`;
+    /* Guardar la lectura para poder volver a abrirla desde el Comparador */
+    const rv = window._pdfReview || {};
+    const keep = {}; ['_matches','_warnings','_sections','_structured','_ai','_scanned'].forEach(k => { if(ex[k] !== undefined) keep[k] = ex[k]; });
+    q.extraction = { filename: rv.filename || '', at: new Date().toISOString(), text: String(rv.text || '').slice(0, 60000), ex: keep };
+  }
   save();
   closeModal();
   render();
+  if(_learned) syncToast('Cotización aplicada · el lector aprendió ' + _learned + ' etiqueta(s) nueva(s) de esta aseguradora', true);
 }
 /* ============================================================
    MODAL — selector de caso
@@ -4509,9 +4993,9 @@ function _errTxt(e){ return (e && (e.message || e.hint || e.details)) || (typeof
 function syncToast(msg, ok){
   let t=document.getElementById('syncToast');
   if(!t){ t=document.createElement('div'); t.id='syncToast'; t.style.cssText='position:fixed;bottom:14px;right:14px;z-index:950;padding:10px 14px;border-radius:10px;font-family:Inter,system-ui,sans-serif;font-size:12.5px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:360px;line-height:1.4'; document.body.appendChild(t); }
-  t.style.background = ok ? '#0E2A1E' : '#2A1315';
-  t.style.color = ok ? '#5FE0A8' : '#F19AA0';
-  t.style.border = '1px solid '+(ok?'#16a34a':'#dc2626');
+  t.style.background = ok ? '#ECFDF3' : '#FEF2F2';
+  t.style.color = ok ? '#166534' : '#9F1D24';
+  t.style.border = '1px solid '+(ok?'#9AD9B1':'#F3B4B7');
   t.textContent = msg; t.style.display='block';
   clearTimeout(t._h); t._h=setTimeout(function(){ t.style.display='none'; }, ok?1500:8000);
 }
@@ -4536,7 +5020,7 @@ function scheduleRemoteSave(){
 function mapCarteraRow(r){
   return { cliente:r.cliente, bien:r.bien, poliza:r.poliza, aseguradora:r.aseguradora, moneda:r.moneda,
     vigStart:r.vig_start, vigEnd:r.vig_end, valor:+r.valor||0, primaNetaAnual:+r.prima_neta_anual||0,
-    primaBrutaAnual:+r.prima_bruta_anual||0, comision:+r.comision||0, lat:+r.lat, lng:+r.lng,
+    primaBrutaAnual:+r.prima_bruta_anual||0, lat:+r.lat, lng:+r.lng,
     provincia:r.provincia, geo:r.geo, source:'excel' };
 }
 async function loadRemote(){
@@ -4571,21 +5055,21 @@ function requireLogin(){
 function showLoginOverlay(resolve){
   const ov = document.createElement('div');
   ov.id = 'loginOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0A1521,#0E2137);font-family:Inter,system-ui,sans-serif';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#012A4F,#001428);font-family:Inter,system-ui,sans-serif';
   ov.innerHTML =
-    '<form id="loginForm" style="background:#12212F;border:1px solid #24384c;border-radius:16px;padding:32px 30px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.5)">'+
+    '<form id="loginForm" style="background:#FFFDF8;border:1px solid #E6DDCD;border-radius:16px;padding:32px 30px;width:340px;box-shadow:0 24px 60px rgba(0,0,0,.35)">'+
       '<img id="loginLogo" alt="Garrigó" style="height:42px;display:block;margin:0 auto 18px">'+
-      '<div style="text-align:center;color:#EAF1F9;font-weight:700;font-size:16px;margin-bottom:4px">Generador TRC</div>'+
-      '<div style="text-align:center;color:#8B9BAC;font-size:12px;margin-bottom:20px">Acceso del equipo</div>'+
-      '<label style="color:#C4D0DD;font-size:12px;font-weight:600">Correo</label>'+
-      '<input id="loginEmail" type="email" autocomplete="username" required style="width:100%;margin:6px 0 14px;padding:11px 12px;border-radius:10px;border:1px solid #24384c;background:#0F1C29;color:#EAF1F9;font-size:14px;box-sizing:border-box">'+
-      '<label style="color:#C4D0DD;font-size:12px;font-weight:600">Contraseña</label>'+
-      '<input id="loginPass" type="password" autocomplete="current-password" required style="width:100%;margin:6px 0 6px;padding:11px 12px;border-radius:10px;border:1px solid #24384c;background:#0F1C29;color:#EAF1F9;font-size:14px;box-sizing:border-box">'+
-      '<div id="loginMsg" style="color:#F19AA0;font-size:12px;min-height:16px;margin:6px 0"></div>'+
+      '<div style="text-align:center;color:#0E2A47;font-weight:700;font-size:17px;margin-bottom:4px;font-family:Montserrat,Inter,sans-serif">Generador TRC</div>'+
+      '<div style="text-align:center;color:#69788B;font-size:12px;margin-bottom:20px">Acceso del equipo</div>'+
+      '<label style="color:#3B4B60;font-size:12px;font-weight:600">Correo</label>'+
+      '<input id="loginEmail" type="email" autocomplete="username" required style="width:100%;margin:6px 0 14px;padding:11px 12px;border-radius:10px;border:1px solid #D3DBE5;background:#ffffff;color:#14243A;font-size:14px;box-sizing:border-box">'+
+      '<label style="color:#3B4B60;font-size:12px;font-weight:600">Contraseña</label>'+
+      '<input id="loginPass" type="password" autocomplete="current-password" required style="width:100%;margin:6px 0 6px;padding:11px 12px;border-radius:10px;border:1px solid #D3DBE5;background:#ffffff;color:#14243A;font-size:14px;box-sizing:border-box">'+
+      '<div id="loginMsg" style="color:#B42318;font-size:12px;min-height:16px;margin:6px 0"></div>'+
       '<button type="submit" id="loginBtn" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:10px;background:#FF5200;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Entrar</button>'+
     '</form>';
   document.body.appendChild(ov);
-  try{ if(typeof LOGO_SIDEBAR_PNG!=='undefined') document.getElementById('loginLogo').src = LOGO_SIDEBAR_PNG; }catch(e){}
+  try{ if(typeof LOGO_DOC_PNG!=='undefined') document.getElementById('loginLogo').src = LOGO_DOC_PNG; }catch(e){}
   document.getElementById('loginForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
@@ -4595,20 +5079,30 @@ function showLoginOverlay(resolve){
     msg.style.color='#8B9BAC'; msg.textContent='Entrando…'; btn.disabled=true;
     try{
       const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-      if(error){ msg.style.color='#F19AA0'; msg.textContent='Correo o contraseña incorrectos.'; btn.disabled=false; return; }
+      if(error){ msg.style.color='#B42318'; msg.textContent='Correo o contraseña incorrectos.'; btn.disabled=false; return; }
       currentUser = data.user; ov.remove(); addLogoutButton(); resolve();
-    }catch(err){ msg.style.color='#F19AA0'; msg.textContent='No se pudo conectar. Revisa tu internet.'; btn.disabled=false; }
+    }catch(err){ msg.style.color='#B42318'; msg.textContent='No se pudo conectar. Revisa tu internet.'; btn.disabled=false; }
   });
 }
 function addLogoutButton(){
   if(document.getElementById('logoutBtn')) return;
   const b=document.createElement('button');
   b.id='logoutBtn'; b.textContent='Cerrar sesión';
-  b.style.cssText='position:fixed;bottom:14px;left:14px;z-index:900;background:#12212F;color:#C4D0DD;border:1px solid #24384c;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif';
+  b.style.cssText='position:fixed;bottom:14px;left:14px;z-index:900;background:#ffffff;color:#3B4B60;border:1px solid #DDE4EC;box-shadow:0 2px 8px rgba(14,42,71,.10);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif';
   b.onclick=async()=>{ try{ await sbClient.auth.signOut(); }catch(e){} location.reload(); };
   document.body.appendChild(b);
 }
+/* MODO LOCAL: al abrir el archivo en la PC (file://) o en localhost se salta el login
+   y se trabaja con datos guardados en el navegador. En Vercel el login sigue igual. */
+const LOCAL_DEV = location.protocol === 'file:' || ['localhost','127.0.0.1'].includes(location.hostname);
+function addLocalBadge(){
+  const b=document.createElement('div');
+  b.textContent='MODO LOCAL · sin login · datos solo en este navegador';
+  b.style.cssText='position:fixed;bottom:14px;left:14px;z-index:900;background:#FF5200;color:#fff;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  document.body.appendChild(b);
+}
 async function boot(){
+  if(LOCAL_DEV){ load(); render(); addLocalBadge(); return; }
   if(!window.supabase || !sbClient){ console.error('Supabase no cargó'); load(); render(); return; }
   await requireLogin();
   await loadRemote();
