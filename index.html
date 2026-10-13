@@ -378,6 +378,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .cmp-score-pill{margin-left:auto;background:#0A1E35;color:#fff;border-radius:999px;padding:3px 9px;font:700 11px Inter,sans-serif;font-variant-numeric:tabular-nums}
 .cmp-break{font-size:10.5px;color:var(--ink-500);text-align:center;margin-top:4px}
 .cmp-more{margin-top:14px}
+.compare-grid thead .btn{white-space:nowrap}
 .cmp-file{font-size:10.5px;font-weight:500;color:var(--ink-500);text-transform:none;letter-spacing:0;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmp-guess{font-style:italic;color:var(--ink-700)}
 .cmp-more summary{cursor:pointer;font-weight:600;color:var(--navy-800);font-size:13px}
@@ -961,7 +962,8 @@ const state = {
     iscRate: 16,
     fxRate: 60.00,
     extractAliases: {},
-    scoreWeights: { price:60, deductibles:40 },
+    scoreWeights: { price:40, coverage:35, deductibles:25 },
+    scoreWeightsV: 3,
   },
 };
 /* ---------- PERSISTENCIA ---------- */
@@ -983,7 +985,7 @@ function migrateConfig(cfg){
   };
   if(placeholders.brokerName.includes(cfg.brokerName)) cfg.brokerName = 'Garrigo Reasesores, SRL';
   if(cfg.subtitle === undefined) cfg.subtitle = 'Corredores de Seguros · Consultoría';
-  if(!cfg.scoreWeights || cfg.scoreWeights.coverage !== undefined) cfg.scoreWeights = { price:60, deductibles:40 };
+  if(!cfg.scoreWeights || cfg.scoreWeightsV !== 3){ cfg.scoreWeights = { price:40, coverage:35, deductibles:25 }; cfg.scoreWeightsV = 3; }
   if(placeholders.rnc.includes(cfg.rnc)) cfg.rnc = '130-238202';
   if(placeholders.license.includes(cfg.license)) cfg.license = '';
   if(placeholders.address.includes(cfg.address)) cfg.address = 'Calle Jacinto Ignacio Mañon 48, Edificio V&M, 4to. piso, Suite 404, Santo Domingo, República Dominicana';
@@ -2833,7 +2835,7 @@ function fmtRate(r){ return r > 0 ? r.toFixed(2)+' ‰' : '—'; }
 /* ============================================================
    SCORING & RECOMENDACIÓN AUTOMÁTICA
    Una sola fórmula para Comparador y Propuesta. Pesos en Configuración
-   Solo primas y deducibles (por defecto Precio 60% · Deducibles 40%).
+   Precio, coberturas y deducibles (por defecto Precio 40% · Cobertura 35% · Deducibles 25%).
    ============================================================ */
 /* ---------- Lo pedido en el Slip vs. lo que cotizó cada aseguradora ---------- */
 const SUBLIMIT_ROWS = [
@@ -2844,9 +2846,9 @@ const SUBLIMIT_ROWS = [
 ];
 function scoreWeights(){
   const w = (state.config && state.config.scoreWeights) || {};
-  const p = Math.max(0, w.price === undefined ? 60 : +w.price || 0), d = Math.max(0, w.deductibles === undefined ? 40 : +w.deductibles || 0);
-  const t = p + d || 100;
-  return { price: p / t, deductibles: d / t, raw: { price: p, deductibles: d } };
+  const p = Math.max(0, w.price === undefined ? 40 : +w.price || 0), cv = Math.max(0, w.coverage === undefined ? 35 : +w.coverage || 0), d = Math.max(0, w.deductibles === undefined ? 25 : +w.deductibles || 0);
+  const t = p + cv + d || 100;
+  return { price: p / t, coverage: cv / t, deductibles: d / t, raw: { price: p, coverage: cv, deductibles: d } };
 }
 /* Endosos que se pidieron en el Slip (los seleccionados del bloque Munich Re) */
 function requestedEndorsements(c){
@@ -2969,6 +2971,15 @@ function scoreQuotes(c){
   return quotes.map(q => {
     /* Precio: la más barata = 100, la más cara = 0 */
     const priceScore = maxP === minP ? 100 : Math.round(((maxP - +q.premiumTotal) / (maxP - minP)) * 100);
+    /* Cobertura: endosos del Slip aceptados, con descuento por rechazos, cambios y sub-límites bajos */
+    const vs = quoteVsSlip(q, c);
+    let coverageScore;
+    if(vs.total){
+      coverageScore = (vs.accepted.length / vs.total) * 100 - vs.rejected.length * 6 - vs.modified.length * 3 - vs.low.length * 5;
+    } else {
+      coverageScore = Math.min(100, ((q.clauses_accepted || []).length / 18) * 100) - (q.clauses_rejected || []).length * 6;
+    }
+    coverageScore = Math.max(0, Math.min(100, Math.round(coverageScore)));
     /* Deducibles: por grupo contra lo pedido; si no hay, lectura del texto de la cotización */
     let dedScore = null;
     const cmps = DED_KINDS.map(d => dedCompare(askedDeductible(c, d.k), quoteDeductible(q, d.k).v)).filter(x => x !== null);
@@ -2984,9 +2995,12 @@ function scoreQuotes(c){
       if(/exclus/.test(dedText)) dedScore -= 5;
       dedScore = Math.max(0, Math.min(100, dedScore));
     }
-    const totalScore = Math.round(priceScore * W.price + dedScore * W.deductibles);
+    const totalScore = Math.round(priceScore * W.price + coverageScore * W.coverage + dedScore * W.deductibles);
     return {
-      q, totalScore, priceScore, dedScore,
+      q, totalScore, priceScore, coverageScore, dedScore, vs,
+      acceptedCount: vs.total ? vs.accepted.length : (q.clauses_accepted || []).length,
+      rejectedCount: vs.total ? vs.rejected.length : (q.clauses_rejected || []).length,
+      modificationPenalty: vs.modified.length * 3,
       isBestPrice:  +q.premiumTotal === minP && minP > 0,
       isWorstPrice: +q.premiumTotal === maxP && quotes.length > 1 && maxP !== minP,
     };
@@ -3112,27 +3126,62 @@ function autoRecommend(){
   const reasons = [];
   if(winner.priceScore >= 80) reasons.push('una de las primas más competitivas del mercado');
   else if(winner.priceScore >= 50) reasons.push('una prima razonable dentro del rango cotizado');
+  if(winner.coverageScore >= 80) reasons.push('la cobertura más completa del panel (acepta los endosos pedidos en el Slip sin recortes)');
+  else if(winner.coverageScore >= 65) reasons.push(`cobertura sólida con ${winner.acceptedCount} endosos aceptados`);
+  if(winner.rejectedCount === 0 && winner.vs && winner.vs.total) reasons.push('sin endosos rechazados');
   if(winner.dedScore >= 75) reasons.push('deducibles bajos y competitivos');
   /* Composición del texto */
   const reasonsText = reasons.length > 0
     ? reasons.length === 1 ? reasons[0] : reasons.slice(0,-1).join(', ') + ' y ' + reasons.slice(-1)
-    : 'el mejor balance entre prima y deducibles';
+    : 'el mejor balance entre prima, coberturas y deducibles';
   const secondPlace = scored[1];
   let competitorNote = '';
   if(secondPlace){
     const secondIns = DEFAULT_INSURERS.find(i => i.id === secondPlace.q.insurerId);
     const priceDiff = (+secondPlace.q.premiumTotal) - (+winner.q.premiumTotal);
     if(priceDiff > 0){
-      competitorNote = ` La opción más cercana, ${secondIns?.name||'la segunda'}, presenta una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} superior${winner.dedScore > secondPlace.dedScore ? ' y con deducibles más altos' : ''}.`;
+      competitorNote = ` La opción más cercana, ${secondIns?.name||'la segunda'}, presenta una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} superior${winner.coverageScore > secondPlace.coverageScore ? ' y con menor cobertura' : winner.dedScore > secondPlace.dedScore ? ' y con deducibles más altos' : ''}.`;
     } else if(priceDiff < 0){
-      competitorNote = ` Aunque ${secondIns?.name||'la segunda opción'} ofrece una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} inferior, la diferencia se compensa por los deducibles más bajos de ${ins?.name||'la recomendada'}.`;
+      competitorNote = ` Aunque ${secondIns?.name||'la segunda opción'} ofrece una prima ${sym} ${Math.abs(priceDiff).toLocaleString('en-US')} inferior, la diferencia se compensa por la cobertura más amplia y los deducibles de ${ins?.name||'la recomendada'}.`;
     }
   }
-  const text = `Recomendamos a ${ins?.name || winner.q.insurerId} por ofrecer ${reasonsText}.${competitorNote} Score técnico Garrigo: ${winner.totalScore}/100 (Precio ${winner.priceScore}/100, Deducibles ${winner.dedScore}/100).`;
+  const text = `Recomendamos a ${ins?.name || winner.q.insurerId} por ofrecer ${reasonsText}.${competitorNote} Score técnico Garrigo: ${winner.totalScore}/100 (Precio ${winner.priceScore}/100, Cobertura ${winner.coverageScore}/100, Deducibles ${winner.dedScore}/100).`;
   c.proposal.selectedInsurer = winner.q.insurerId;
   c.proposal.recommendation = text;
   c.updatedAt = new Date().toISOString();
   save(); render();
+}
+/* Matrices de coberturas y deducibles para la Propuesta (pantalla, Word, PDF) y el PPT */
+const ENDO_SHORT = { mr001:'Huelga, motín y conmoción civil', mr002:'RC cruzada', mr003:'Obras recibidas / en operación', mr004:'Mantenimiento ampliado',
+  mr006:'Gastos extras y flete aéreo', mr008:'Obras en zonas sísmicas', mr010:'Escombros tras eventos naturales', mr013:'Bienes fuera del sitio',
+  mr102:'Cables y tuberías subterráneas', mr107:'Campamentos y almacenes', mr110:'Medidas ante inundación', mr112:'Equipos extintores',
+  mr113:'Transporte nacional', mr115:'Error de diseño', mr119:'Bienes existentes', 'mr-rc-vib':'RC por vibración' };
+function proposalMatrices(c){
+  const scored = scoreQuotes(c);
+  const selId = c.proposal && c.proposal.selectedInsurer;
+  const insName = id => { const i = DEFAULT_INSURERS.find(x => x.id === id); return i ? i.name : (id || '—'); };
+  const cols = scored.map(s => ({ q: s.q, name: insName(s.q.insurerId), selected: s.q.insurerId === selId, score: s.totalScore, vs: s.vs }));
+  const req = requestedEndorsements(c);
+  const cov = req.map(r => ({ code: r.code, title: ENDO_SHORT[r.id] || r.title, want: requestedSublimit(c, r.id),
+    statuses: cols.map(col => getAcceptanceStatus(col.q, r.code)) }));
+  const ded = DED_KINDS.map(d => ({ label: d.label, asked: askedDeductible(c, d.k), values: cols.map(col => quoteDeductible(col.q, d.k).v || '—') }));
+  return { cols, cov, ded };
+}
+const STATUS_TXT = { accepted:['✓','Incluido','#15803D'], modified:['⚠','Con cambios','#B45309'], rejected:['✗','No incluido','#C0262D'], unknown:['—','No indicado','#9CA3AF'] };
+function proposalMatricesHtml(c, forWord){
+  const m = proposalMatrices(c);
+  if(!m.cols.length) return { cov:'', ded:'' };
+  const BLUE = '#004A88', LINE = '#E5E7EB', SELBG = '#EEF4FB';
+  const th = (t, sel, first) => `<th style="background:${BLUE};color:#fff;padding:5pt 6pt;font-family:Arial,sans-serif;font-size:8.5pt;font-weight:700;text-align:${first?'left':'center'}${sel?';border-bottom:3pt solid #FF5200':''}">${t}</th>`;
+  const head = '<tr>' + th('', false, true) + m.cols.map(col => th(escapeHtml(col.name) + (col.selected ? '<br><span style="font-weight:400;font-size:7.5pt;color:#FFD3BF">Recomendada</span>' : ''), col.selected)).join('') + '</tr>';
+  const td = (html, sel, first) => `<td style="padding:4pt 6pt;border-bottom:0.5pt solid ${LINE};font-family:Arial,sans-serif;font-size:8.5pt;vertical-align:middle;text-align:${first?'left':'center'}${sel?';background:'+SELBG:''}">${html}</td>`;
+  const covRows = m.cov.map(r => '<tr>' + td(`<strong style="color:${BLUE}">${r.code}</strong> ${escapeHtml(r.title)}`, false, true)
+    + r.statuses.map((st, i) => { const t = STATUS_TXT[st] || STATUS_TXT.unknown; return td(`<span style="color:${t[2]};font-weight:700">${t[0]}</span>${forWord ? '' : ` <span style="color:${t[2]};font-size:7.5pt">${t[1]}</span>`}`, m.cols[i].selected); }).join('') + '</tr>').join('');
+  const legend = `<p style="font-family:Arial,sans-serif;font-size:8pt;color:#6b7280;margin:3pt 0 0">✓ incluido · ⚠ incluido con cambios · ✗ no incluido · — la cotización no lo menciona</p>`;
+  const tbl = rows => `<table style="width:100%;border-collapse:collapse;margin:6pt 0;table-layout:fixed">${head}${rows}</table>`;
+  const dedRows = m.ded.map(r => '<tr>' + td(`<strong style="color:${BLUE}">${r.label}</strong>${r.asked ? `<br><span style="color:#6b7280;font-size:7.5pt">Solicitado: ${escapeHtml(r.asked)}</span>` : ''}`, false, true)
+    + r.values.map((v, i) => td(escapeHtml(v), m.cols[i].selected)).join('') + '</tr>').join('');
+  return { cov: m.cov.length ? tbl(covRows) + legend : '', ded: tbl(dedRows) };
 }
 function proposalData(c){
   const ccy = c.header.currency;
@@ -3174,71 +3223,128 @@ function fallbackNarrative(d){
 function buildProposalDeck(c, d, ai){
   const P = new PptxGenJS();
   P.defineLayout({ name:'W', width:13.333, height:7.5 }); P.layout='W';
-  const BLUE='004A88', ORANGE='FF5200', GRAYT='5F6B7A', DARK='1A1F2E', LIGHT='F1F4F8', GREEN='E9F5E1', WHITE='FFFFFF', NAVY='0A2E52', SUB='C9D6E5';
+  P.title = 'Propuesta TRC — ' + (d.insured || '');
+  const BLUE='004A88', NAVY='0A1E35', ORANGE='FF5200', INK='1A2433', GRAYT='5F6B7A', LINE='E3E7ED', LIGHT='F4F6F9', SELBG='EEF4FB', WHITE='FFFFFF', SUB='C9D6E5';
+  const OK='15803D', WARN='B45309', BAD='C0262D', MUTED='9CA3AF';
   const F='Arial', RR=P.ShapeType.roundRect, RC=P.ShapeType.rect;
-  const sym = d.currency==='USD'?'US$':'RD$';
+  const sym = d.currency==='USD'?'US$ ':'RD$ ';
   const money = v => sym+Math.round(+v||0).toLocaleString('en-US');
-  const moneyD = v => sym+Number(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const logo = (typeof LOGO_DOC_PNG!=='undefined') ? LOGO_DOC_PNG : null;
+  const mx = proposalMatrices(c);
+  const cols = mx.cols;
+  const fitSize = (txt, base, maxChars) => { const n = String(txt||'').length; return n <= maxChars ? base : Math.max(9, Math.round(base * maxChars / n)); };
+  let pageNo = 1;
+  /* Lámina estándar: título, línea naranja, logo y pie */
+  const frame = (eyebrow, title) => {
+    const s = P.addSlide(); s.background = { color: WHITE }; pageNo++;
+    s.addText(eyebrow, { x:0.6, y:0.42, w:8, h:0.28, fontFace:F, fontSize:11, bold:true, color:ORANGE, charSpacing:2 });
+    s.addText(title, { x:0.6, y:0.7, w:10, h:0.62, fontFace:F, fontSize:26, bold:true, color:NAVY });
+    if(logo) s.addImage({ data:logo, x:11.15, y:0.45, w:1.6, h:0.52 });
+    s.addShape(RC, { x:0.6, y:1.42, w:12.13, h:0.03, fill:{ color:LINE }, line:{ color:LINE } });
+    s.addText((d.insured||'') + (c.ref ? '  ·  ' + c.ref : '') + '  ·  Garrigó Seguros', { x:0.6, y:7.0, w:10.5, h:0.3, fontFace:F, fontSize:8.5, color:MUTED });
+    s.addText(String(pageNo), { x:12.2, y:7.0, w:0.53, h:0.3, fontFace:F, fontSize:8.5, color:MUTED, align:'right' });
+    return s;
+  };
+  /* Tabla comparativa: primera columna conceptos, una columna por aseguradora; la recomendada resaltada */
+  const firstW = 3.3, tableW = 12.13;
+  const colW = cols.length ? [firstW].concat(cols.map(() => (tableW - firstW) / cols.length)) : [tableW];
+  const head = [{ text:'', options:{ fill:{ color:NAVY } } }].concat(cols.map(col => ({
+    text: col.name + (col.selected ? '\nRecomendada' : ''),
+    options:{ bold:true, color:WHITE, fill:{ color: col.selected ? BLUE : NAVY }, align:'center', fontSize: fitSize(col.name, 11, 22) }
+  })));
+  const cell = (txt, col, o) => ({ text: String(txt), options: Object.assign({ align:'center', color:INK, fill:{ color: col.selected ? SELBG : WHITE } }, o || {}) });
+  const label = (txt, sub) => ({ text: sub ? [{ text: txt, options:{ bold:true, color:NAVY, breakLine:true } }, { text: sub, options:{ fontSize:8.5, color:GRAYT } }] : txt,
+                                 options:{ bold:true, color:NAVY, fill:{ color:LIGHT } } });
+  const tableOpts = (y, rowH, fs) => ({ x:0.6, y:y, w:tableW, colW:colW, rowH:rowH, fontFace:F, fontSize:fs, border:{ type:'solid', color:LINE, pt:0.75 }, valign:'middle', margin:0.06 });
+  const sel = cols.find(x => x.selected);
 
-  // --- Slide 1: Portada ---
-  let s=P.addSlide(); s.background={color:NAVY};
-  if(d.projectImage){ try{ s.addImage({data:d.projectImage,x:5.6,y:0,w:7.73,h:7.5,sizing:{type:'cover',w:7.73,h:7.5}}); }catch(e){} s.addShape(RC,{x:5.6,y:0,w:7.73,h:7.5,fill:{color:NAVY,transparency:40}}); }
-  s.addShape(RC,{x:0,y:0,w:0.28,h:7.5,fill:{color:ORANGE}});
-  s.addShape(RR,{x:0.75,y:0.55,w:3.3,h:1.5,fill:{color:WHITE},rectRadius:0.1});
-  if(logo) s.addImage({data:logo,x:1.0,y:0.85,w:2.8,h:0.9});
-  s.addShape(RR,{x:4.25,y:0.55,w:2.7,h:1.5,fill:{color:WHITE},rectRadius:0.1});
-  s.addText('PREPARADO PARA',{x:4.4,y:0.72,w:2.4,h:0.28,fontFace:F,fontSize:9,color:GRAYT,charSpacing:1,align:'center'});
-  s.addText(d.insured||'Cliente',{x:4.35,y:1.05,w:2.5,h:0.85,fontFace:F,fontSize:12,bold:true,color:BLUE,align:'center',valign:'middle'});
-  s.addText('COMPARATIVO DE PROPUESTAS · '+new Date().toLocaleDateString('es-DO',{month:'long',year:'numeric'}).toUpperCase(),{x:0.78,y:2.95,w:11.5,h:0.4,fontFace:F,fontSize:13,color:ORANGE,charSpacing:2});
-  s.addText('Seguro Todo Riesgo\nde Construcción',{x:0.72,y:3.35,w:11.5,h:1.8,fontFace:F,fontSize:42,bold:true,color:WHITE,lineSpacing:46});
-  s.addText(d.project||'Proyecto',{x:0.78,y:5.25,w:11.5,h:0.5,fontFace:F,fontSize:17,color:SUB});
-  const cardW=3.9, cardY=6.15, cardH=0.95;
-  [['ASEGURADO',d.insured||'—'],['VALOR ASEGURABLE',moneyD(d.sumaI)],['MERCADOS',(d.mercados||[]).join(' · ')||'—']].forEach((cd,i)=>{
-    const x=0.75+i*(cardW+0.18);
-    s.addShape(RR,{x:x,y:cardY,w:cardW,h:cardH,fill:{color:'FFFFFF',transparency:88},line:{color:'6E8CAE',width:0.5},rectRadius:0.05});
-    s.addText(cd[0],{x:x+0.2,y:cardY+0.13,w:cardW-0.35,h:0.25,fontFace:F,fontSize:9,color:'FFB08A',charSpacing:1});
-    s.addText(cd[1],{x:x+0.2,y:cardY+0.42,w:cardW-0.35,h:0.45,fontFace:F,fontSize:12.5,bold:true,color:WHITE,valign:'middle'});
-  });
+  /* 1 · Portada */
+  let s = P.addSlide(); s.background = { color:NAVY };
+  if(d.projectImage){
+    try{ s.addImage({ data:d.projectImage, x:6.2, y:0, w:7.133, h:7.5, sizing:{ type:'cover', w:7.133, h:7.5 } }); }catch(e){}
+    s.addShape(RC, { x:6.2, y:0, w:7.133, h:7.5, fill:{ color:NAVY, transparency:35 }, line:{ color:NAVY, transparency:100 } });
+  }
+  s.addShape(RC, { x:0, y:0, w:0.22, h:7.5, fill:{ color:ORANGE }, line:{ color:ORANGE } });
+  s.addShape(RR, { x:0.7, y:0.6, w:3.0, h:1.15, fill:{ color:WHITE }, line:{ color:WHITE }, rectRadius:0.08 });
+  if(logo) s.addImage({ data:logo, x:0.9, y:0.78, w:2.6, h:0.82 });
+  s.addText('PROPUESTA DE SEGURO · ' + new Date().toLocaleDateString('es-DO', { month:'long', year:'numeric' }).toUpperCase(), { x:0.72, y:2.55, w:5.4, h:0.35, fontFace:F, fontSize:12, bold:true, color:ORANGE, charSpacing:2 });
+  s.addText('Todo Riesgo\nConstrucción', { x:0.68, y:2.95, w:5.6, h:1.75, fontFace:F, fontSize:40, bold:true, color:WHITE, lineSpacing:44, valign:'top' });
+  const projShort = (d.project || '').length > 150 ? (d.project || '').slice(0, 147).replace(/\s+\S*$/, '') + '…' : (d.project || '');
+  s.addText(projShort, { x:0.72, y:4.75, w:5.3, h:0.95, fontFace:F, fontSize: projShort.length > 90 ? 12.5 : 15, color:SUB, valign:'top' });
+  s.addText([{ text:'PREPARADO PARA', options:{ fontSize:9, color:'FFB89A', charSpacing:1.5, breakLine:true } }, { text: d.insured || '—', options:{ fontSize: fitSize(d.insured, 15, 34), bold:true, color:WHITE } }],
+            { x:0.72, y:5.85, w:5.3, h:0.9, fontFace:F, valign:'top' });
 
-  // --- Slide 2: Perfil del riesgo ---
-  s=P.addSlide(); s.background={color:WHITE};
-  s.addText('EL PROYECTO',{x:0.72,y:0.5,w:6,h:0.3,fontFace:F,fontSize:12,color:ORANGE,charSpacing:2});
-  s.addText('Perfil del riesgo asegurado',{x:0.7,y:0.82,w:9,h:0.7,fontFace:F,fontSize:30,bold:true,color:BLUE});
-  if(logo) s.addImage({data:logo,x:11.0,y:0.5,w:1.9,h:0.62});
-  s.addShape(RR,{x:0.72,y:1.9,w:5.7,h:1.5,fill:{color:LIGHT},rectRadius:0.08});
-  s.addText(moneyD(d.sumaI),{x:0.97,y:2.15,w:5.2,h:0.6,fontFace:F,fontSize:24,bold:true,color:ORANGE});
-  s.addText('Valor asegurable de la obra (Sección I)',{x:0.97,y:2.85,w:5.2,h:0.4,fontFace:F,fontSize:12,color:GRAYT});
-  s.addShape(RR,{x:6.6,y:1.9,w:5.7,h:1.5,fill:{color:LIGHT},rectRadius:0.08});
-  s.addText(d.constMonths+' meses',{x:6.85,y:2.15,w:5.2,h:0.6,fontFace:F,fontSize:24,bold:true,color:ORANGE});
-  s.addText('Plazo de construcción + '+d.maint+' meses de mantenimiento',{x:6.85,y:2.85,w:5.2,h:0.5,fontFace:F,fontSize:12,color:GRAYT});
-  const kv=[
-    ['Asegurado', (d.insured||'—')+' y/o contratistas y/o subcontratistas'],
-    ['Obra', (ai&&ai.obraDesc)||d.project||'—'],
-    ['Ubicación', d.location||'—'],
-    ['Interés asegurable', (ai&&ai.interesAsegurable)||('Sección I: daños materiales · Sección II: RC a terceros '+money(d.rc))],
-    ['Tipo de póliza', (ai&&ai.tipoPoliza)||('Todo Riesgo Construcción, base '+(d.formato||'Munich Re'))]
+  /* 2 · Perfil del riesgo */
+  s = frame('EL PROYECTO', 'Perfil del riesgo');
+  const stat = (x, big, small) => {
+    s.addShape(RR, { x:x, y:1.75, w:3.9, h:1.25, fill:{ color:LIGHT }, line:{ color:LIGHT }, rectRadius:0.06 });
+    s.addText(big, { x:x+0.25, y:1.88, w:3.45, h:0.6, fontFace:F, fontSize: fitSize(big, 22, 18), bold:true, color:BLUE });
+    s.addText(small, { x:x+0.25, y:2.45, w:3.45, h:0.45, fontFace:F, fontSize:10.5, color:GRAYT });
+  };
+  stat(0.6, money(d.sumaI), 'Suma asegurada · Sección I');
+  stat(4.715, money(d.rc), 'Responsabilidad civil por evento');
+  stat(8.83, d.constMonths + ' + ' + d.maint + ' meses', 'Construcción + mantenimiento');
+  const kv = [
+    ['Asegurado', (d.insured||'—') + ' y/o contratistas y/o subcontratistas'],
+    ['Obra', (ai && ai.obraDesc) || d.project || '—'],
+    ['Ubicación', d.location || '—'],
+    ['Tipo de póliza', 'Todo Riesgo Construcción, condicionado ' + (d.formato || 'Munich Re')]
   ];
-  s.addTable(kv.map(r=>[{text:r[0],options:{bold:true,color:BLUE}},{text:String(r[1]),options:{color:GRAYT}}]),{x:0.72,y:3.75,w:11.9,colW:[2.7,9.2],rowH:0.6,fontFace:F,fontSize:12.5,border:{type:'solid',color:'EDEFF3',pt:0.5},valign:'middle'});
+  s.addTable(kv.map(r => [{ text:r[0], options:{ bold:true, color:NAVY, fill:{ color:LIGHT } } }, { text:String(r[1]).slice(0, 260), options:{ color:INK } }]),
+             { x:0.6, y:3.35, w:tableW, colW:[2.4, tableW - 2.4], rowH:0.62, fontFace:F, fontSize:12.5, border:{ type:'solid', color:LINE, pt:0.75 }, valign:'middle', margin:0.1 });
 
-  // --- Slide 3: Comparativo económico ---
-  s=P.addSlide(); s.background={color:WHITE};
-  s.addText('Comparativo económico',{x:0.7,y:0.5,w:9,h:0.7,fontFace:F,fontSize:28,bold:true,color:BLUE});
-  if(logo) s.addImage({data:logo,x:11.0,y:0.5,w:1.9,h:0.62});
-  const Q=d.quotes||[];
-  const firstW=3.0, restW=Q.length?((12.3-firstW)/Q.length):9;
-  const colW=[firstW].concat(Q.map(function(){return restW;}));
-  const hdrE=[{text:'Concepto',options:{bold:true,color:WHITE,fill:{color:BLUE}}}].concat(Q.map(q=>({text:q.insurer.toUpperCase(),options:{bold:true,color:WHITE,fill:{color:BLUE},align:'center'}})));
-  const rowsE=[['Tasa negociada',q=>q.tasa,true],['Prima neta',q=>money(q.premiumNet),false],['ISC (16%)',q=>money(q.isc),false],['Prima total',q=>money(q.premiumTotal),true],['Facilidad de pago',q=>q.facilidad,true]];
-  const bodyE=rowsE.map(rd=>[{text:rd[0],options:{bold:true,color:DARK}}].concat(Q.map(q=>({text:String(rd[1](q)),options:{align:'center',bold:rd[2],color:(q.recommended&&rd[2])?ORANGE:(q.recommended?DARK:GRAYT),fill:{color:q.recommended?GREEN:WHITE}}}))));
-  s.addTable([hdrE].concat(Q.length?bodyE:[[{text:'Aún no hay cotizaciones',options:{colspan:1,color:'888888'}}]]),{x:0.5,y:1.35,w:12.3,colW:colW,rowH:0.42,fontFace:F,fontSize:11.5,border:{type:'solid',color:'E5E7EB',pt:0.5},valign:'middle'});
-  const yD=1.35+(rowsE.length+1)*0.42+0.3;
-  s.addText('DEDUCIBLES',{x:0.5,y:yD,w:6,h:0.3,fontFace:F,fontSize:12,color:ORANGE,charSpacing:2});
-  const ded=(ai&&ai.deducibles)||{};
-  const dedRows=[['Riesgos catastróficos / de la naturaleza','catastroficos'],['Responsabilidad civil','rc'],['Daños a la obra / otros riesgos','obra']];
-  const hdrD=[{text:'Cobertura / Concepto',options:{bold:true,color:WHITE,fill:{color:BLUE}}}].concat(Q.map(q=>({text:q.insurer.toUpperCase(),options:{bold:true,color:WHITE,fill:{color:BLUE},align:'center'}})));
-  const bodyD=dedRows.map(dr=>[{text:dr[0],options:{bold:true,color:BLUE}}].concat(Q.map(q=>{ const v=(ded[q.insurer]&&ded[q.insurer][dr[1]])||''; return {text:String(v||'—'),options:{align:'center',color:DARK,fill:{color:q.recommended?GREEN:WHITE}}}; })));
-  s.addTable([hdrD].concat(bodyD),{x:0.5,y:yD+0.34,w:12.3,colW:colW,rowH:0.72,fontFace:F,fontSize:10,border:{type:'solid',color:'E5E7EB',pt:0.5},valign:'middle'});
+  if(cols.length){
+    /* 3 · Primas */
+    s = frame('COMPARATIVO ECONÓMICO', 'Primas por aseguradora');
+    const minP = Math.min(...cols.map(x => +x.q.premiumTotal || Infinity));
+    const rowsE = [
+      [label('Tasa'), col => cell(fmtRate(calcRate(col.q, c)), col)],
+      [label('Prima neta'), col => cell(money(col.q.premiumNet), col)],
+      [label('ISC'), col => cell(money(col.q.isc), col)],
+      [label('Prima total'), col => cell(money(col.q.premiumTotal), col, { bold:true, color: col.selected ? BLUE : NAVY, fontSize:14 })],
+      [label('Contra la más barata'), col => { const t = +col.q.premiumTotal; return cell(t === minP ? 'La más barata' : '+' + money(t - minP) + ' (' + ((t - minP) / minP * 100).toFixed(1) + '%)', col, { color: t === minP ? OK : GRAYT, fontSize:10.5 }); }],
+      [label('Puntaje Garrigó', 'de 100'), col => cell(String(col.score), col, { bold:true, color: col.selected ? ORANGE : NAVY, fontSize:14 })]
+    ];
+    s.addTable([head].concat(rowsE.map(r => [r[0]].concat(cols.map(r[1])))), tableOpts(1.75, 0.62, 12));
+    s.addText('Puntaje: Precio ' + scoreWeights().raw.price + '% · Cobertura ' + scoreWeights().raw.coverage + '% · Deducibles ' + scoreWeights().raw.deductibles + '%. Primas en ' + (d.currency === 'USD' ? 'dólares' : 'pesos dominicanos') + ', ISC incluido en la prima total.',
+              { x:0.6, y:6.45, w:12, h:0.35, fontFace:F, fontSize:9, color:GRAYT });
+
+    /* 4 · Deducibles */
+    s = frame('COMPARATIVO TÉCNICO', 'Deducibles');
+    const rowsD = mx.ded.map(r => [label(r.label, r.asked ? 'Solicitado: ' + r.asked : '')].concat(r.values.map((v, i) => cell(v, cols[i], { fontSize: fitSize(v, 11.5, 34) }))));
+    s.addTable([head].concat(rowsD), tableOpts(1.75, 1.05, 11.5));
+
+    /* 5 · Coberturas y endosos */
+    if(mx.cov.length){
+      s = frame('COMPARATIVO TÉCNICO', 'Coberturas y endosos');
+      const STAT = { accepted:['✓', OK], modified:['⚠', WARN], rejected:['✗', BAD], unknown:['—', MUTED] };
+      const rowH = Math.min(0.42, 4.6 / (mx.cov.length + 1));
+      const fs = rowH < 0.32 ? 9 : 10.5;
+      const rowsC = mx.cov.map(r => [{ text:[{ text: r.code + '  ', options:{ bold:true, color:BLUE } }, { text: r.title, options:{ color:INK } }], options:{ fill:{ color:LIGHT } } }]
+        .concat(r.statuses.map((st, i) => { const t = STAT[st] || STAT.unknown; return cell(t[0], cols[i], { bold:true, color:t[1], fontSize: fs + 2 }); })));
+      s.addTable([head].concat(rowsC), Object.assign(tableOpts(1.65, rowH, fs), { margin:0.04 }));
+      s.addText('✓ incluido   ⚠ incluido con cambios   ✗ no incluido   — la cotización no lo menciona', { x:0.6, y:Math.min(6.68, 1.65 + (mx.cov.length + 1) * rowH + 0.22), w:12, h:0.28, fontFace:F, fontSize:9, color:GRAYT });
+    }
+
+    /* 6 · Recomendación */
+    if(sel){
+      s = frame('NUESTRA RECOMENDACIÓN', sel.name);
+      s.addShape(RR, { x:0.6, y:1.75, w:4.2, h:4.6, fill:{ color:NAVY }, line:{ color:NAVY }, rectRadius:0.08 });
+      const big = (y, k, v) => { s.addText(k, { x:0.9, y:y, w:3.6, h:0.3, fontFace:F, fontSize:9.5, color:'FFB89A', charSpacing:1.5 }); s.addText(v, { x:0.9, y:y+0.3, w:3.6, h:0.6, fontFace:F, fontSize: fitSize(v, 22, 16), bold:true, color:WHITE }); };
+      big(2.0, 'PRIMA TOTAL', money(sel.q.premiumTotal));
+      big(3.3, 'PUNTAJE', sel.score + ' / 100');
+      big(4.6, 'ENDOSOS DEL SLIP', (sel.vs ? sel.vs.accepted.length + ' de ' + sel.vs.total : '—'));
+      const recTxt = (c.proposal && c.proposal.recommendation) || '';
+      const txt = (recTxt && recTxt.indexOf(sel.name) !== -1) ? recTxt
+        : ('Recomendamos ' + sel.name + ' por el mejor balance entre prima, coberturas y deducibles' + (sel.vs && sel.vs.total ? ', con ' + sel.vs.accepted.length + ' de los ' + sel.vs.total + ' endosos solicitados incluidos' : '') + '.');
+      s.addText(txt, { x:5.2, y:1.75, w:7.5, h:3.3, fontFace:F, fontSize: fitSize(txt, 15, 420), color:INK, valign:'top', paraSpaceAfter:6 });
+      s.addText([{ text:'Próximos pasos', options:{ bold:true, color:NAVY, breakLine:true } },
+                 { text:'1. Confirmar la aseguradora seleccionada.', options:{ breakLine:true } },
+                 { text:'2. Emisión de la póliza y envío de la factura.', options:{ breakLine:true } },
+                 { text:'3. Pago de la prima para activar la cobertura.' }],
+                { x:5.2, y:5.1, w:7.5, h:1.3, fontFace:F, fontSize:11.5, color:GRAYT, valign:'top' });
+    }
+  }
   return P;
 }
 async function generateProposalPPT(){
@@ -3246,10 +3352,7 @@ async function generateProposalPPT(){
   if(typeof PptxGenJS === 'undefined'){ alert('La librería de PowerPoint no cargó. Revisa tu conexión a internet.'); return; }
   const d = proposalData(c);
   syncToast('Generando presentación…', true);
-  let ai = null;
-  try{ ai = await fetchProposalNarrative(d); }
-  catch(e){ console.warn('IA propuesta no disponible, uso datos locales:', e); ai = fallbackNarrative(d); }
-  if(!ai || !ai.deducibles) ai = Object.assign(fallbackNarrative(d), ai||{});
+  const ai = fallbackNarrative(d);
   try{
     const P = buildProposalDeck(c, d, ai);
     await P.writeFile({ fileName:'Propuesta-'+((c.ref||'TRC').replace(/[^a-zA-Z0-9_-]/g,'_'))+'.pptx' });
@@ -3271,7 +3374,7 @@ function viewProposal(c){
       </div>
       ${scored.length > 0 ? `
         <div class="section-title">Score técnico Garrigo</div>
-        <p class="muted" style="font-size:11.5px;margin-top:-4px">Ponderación: <strong>Precio ${scoreWeights().raw.price}% · Deducibles ${scoreWeights().raw.deductibles}%</strong>. Ranking de mejor a peor:</p>
+        <p class="muted" style="font-size:11.5px;margin-top:-4px">Ponderación: <strong>Precio ${scoreWeights().raw.price}% · Cobertura ${scoreWeights().raw.coverage}% · Deducibles ${scoreWeights().raw.deductibles}%</strong>. Ranking de mejor a peor:</p>
         <div class="table-wrap" style="margin-bottom:14px">
           <table>
             <thead>
@@ -3279,6 +3382,7 @@ function viewProposal(c){
                 <th style="width:30px"></th>
                 <th>Aseguradora</th>
                 <th style="text-align:center;width:80px">Precio</th>
+                <th style="text-align:center;width:90px">Cobertura</th>
                 <th style="text-align:center;width:90px">Deducibles</th>
                 <th style="text-align:center;width:90px">Total</th>
                 <th style="width:60px"></th>
@@ -3292,6 +3396,7 @@ function viewProposal(c){
                   <td style="text-align:center;font-weight:700;color:${i===0?'var(--gold-500)':'var(--ink-500)'}">${i===0?'★':'#'+(i+1)}</td>
                   <td><div style="display:flex;align-items:center;gap:8px"><span class="insurer-mark" style="background:${ins?.color||'#666'};width:20px;height:20px;font-size:9px">${ins?.short||'?'}</span><strong>${ins?ins.name:s.q.insurerId}</strong></div></td>
                   <td>${scoreBar(s.priceScore)}</td>
+                  <td>${scoreBar(s.coverageScore)}</td>
                   <td>${scoreBar(s.dedScore)}</td>
                   <td style="text-align:center;font-size:14px;font-weight:800;color:${s.totalScore>=80?'var(--ok)':s.totalScore>=60?'var(--grg-blue)':s.totalScore>=40?'var(--warn)':'var(--bad)'}">${s.totalScore}</td>
                   <td>${isSel?'<span class="badge badge-coloc">★ Elegida</span>':`<button class="btn btn-ghost btn-sm" onclick="pickInsurer('${s.q.insurerId}')">Elegir</button>`}</td>
@@ -3366,6 +3471,7 @@ function renderProposalBody(c){
   ` : `<p style="font-style:italic;color:var(--ink-500)">Pendiente: aún no se han recibido cotizaciones.</p>`;
   const ded = (sel && sel.deductibles_proposed) ? `<p style="font-size:10pt;color:var(--ink-700);white-space:pre-line">${escapeHtml(sel.deductibles_proposed)}</p>`
     : ((c.deductibles && c.deductibles.length) ? `<ul style="font-size:10pt;color:var(--ink-700);margin:0;padding-left:16pt;line-height:1.6">${c.deductibles.map(d=>`<li>${escapeHtml((d.section?d.section+' — ':'')+(d.type?d.type+': ':'')+(d.value||''))}</li>`).join('')}</ul>` : `<p style="font-style:italic;color:var(--ink-500)">Por definir según póliza emitida.</p>`);
+  const mx = proposalMatricesHtml(c, false);
   return `
     <p style="text-align:center;color:var(--ink-500);font-style:italic;margin-top:-8pt">Preparada para ${escapeHtml(c.insured.name||'—')} · ${dateStr}</p>
     ${hero}
@@ -3379,15 +3485,16 @@ function renderProposalBody(c){
     </dl>
     <h2><span class="doc-section-num">2</span> Comparación de opciones</h2>
     ${cmp}
-    <h2><span class="doc-section-num">3</span> Coberturas y sumas aseguradas</h2>
+    ${mx.cov ? `<h2><span class="doc-section-num">3</span> Coberturas y endosos por aseguradora</h2>${mx.cov}` : ''}
+    <h2><span class="doc-section-num">${mx.cov ? 4 : 3}</span> Deducibles por aseguradora</h2>
+    ${mx.ded || ded}
+    <h2><span class="doc-section-num">${mx.cov ? 5 : 4}</span> Coberturas y sumas aseguradas</h2>
     <table>
       <thead><tr><th>Cobertura</th><th>Descripción</th><th style="text-align:right">Suma (${ccy})</th></tr></thead>
       <tbody>${coverageRows(c).map(cv=>`<tr><td><strong>${cv.code}</strong></td><td>${escapeHtml(cv.desc)}</td><td style="text-align:right">${cv.sum>0?M(cv.sum):'Incluido'}</td></tr>`).join('')}</tbody>
     </table>
     <p style="font-size:9.5pt;color:var(--ink-500);margin-top:4pt">Vigencia: construcción ${c.period.constMonths||12} meses + mantenimiento ${c.period.maintMonths||0} meses.${(sel && (sel.clauses_accepted||[]).length)?` Incluye ${(sel.clauses_accepted||[]).length} endosos aceptados por ${escapeHtml(insName(sel.insurerId))}.`:''}</p>
-    <h2><span class="doc-section-num">4</span> Deducibles principales</h2>
-    ${ded}
-    <h2><span class="doc-section-num">5</span> Próximos pasos</h2>
+    <h2><span class="doc-section-num">${mx.cov ? 6 : 5}</span> Próximos pasos</h2>
     <ol style="font-size:10.5pt;color:var(--ink-700);line-height:1.7">
       <li>Confirmar la aseguradora seleccionada.</li>
       <li>Emisión de la póliza y envío de la factura.</li>
@@ -3420,22 +3527,46 @@ function viewCompare(c){
     const diff = (+best.q.premiumTotal) - (+cheapest.q.premiumTotal);
     const pct = cheapest.q.premiumTotal > 0 ? diff / cheapest.q.premiumTotal * 100 : 0;
     const same = best.q === cheapest.q;
+    const missingBest = best.vs.missing.length;
     let rec;
     if(same){
-      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> es la más barata y la mejor puntuada${best.dedScore >= 85 ? ', con deducibles iguales o mejores que lo pedido' : ''}.`;
+      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> es la más barata y la mejor puntuada${missingBest ? `, aunque le faltan ${missingBest} endoso(s) del Slip` : ' y acepta todo lo pedido'}.`;
     } else {
-      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> cuesta ${M(diff)} (${pct.toFixed(1)}%) más que ${escapeHtml(nameOf(cheapest.q.insurerId))}, pero con mejores deducibles.`;
+      const extra = best.vs.accepted.length - cheapest.vs.accepted.length;
+      rec = `<strong>${escapeHtml(nameOf(best.q.insurerId))}</strong> cuesta ${M(diff)} (${pct.toFixed(1)}%) más que ${escapeHtml(nameOf(cheapest.q.insurerId))}`
+          + (extra > 0 ? `, pero acepta ${extra} endoso(s) más del Slip` : best.dedScore > cheapest.dedScore ? ', pero con mejores deducibles' : '')
+          + '.';
     }
     const isSel = c.proposal && c.proposal.selectedInsurer === best.q.insurerId;
     summary = `
       <div class="cmp-summary">
         <div class="cmp-stat"><div class="cmp-stat-k">Más barata</div><div class="cmp-stat-v">${escapeHtml(nameOf(cheapest.q.insurerId))}</div><div class="cmp-stat-s">${M(cheapest.q.premiumTotal)} prima total</div></div>
-        <div class="cmp-stat"><div class="cmp-stat-k">Mejor puntuada</div><div class="cmp-stat-v">${escapeHtml(nameOf(best.q.insurerId))}</div><div class="cmp-stat-s">${best.totalScore}/100 · Precio ${best.priceScore} · Deducibles ${best.dedScore}</div></div>
+        <div class="cmp-stat"><div class="cmp-stat-k">Mejor puntuada</div><div class="cmp-stat-v">${escapeHtml(nameOf(best.q.insurerId))}</div><div class="cmp-stat-s">${best.totalScore}/100 · ${best.vs.accepted.length} de ${best.vs.total || '—'} endosos</div></div>
         <div class="cmp-stat"><div class="cmp-stat-k">Rango de primas</div><div class="cmp-stat-v">${M(maxP - minP)}</div><div class="cmp-stat-s">${minP ? ((maxP - minP) / minP * 100).toFixed(1) : '0'}% entre la más barata y la más cara</div></div>
         <div class="cmp-rec"><div class="cmp-stat-k">Recomendación</div><div class="cmp-rec-t">${rec}</div>
           <button class="btn ${isSel ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="useInProposal('${best.q.insurerId}')">${isSel ? '✓ Elegida para la Propuesta' : 'Usar en la Propuesta'}</button></div>
       </div>`;
   }
+
+  /* ---- Endosos del Slip ---- */
+  const req = requestedEndorsements(c);
+  const vsAll = c.quotes.map(q => quoteVsSlip(q, c));
+  const chip = (st, qi, code) => {
+    const m = { accepted:['✓','Aceptado','ok'], modified:['⚠','Con cambios','mod'], rejected:['✗','Rechazado','bad'], unknown:['—','No lo menciona','unk'] }[st] || ['—','No lo menciona','unk'];
+    return `<button type="button" class="cmp-chip cmp-${m[2]}" title="${m[1]} · clic para cambiar" onclick="cycleEndoStatus(${qi},'${code}')">${m[0]} <span>${m[1]}</span></button>`;
+  };
+  const endoRows = req.map(r => `<tr><td><strong>${r.code}</strong><div class="cmp-sub">${escapeHtml(r.title)}</div></td>${c.quotes.map((q, qi) => `<td class="cmp-c">${chip(getAcceptanceStatus(q, r.code), qi, r.code)}</td>`).join('')}</tr>`).join('');
+  const missingRow = `<tr class="cmp-missing"><td><strong>Le falta</strong><div class="cmp-sub">Pedido en el Slip y no aceptado</div></td>${vsAll.map(v => `<td>${v.missing.length ? v.missing.map(x => `<span class="cmp-tag">${x.code}</span>`).join(' ') : '<span class="cmp-okline">Acepta todo lo pedido</span>'}</td>`).join('')}</tr>`;
+
+  /* ---- Sub-límites ---- */
+  const subRows = SUBLIMIT_ROWS.filter(([id]) => requestedSublimit(c, id) > 0 && req.some(r => r.id === id)).map(([id, code, label]) => {
+    const want = requestedSublimit(c, id);
+    return `<tr><td><strong>${code}</strong> ${escapeHtml(label)}<div class="cmp-sub">Pedido: ${M(want)}${id === 'mr115' ? ' (mín. 30% Sec. I)' : ''}</div></td>${c.quotes.map((q, qi) => {
+      const got = +((q.endorsement_sublimits || {})[id]) || 0;
+      const cls = !got ? '' : got >= want ? 'best' : 'worst';
+      return `<td class="${cls}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(got)}" placeholder="No indicado" onchange="updQuoteSublimit(${qi},'${id}',this)"></td>`;
+    }).join('')}</tr>`;
+  }).join('');
 
   /* ---- Deducibles (tres campos) ---- */
   const dedRows = DED_KINDS.map(d => {
@@ -3453,7 +3584,7 @@ function viewCompare(c){
       <div class="card-header">
         <div>
           <h2 class="card-title">Comparador de cotizaciones recibidas</h2>
-          <div class="card-subtitle">Sube el PDF de cada aseguradora o escribe los datos. Se comparan primas y deducibles; los deducibles, contra lo que pediste en el Slip.</div>
+          <div class="card-subtitle">Sube el PDF de cada aseguradora o escribe los datos. Primas, coberturas y deducibles se comparan contra lo que pediste en el Slip.</div>
         </div>
         <button class="btn btn-gold btn-sm" onclick="addQuote()">+ Agregar cotización</button>
       </div>
@@ -3470,7 +3601,7 @@ function viewCompare(c){
                     <strong style="font-size:12px">${ins ? ins.name : q.insurerId}</strong>
                   </div>
                   ${q.extraction ? `<div class="cmp-file" title="${escapeHtml(q.extraction.filename || '')}">📎 ${escapeHtml((q.extraction.filename || 'PDF leído').slice(0, 34))}</div>` : ''}
-                  <div style="display:flex;gap:4px;align-items:center">
+                  <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
                     <button class="btn btn-primary btn-sm" onclick="triggerPdfUpload(${idx})" title="Subir PDF de cotización" style="padding:4px 8px;font-size:11px">📄 ${q.extraction ? 'Otro PDF' : 'Importar PDF'}</button>
                     <button class="btn btn-ghost btn-sm" onclick="reopenQuoteReview(${idx})" title="${q.extraction ? 'Abrir lo leído del PDF y corregirlo' : 'Escribir o corregir los datos de esta cotización'}" style="padding:4px 8px;font-size:11px">✎ Revisar</button>
                     <button class="btn btn-ghost btn-sm" onclick="rmQuote('${q.insurerId}')" title="Quitar" style="padding:4px 8px;font-size:11px">×</button>
@@ -3487,16 +3618,27 @@ function viewCompare(c){
             <tr><td>ISC ${state.config.iscRate || 16}%</td>${c.quotes.map((q, i) => `<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.isc)}" onchange="updMoneyQuote(${i},'isc',this)"></td>`).join('')}</tr>
             <tr><td><strong>Prima total</strong></td>${c.quotes.map((q, i) => `<td class="${(+q.premiumTotal === minP && priced.length > 1) ? 'best' : ((+q.premiumTotal === maxP && priced.length > 1) ? 'worst' : '')}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumTotal)}" onchange="updMoneyQuote(${i},'premiumTotal',this)"></td>`).join('')}</tr>
             <tr><td>Contra la más barata</td>${c.quotes.map(q => { const t = +q.premiumTotal; if(!t || !minP) return '<td class="cmp-sub">—</td>'; if(t === minP) return '<td class="cmp-diff cmp-diff-best">La más barata</td>'; const d = t - minP; return `<td class="cmp-diff">+${M(d)} <span>(+${(d / minP * 100).toFixed(1)}%)</span></td>`; }).join('')}</tr>
+            ${req.length ? group('Coberturas y endosos pedidos en el Slip', 'Clic en una marca para corregirla') + endoRows + missingRow : ''}
+            ${subRows ? group('Sub-límites', 'Verde: igual o mayor a lo pedido · Rojo: menor') + subRows : ''}
             ${group('Deducibles', 'Verde: más bajo que lo pedido · Rojo: más alto')}
             ${dedRows}
-            ${group('Puntuación', `Precio ${W.price}% · Deducibles ${W.deductibles}%`)}
-            <tr class="cmp-score-row"><td><strong>Total</strong><div class="cmp-sub">de 100</div></td>${c.quotes.map(q => { const sc = scoreOf(q); return sc ? `<td>${scoreBar(sc.totalScore)}<div class="cmp-break">Precio ${sc.priceScore} · Deducibles ${sc.dedScore}</div></td>` : '<td class="cmp-sub">Falta la prima</td>'; }).join('')}</tr>
+            ${group('Puntuación', `Precio ${W.price}% · Cobertura ${W.coverage}% · Deducibles ${W.deductibles}%`)}
+            <tr class="cmp-score-row"><td><strong>Total</strong><div class="cmp-sub">de 100</div></td>${c.quotes.map(q => { const sc = scoreOf(q); return sc ? `<td>${scoreBar(sc.totalScore)}<div class="cmp-break">Precio ${sc.priceScore} · Cobertura ${sc.coverageScore} · Deducibles ${sc.dedScore}</div></td>` : '<td class="cmp-sub">Falta la prima</td>'; }).join('')}</tr>
           </tbody>
         </table>
       </div>
+      <details class="cmp-more">
+        <summary>Cláusulas en texto (como vienen en la cotización)</summary>
+        <div class="compare-grid" style="margin-top:10px"><table><tbody>
+          <tr><td>Aceptadas</td>${c.quotes.map((q, i) => `<td><textarea class="textarea" rows="3" onchange="updQuoteList(${i},'clauses_accepted',this.value)">${(q.clauses_accepted || []).join(', ')}</textarea></td>`).join('')}</tr>
+          <tr><td>Rechazadas</td>${c.quotes.map((q, i) => `<td><textarea class="textarea" rows="2" onchange="updQuoteList(${i},'clauses_rejected',this.value)">${(q.clauses_rejected || []).join(', ')}</textarea></td>`).join('')}</tr>
+          <tr><td>Con cambios</td>${c.quotes.map((q, i) => `<td><textarea class="textarea" rows="2" onchange="updQuoteList(${i},'clauses_modified',this.value)">${(q.clauses_modified || []).join(', ')}</textarea></td>`).join('')}</tr>
+        </tbody></table></div>
+      </details>
       <div class="cmp-weights">
         <span>Pesos de la puntuación</span>
         <label>Precio <input class="input" type="number" min="0" max="100" value="${W.price}" onchange="setScoreWeight('price',this.value)">%</label>
+        <label>Cobertura <input class="input" type="number" min="0" max="100" value="${W.coverage}" onchange="setScoreWeight('coverage',this.value)">%</label>
         <label>Deducibles <input class="input" type="number" min="0" max="100" value="${W.deductibles}" onchange="setScoreWeight('deductibles',this.value)">%</label>
         <span class="cmp-sub">Se usan aquí y en la Propuesta. Si no suman 100 se ajustan en proporción.</span>
       </div>
@@ -3539,7 +3681,7 @@ function updQuoteDed(qi, gi, v){
   save(); render();
 }
 function setScoreWeight(k, v){
-  state.config.scoreWeights = state.config.scoreWeights || { price:60, deductibles:40 };
+  state.config.scoreWeights = state.config.scoreWeights || { price:40, coverage:35, deductibles:25 };
   state.config.scoreWeights[k] = Math.max(0, Math.min(100, +v || 0));
   save(); render();
 }
@@ -4036,17 +4178,17 @@ function renderWordProposal(c){
     out += wTable(['Aseguradora','Prima total','Puntaje'],
       scored.map(s => [ insName(s.q.insurerId) + (sel && s.q.insurerId===sel.insurerId ? ' ✓ recomendada' : ''), M(s.q.premiumTotal), s.totalScore+'/100' ]));
   }
-  out += wH2('3', 'Coberturas y sumas aseguradas');
-  out += wTable(['Cobertura','Descripción','Suma ('+ccy+')'], coverageRows(c).map(cv=>[cv.code, cv.desc, cv.sum>0?M(cv.sum):'Incluido']), { lastRight:true });
-  out += wH2('4', 'Deducibles principales');
-  if(sel && sel.deductibles_proposed){
-    out += `<p style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;white-space:pre-line">${escapeHtml(sel.deductibles_proposed)}</p>`;
-  } else if(c.deductibles && c.deductibles.length){
+  const mxw = proposalMatricesHtml(c, true);
+  let _n = 3;
+  if(mxw.cov){ out += wH2(String(_n++), 'Coberturas y endosos por aseguradora'); out += mxw.cov; }
+  out += wH2(String(_n++), 'Deducibles por aseguradora');
+  if(mxw.ded) out += mxw.ded;
+  else if(c.deductibles && c.deductibles.length){
     out += `<ul style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;line-height:1.6;padding-left:16pt">${c.deductibles.map(d=>`<li>${escapeHtml((d.section?d.section+' — ':'')+(d.type?d.type+': ':'')+(d.value||''))}</li>`).join('')}</ul>`;
-  } else {
-    out += `<p style="font-style:italic;color:${W_GRAY};font-family:Arial,sans-serif;font-size:10pt">Por definir según póliza emitida.</p>`;
   }
-  out += wH2('5', 'Próximos pasos');
+  out += wH2(String(_n++), 'Coberturas y sumas aseguradas');
+  out += wTable(['Cobertura','Descripción','Suma ('+ccy+')'], coverageRows(c).map(cv=>[cv.code, cv.desc, cv.sum>0?M(cv.sum):'Incluido']), { lastRight:true });
+  out += wH2(String(_n++), 'Próximos pasos');
   out += `<ol style="font-family:Arial,sans-serif;font-size:10pt;color:#374151;line-height:1.6;padding-left:16pt">
     <li>Confirmar la aseguradora seleccionada.</li>
     <li>Emisión de la póliza y envío de la factura.</li>
