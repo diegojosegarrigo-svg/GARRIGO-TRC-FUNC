@@ -3030,6 +3030,64 @@ function scoreBarPrint(score){
    Acepta: "End. 001", "Endoso 001", "Endoso 1", "Cobertura A", "Cob. E + F",
    "LMA 3100", "NMA 2842", "CL 370", "RC Vibración", "End. 120", etc.
    Retorna: "001", "EF", "LMA3100", "VIB"... o null si no encuentra patrón. */
+/* Cómo suelen llamar las aseguradoras a cada endoso cuando no ponen el número */
+const ENDO_KEYWORDS = [
+  ['001', /huelga|mot[ií]n|conmoci[oó]n civil|srcc|strike|riot/i],
+  ['002', /responsabilidad civil cruzada|rc cruzada|cross.?liab/i],
+  ['003', /obras?\s+(aseguradas\s+)?(recibidas|entregadas|terminadas)|puestas?\s+en\s+(operaci|servicio|marcha)|taken over|ocupaci[oó]n parcial/i],
+  ['004', /mantenimiento\s+(amplio|ampliado|extendido)|extended maintenance/i],
+  ['006', /gastos?\s+(extra|adicional)|flete\s+(a[eé]reo|expreso)|horas?\s+extra|trabajo nocturno|overtime|air freight|express freight/i],
+  ['008', /zonas?\s+s[ií]smic|c[oó]digo s[ií]smico|seismic zone/i],
+  ['010', /escombros? (tras|despu[eé]s|por) (eventos?|fen[oó]menos?|cat[aá]strofe)/i],
+  ['013', /fuera\s+(del|de)\s+(sitio|obra|predio)|almacenad[oa]s? fuera|off.?site/i],
+  ['102', /cables?\s+(y|o)?\s*tuber[ií]as|tuber[ií]as?\s+subterr|instalaciones subterr|underground cables/i],
+  ['107', /campamentos?|almacenes de materiales|site camps/i],
+  ['110', /inundaci[oó]n.{0,30}(medidas|precauci)|(medidas|precauci).{0,30}(inundaci|precipitaci|avenida)|precipitaciones/i],
+  ['112', /extintor|equipos? contra incendio|fire.?fighting/i],
+  ['113', /transporte\s+(nacional|terrestre|interno|local)|tr[aá]nsito\s+(terrestre|nacional|interno)|inland transit/i],
+  ['115', /error(es)?\s+de\s+dise[ñn]o|riesgo del dise[ñn]ador|dise[ñn]o defectuoso|defecto de dise[ñn]o|designer'?s? risk|faulty design|\bLEG\s?[123]/i],
+  ['119', /bienes\s+existentes|propiedad\s+existente|existing property/i],
+  ['VIB', /vibraci[oó]n|debilitamiento|remoci[oó]n de soportes|weakening of support/i]
+];
+function endoCodeFromName(text){
+  const t = String(text || '');
+  for(const [code, re] of ENDO_KEYWORDS){ if(re.test(t)) return code; }
+  return null;
+}
+/* Busca en el texto del PDF los endosos pedidos: incluidos y excluidos (si cerca dice "excluye / no se otorga / no aplica") */
+function detectEndosInText(text, requested){
+  const out = { accepted: [], rejected: [] };
+  const t = String(text || ''); if(!t) return out;
+  const NEG = /(excluid|excluye|se excluy|no\s+(se\s+)?(otorga|incluye|cubre|aplica|acepta|concede|ampara)|sin\s+cobertura|rechaz|declinad)/i;
+  const POS = /\b(incluid[oa]s?|se incluye|otorgad[oa]|amparad[oa]|hasta\s+(rd\$|us\$|\$))/i;
+  const EXC_HEAD = /^\W*(exclusiones|riesgos\s+excluidos|no\s+cubiert|coberturas?\s+no\s+otorgad|endosos?\s+(rechazad|no\s+aceptad))/i;
+  const COV_HEAD = /^\W*(condiciones|coberturas?|endosos|cl[aá]usulas|alcance|extensiones)/i;
+  /* sección de cada línea: 'exc' si está bajo un título de exclusiones */
+  const lines = t.split(/\n/); const secOf = []; let sec = '';
+  lines.forEach((ln, i) => {
+    const head = ln.trim().length < 70 && (ln.trim() === ln.trim().toUpperCase() || /:\s*$/.test(ln.trim()));
+    if(head && EXC_HEAD.test(ln.trim())) sec = 'exc'; else if(head && COV_HEAD.test(ln.trim())) sec = '';
+    secOf[i] = sec;
+  });
+  const lineStarts = []; let pos = 0; lines.forEach(ln => { lineStarts.push(pos); pos += ln.length + 1; });
+  const lineAt = idx => { let lo = 0, hi = lineStarts.length - 1; while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(lineStarts[mid] <= idx) lo = mid; else hi = mid - 1; } return lo; };
+  (requested || []).forEach(r => {
+    const code = normalizeEndoCode(r.code); if(!code) return;
+    const kw = (ENDO_KEYWORDS.find(k => k[0] === code) || [])[1];
+    const num = /^\d{3}$/.test(code) ? new RegExp('(endoso|end\\.?|cl[aá]usula)\\s*0*' + parseInt(code, 10) + '\\b', 'i') : null;
+    let pos = false, neg = false;
+    [num, kw].filter(Boolean).forEach(re => {
+      const g = new RegExp(re.source, 'gi'); let m;
+      while((m = g.exec(t)) !== null){
+        const li = lineAt(m.index); const line = lines[li] || '';
+        const isNeg = (NEG.test(line) || secOf[li] === 'exc') && !POS.test(line);
+        if(isNeg) neg = true; else pos = true;
+      }
+    });
+    if(pos) out.accepted.push(r.code); else if(neg) out.rejected.push(r.code);
+  });
+  return out;
+}
 function normalizeEndoCode(text){
   if(!text) return null;
   const t = String(text).toLowerCase().replace(/\s+/g,' ').trim();
@@ -3050,7 +3108,7 @@ function normalizeEndoCode(text){
   /* SRCC / Cross / RC mention */
   if(/srcc|huelga.*motin|motin.*huelga/.test(t)) return '001';
   if(/cross.*liab|rc.*cruzad/.test(t)) return '002';
-  return null;
+  return endoCodeFromName(text);
 }
 /* Detecta si una cláusula/cobertura está aceptada/rechazada/modificada por una cotización.
    Matching robusto basado en código normalizado. */
@@ -4769,14 +4827,37 @@ function mergeWithLocal(ex, text, insurerId){
     ex.endorsement_sublimits = { ...local.endorsement_sublimits, ...(ex.endorsement_sublimits || {}) };
   }
   if(!ex.clauses_rejected_text && local.clauses_rejected_text) ex.clauses_rejected_text = local.clauses_rejected_text;
+  /* Endosos del Slip encontrados en el texto (por número o por nombre) */
+  try{
+    const c = activeCase();
+    const req = c ? requestedEndorsements(c) : [];
+    const det = detectEndosInText(text, req);
+    const acc = (ex.clauses_accepted || []).slice(), rej = (ex.clauses_rejected_text ? ex.clauses_rejected_text.split('\n') : []).filter(Boolean);
+    const has = (list, code) => list.some(x => normalizeEndoCode(x) === normalizeEndoCode(code));
+    det.accepted.forEach(code => { if(!has(acc, code) && !has(rej, code)) acc.push(code); });
+    det.rejected.forEach(code => { if(!has(rej, code) && !has(acc, code)) rej.push(code); });
+    ex.clauses_accepted = acc; ex.clauses_accepted_text = acc.join('\n');
+    if(rej.length){ ex.clauses_rejected = rej; ex.clauses_rejected_text = rej.join('\n'); }
+  }catch(e){ console.warn('No se pudieron detectar endosos', e); }
   if(!ex.deductibles_proposed && local.deductibles_proposed) ex.deductibles_proposed = local.deductibles_proposed;
+  /* Si nadie encontró deducibles, se toman las líneas que siguen al título "Deducibles" */
+  if(!ex.deductibles_proposed){
+    const lines = String(text || '').split(/\n/);
+    const i = lines.findIndex(l => /deducible/i.test(l));
+    if(i !== -1){
+      const block = lines.slice(i, i + 10).filter(l => /%|rd\$|us\$|\$\s*\d|\d{2,3},\d{3}/i.test(l)).join(' · ').replace(/^.*?deducibles?\s*[:\-–]?\s*/i, '');
+      if(block) ex.deductibles_proposed = block.slice(0, 600);
+    }
+  }
   return ex;
 }
 /* Trigger del input file por cada columna del comparador */
 async function aiExtract(text, insurer, insurerId){
   const L = insurerId ? learnedFor(insurerId) : null;
   const hints = L && L.count ? { labels: L.aliases, note: 'Etiquetas que usa esta aseguradora para cada campo, aprendidas de cotizaciones anteriores revisadas.' } : undefined;
-  const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insurer||'', hints:hints }) });
+  let requested = [];
+  try{ const c = activeCase(); requested = c ? requestedEndorsements(c).map(r => ({ code: r.code, title: r.title })) : []; }catch(e){}
+  const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insurer||'', hints:hints, requested:requested }) });
   let data; try{ data = await resp.json(); }catch(e){ throw new Error('Respuesta inválida del servidor'); }
   if(!resp.ok) throw new Error(data && data.error ? data.error : ('HTTP '+resp.status));
   return data || {};
@@ -4793,6 +4874,22 @@ function aiToExtracted(ai){
   } else if(ai.deductibles) r.deductibles_proposed = String(ai.deductibles);
   if(Array.isArray(ai.clausesAccepted)){ r.clauses_accepted = ai.clausesAccepted; r.clauses_accepted_text = ai.clausesAccepted.join('\n'); }
   if(ai.currency) r._aiCurrency = ai.currency;
+  /* Estado por endoso del Slip: { "End. 001": "accepted" | "rejected" | "modified" | "unknown" } */
+  if(ai.coverage && typeof ai.coverage === 'object'){
+    const acc = (r.clauses_accepted || []).slice(), rej = [], mod = [];
+    Object.entries(ai.coverage).forEach(([code, st]) => {
+      const v = String(st || '').toLowerCase();
+      if(/reject|exclu|^no\b/.test(v)) rej.push(code); else if(/modif|cambi|limit/.test(v)) mod.push(code); else if(/accept|inclu|^s[ií]$/.test(v)) acc.push(code);
+    });
+    r.clauses_accepted = acc; r.clauses_accepted_text = acc.join('\n');
+    if(rej.length){ r.clauses_rejected = rej; r.clauses_rejected_text = rej.join('\n'); }
+    if(mod.length) r.clauses_modified = mod;
+  }
+  if(ai.sublimits && typeof ai.sublimits === 'object'){
+    const map = { '001':'mr001','003':'mr003','006':'mr006','013':'mr013','102':'mr102','107':'mr107','112':'mr112','113':'mr113','115':'mr115','119':'mr119','120':'mr-rc-vib' };
+    r.endorsement_sublimits = r.endorsement_sublimits || {};
+    Object.entries(ai.sublimits).forEach(([code, v]) => { const k = map[String(code).replace(/\D/g,'').padStart(3,'0')]; if(k && +v > 0) r.endorsement_sublimits[k] = +v; });
+  }
   return r;
 }
 function triggerPdfUpload(quoteIndex){
@@ -4817,7 +4914,7 @@ function triggerPdfUpload(quoteIndex){
         extracted = fillMissingPremium(mergeWithLocal(aiToExtracted(ai), text, _insId));
       } catch(e) {
         console.warn('IA no disponible, uso extractor local:', e);
-        extracted = fillMissingPremium(extractQuoteFields(text, _insId));
+        extracted = fillMissingPremium(mergeWithLocal(extractQuoteFields(text, _insId), text, _insId));
       }
       if(text.replace(/\s+/g,'').length < 400) extracted._scanned = true;
       showPdfReviewModal(quoteIndex, extracted, text, file.name);
@@ -4994,6 +5091,17 @@ function reopenQuoteReview(qi){
   ex.clauses_accepted = (q.clauses_accepted || []).slice(); ex.clauses_accepted_text = ex.clauses_accepted.join('\n');
   ex.clauses_rejected = (q.clauses_rejected || []).slice(); ex.clauses_rejected_text = ex.clauses_rejected.join('\n');
   ex.endorsement_sublimits = Object.assign({}, q.endorsement_sublimits || {});
+  /* Volver a buscar en el texto del PDF los endosos del Slip que aún no estén marcados */
+  if(x.text){
+    try{
+      const det = detectEndosInText(x.text, requestedEndorsements(c));
+      const has = (list, code) => list.some(v => normalizeEndoCode(v) === normalizeEndoCode(code));
+      const known = ex.clauses_accepted.concat(ex.clauses_rejected, q.clauses_modified || []);
+      det.accepted.forEach(code => { if(!has(known, code)) ex.clauses_accepted.push(code); });
+      det.rejected.forEach(code => { if(!has(known, code)) ex.clauses_rejected.push(code); });
+      ex.clauses_accepted_text = ex.clauses_accepted.join('\n'); ex.clauses_rejected_text = ex.clauses_rejected.join('\n');
+    }catch(e){}
+  }
   showPdfReviewModal(qi, ex, x.text || '', x.filename || '');
 }
 function recalcPdfPrima(){
@@ -5046,6 +5154,7 @@ function applyPdfExtraction(quoteIndex, ex){
   } else if(ex.clauses_rejected_text){
     q.clauses_rejected = ex.clauses_rejected_text.split('\n').map(s => s.trim()).filter(Boolean);
   }
+  if(Array.isArray(ex.clauses_modified) && ex.clauses_modified.length && !ex._reopen) q.clauses_modified = ex.clauses_modified.slice();
   /* Sub-límites por endoso — se guardan por cotización */
   if(ex.endorsement_sublimits && Object.keys(ex.endorsement_sublimits).length){
     q.endorsement_sublimits = { ...(q.endorsement_sublimits||{}), ...ex.endorsement_sublimits };
