@@ -19,9 +19,15 @@ Reglas:
     liability = responsabilidad civil / daños a terceros / TPL / Sección II.
   Si no aparece alguno, usa null. No incluyas el nombre del tipo en el valor (ej: "2% del valor asegurado, mín. RD$ 500,000").
 - clausesAccepted: lista de endosos o cláusulas que la aseguradora incluye, como "End. 001 SRCC", "End. 006 Gastos extras", "LMA 3100".
+- coverage: para CADA endoso de la lista "Endosos solicitados" indica su estado en la cotización, usando la misma clave que viene en la lista:
+    "accepted" = lo incluye (aunque lo llame con otro nombre o sin número, ej: "Huelga, motín y conmoción civil" = End. 001; "Riesgo del diseñador" o "LEG 2" = End. 115),
+    "rejected" = lo excluye o dice que no lo otorga,
+    "modified" = lo incluye con condiciones distintas o un límite menor al solicitado,
+    "unknown" = la cotización no lo menciona.
+- sublimits: monto del sub-límite que la aseguradora da a cada endoso solicitado, si lo indica (clave = número del endoso, ej "006": 5000000).
 - currency: "DOP" o "USD".`;
 
-function buildUser(text, insurer, hints){
+function buildUser(text, insurer, hints, requested){
   let u = `Aseguradora: ${insurer || 'no indicada'}\n`;
   if(hints && hints.labels && typeof hints.labels === 'object'){
     const lines = Object.entries(hints.labels)
@@ -29,7 +35,9 @@ function buildUser(text, insurer, hints){
       .map(([k, v]) => `- ${k}: ${v.join(' | ')}`);
     if(lines.length) u += `Esta aseguradora suele llamar así a estos campos en sus cotizaciones (aprendido de cotizaciones revisadas):\n${lines.join('\n')}\n`;
   }
-  u += `\nDevuelve este JSON:\n{"premiumNet":number|null,"isc":number|null,"premiumTotal":number|null,"sumSeccionI":number|null,"sumSeccionII":number|null,"deductibles":{"catastrophic":string|null,"other":string|null,"liability":string|null},"clausesAccepted":string[],"currency":"DOP"|"USD"|null}\n\nTexto de la cotización:\n"""\n${text}\n"""`;
+  const req = Array.isArray(requested) ? requested.filter(r => r && r.code).slice(0, 40) : [];
+  if(req.length) u += `\nEndosos solicitados en el Slip (devuelve el estado de cada uno en "coverage"):\n${req.map(r => `- ${r.code}: ${r.title || ''}`).join('\n')}\n`;
+  u += `\nDevuelve este JSON:\n{"premiumNet":number|null,"isc":number|null,"premiumTotal":number|null,"sumSeccionI":number|null,"sumSeccionII":number|null,"deductibles":{"catastrophic":string|null,"other":string|null,"liability":string|null},"clausesAccepted":string[],"coverage":{"End. 001":"accepted"|"rejected"|"modified"|"unknown"},"sublimits":{"006":number},"currency":"DOP"|"USD"|null}\n\nTexto de la cotización:\n"""\n${text}\n"""`;
   return u;
 }
 
@@ -61,9 +69,9 @@ export default async function handler(req, res){
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 2000,
+        max_tokens: 3000,
         system: SYSTEM,
-        messages: [{ role: 'user', content: buildUser(text, body.insurer, body.hints) }]
+        messages: [{ role: 'user', content: buildUser(text, body.insurer, body.hints, body.requested) }]
       })
     });
     const data = await r.json().catch(() => ({}));
