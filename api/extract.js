@@ -1,5 +1,5 @@
-// Vercel serverless: lee el texto de una cotización TRC y devuelve los datos estructurados con IA.
-// POST /api/extract   body: { text, insurer, hints }
+// Vercel serverless: lee el texto de una cotización TRC (o de fianza, con kind:'fianza') y devuelve los datos estructurados con IA.
+// POST /api/extract   body: { text, insurer, hints, requested, kind }
 // Requiere la variable de entorno ANTHROPIC_API_KEY en Vercel (Settings → Environment Variables).
 // Opcional: ANTHROPIC_MODEL (por defecto claude-opus-5-5).
 
@@ -41,6 +41,23 @@ function buildUser(text, insurer, hints, requested){
   return u;
 }
 
+const SYSTEM_FIANZA = `Eres un analista de seguros en República Dominicana. Lees cotizaciones de FIANZAS (seriedad de oferta, fiel cumplimiento, anticipo, vicios ocultos, judiciales, aduanales, etc.) que envían las aseguradoras a un corredor, y devuelves sus datos en JSON.
+Reglas:
+- Responde SOLO con un objeto JSON válido, sin texto antes ni después.
+- Montos como números (sin símbolos, sin comas). Si un dato no aparece, usa null. No inventes.
+- premiumNet = prima neta (antes de impuestos). isc = impuesto selectivo al consumo (ISC, normalmente 16%). premiumTotal = prima total a pagar (neta + ISC).
+- bondAmount = monto afianzado. rate = tasa en porcentaje (ej. 1.25 si dice 1.25% anual).
+- minPremium = prima mínima, si la indica.
+- counterGuarantee = contragarantía o garantías que exige la aseguradora (pagaré, hipoteca, depósito, firma solidaria de socios…), texto corto.
+- issueDays = días hábiles para emitir, si lo indica (número).
+- conditions = otras condiciones o requisitos importantes, texto corto (máx. 250 caracteres).
+- validity = vigencia de la fianza o de la cotización, texto corto.
+- currency: "DOP" o "USD".`;
+
+function buildUserFianza(text, insurer){
+  return `Aseguradora: ${insurer || 'no indicada'}\n\nDevuelve este JSON:\n{"premiumNet":number|null,"isc":number|null,"premiumTotal":number|null,"bondAmount":number|null,"rate":number|null,"minPremium":number|null,"counterGuarantee":string|null,"issueDays":number|null,"conditions":string|null,"validity":string|null,"currency":"DOP"|"USD"|null}\n\nTexto de la cotización:\n"""\n${text}\n"""`;
+}
+
 function parseJson(raw){
   const s = String(raw || '').trim();
   try{ return JSON.parse(s); }catch(e){}
@@ -59,6 +76,7 @@ export default async function handler(req, res){
   const text = String((body && body.text) || '').slice(0, 60000);
   if(text.replace(/\s+/g, '').length < 30) return res.status(400).json({ error: 'El PDF no tiene texto suficiente para leer (¿es escaneado?).' });
 
+  const isFianza = body && body.kind === 'fianza';
   try{
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -70,8 +88,8 @@ export default async function handler(req, res){
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 3000,
-        system: SYSTEM,
-        messages: [{ role: 'user', content: buildUser(text, body.insurer, body.hints, body.requested) }]
+        system: isFianza ? SYSTEM_FIANZA : SYSTEM,
+        messages: [{ role: 'user', content: isFianza ? buildUserFianza(text, body.insurer) : buildUser(text, body.insurer, body.hints, body.requested) }]
       })
     });
     const data = await r.json().catch(() => ({}));
