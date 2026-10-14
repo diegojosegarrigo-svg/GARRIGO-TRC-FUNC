@@ -71,6 +71,8 @@
   --shadow:0 6px 20px rgba(40,30,15,.08);
   --shadow-lg:0 24px 60px rgba(40,30,15,.20);
   --radius:12px;
+  --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out:cubic-bezier(0.77, 0, 0.175, 1);
   --radius-lg:14px;
   --font-display:"Montserrat","Inter",system-ui,sans-serif;
 }
@@ -186,7 +188,8 @@ body{
   display:inline-flex;align-items:center;gap:8px;
   padding:9px 16px;border-radius:10px;border:1px solid transparent;
   font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
-  transition:all .15s;text-decoration:none;line-height:1;
+  transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease,transform .16s var(--ease-out);text-decoration:none;line-height:1;
+  -webkit-tap-highlight-color:transparent;
 }
 .btn-primary{background:#00335E;color:#fff}
 .btn-primary:hover{background:#00223F;box-shadow:0 4px 14px rgba(0,35,63,.28)}
@@ -221,7 +224,7 @@ body{
 .input,.select,.textarea{
   font-family:inherit;font-size:13px;color:var(--ink-900);
   padding:10px 12px;border:1px solid #DDD2C0;border-radius:10px;
-  background:var(--surface);outline:none;transition:all .15s;width:100%;
+  background:var(--surface);outline:none;transition:border-color .15s ease,box-shadow .15s ease;width:100%;
 }
 .input:focus,.select:focus,.textarea:focus{
   border-color:#2F5F8F;box-shadow:0 0 0 3px rgba(0,51,94,.14);
@@ -267,7 +270,7 @@ body{
   display:flex;align-items:center;gap:8px;padding:9px 14px;
   background:var(--surface);border:1px solid var(--line);border-radius:999px;
   font-size:12px;font-weight:600;color:var(--ink-500);cursor:pointer;
-  transition:all .15s;
+  transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .16s var(--ease-out);
 }
 .wizard-step:hover{border-color:var(--navy-300);color:var(--navy-700)}
 .wizard-step.active{background:var(--navy-700);border-color:var(--navy-700);color:#fff}
@@ -310,7 +313,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* ===== CLAUSE LIBRARY ===== */
 .clause{
   border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;
-  background:var(--surface);transition:all .15s;
+  background:var(--surface);transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease;
 }
 .clause.selected{border-color:#FFC7A8;background:#FFF8F4;box-shadow:inset 3px 0 0 var(--grg-orange)}
 .clause-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -327,7 +330,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .insurer-card{
   display:flex;align-items:center;gap:14px;padding:12px 14px;
   border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px;
-  transition:all .15s;
+  transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease;
 }
 .insurer-card.selected{border-color:#C9D6E3;background:#F3F5F6;box-shadow:inset 3px 0 0 #00335E}
 .insurer-mark{
@@ -502,6 +505,44 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   .doc{box-shadow:none;padding:0;max-width:none}
 }
 
+
+/* ===== PULIDO DE INTERACCIÓN (criterios de Emil Kowalski) ===== */
+/* Botones y elementos que se presionan: respuesta inmediata al clic */
+.btn:active:not(:disabled),.wizard-step:active,.cmp-chip:active,.nav-item:active{transform:scale(0.97)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.cmp-chip{transition:filter .15s ease,transform .12s var(--ease-out)}
+.nav-item{transition:background-color .15s ease,color .15s ease,transform .12s var(--ease-out)}
+/* Cifras alineadas: los montos no "bailan" al cambiar */
+td,.compare-grid td,.cmp-stat-v,.cmp-stat-s,.badge,.case-pill{font-variant-numeric:tabular-nums}
+/* Ventanas: aparecen desde 96% + transparencia (sin "saltar"), centradas */
+.modal-bg.open{animation:modalBgIn .2s ease-out}
+.modal-bg.open .modal{animation:modalIn .22s var(--ease-out);transform-origin:center}
+@keyframes modalBgIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(6px)}to{opacity:1;transform:none}}
+/* Avisos: entran desde abajo, salen más rápido de lo que entran */
+#syncToast.toast-anim{opacity:0;transform:translateY(8px);transition:opacity .15s ease,transform .15s ease}
+#syncToast.toast-anim.show{opacity:1;transform:none;transition:opacity .22s var(--ease-out),transform .22s var(--ease-out)}
+/* Indicador de carga: giro rápido = se percibe más rápido */
+.spinner{width:34px;height:34px;margin:0 auto;border-radius:50%;border:3px solid var(--line);border-top-color:var(--grg-orange);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Efectos de hover solo con mouse (en pantallas táctiles se quedaban "pegados") */
+@media (hover: none){
+  .btn-primary:hover{background:#00335E;box-shadow:none}
+  .btn-gold:hover{background:var(--grg-orange);box-shadow:none}
+  .btn-ghost:hover{background:var(--surface);border-color:var(--line)}
+  .btn-danger:hover{background:#FDECEC}
+  .nav-item:hover{background:transparent;color:rgba(255,255,255,.80)}
+  .nav-item.active:hover{background:rgba(255,255,255,.11);color:#fff}
+  tr:hover td{background:inherit}
+  .wizard-step:hover{border-color:var(--line);color:var(--ink-500)}
+}
+/* Menos movimiento para quien lo pide en su sistema: se conservan los fundidos */
+@media (prefers-reduced-motion: reduce){
+  .btn:active:not(:disabled),.wizard-step:active,.cmp-chip:active,.nav-item:active{transform:none}
+  .modal-bg.open .modal{animation:modalBgIn .2s ease-out}
+  #syncToast.toast-anim,#syncToast.toast-anim.show{transform:none}
+  .spinner{animation-duration:1.4s}
+}
 </style>
 </head>
 <body>
@@ -510,7 +551,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   <aside class="sidebar">
     <div class="brand">
       <img src="" id="sidebarLogo" alt="Garrigo Reasesores" class="garrigo-logo-img on-blue" style="width:100%;max-width:220px;height:auto;display:block">
-      <div class="brand-sub">Generador TRC · TRM</div>
+      <div class="brand-sub">Generador TRC · Fianzas</div>
     </div>
     <nav class="nav">
       <div class="nav-section">Casos</div>
@@ -546,6 +587,25 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="nav-item" data-view="emails">
         <span class="nav-ico">✉</span> Emails
       </div>
+      <div class="nav-section">Fianzas</div>
+      <div class="nav-item" data-view="fz-list">
+        <span class="nav-ico">🛡</span> Cartera de Fianzas
+      </div>
+      <div class="nav-item" data-view="fz-data">
+        <span class="nav-ico">✎</span> Datos de la Fianza
+      </div>
+      <div class="nav-item" data-view="fz-request">
+        <span class="nav-ico">▤</span> Solicitud
+      </div>
+      <div class="nav-item" data-view="fz-form">
+        <span class="nav-ico">✍</span> Formulario
+      </div>
+      <div class="nav-item" data-view="fz-compare">
+        <span class="nav-ico">≣</span> Comparador
+      </div>
+      <div class="nav-item" data-view="fz-proposal">
+        <span class="nav-ico">★</span> Propuesta
+      </div>
       <div class="nav-section">Sistema</div>
       <div class="nav-item" data-view="config">
         <span class="nav-ico">⚙</span> Configuración
@@ -561,8 +621,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       </div>
       <div class="topbar-right">
         <div class="case-pill" id="caseChip"><span class="dot"></span><span id="caseChipText">Sin caso seleccionado</span></div>
-        <button class="btn btn-ghost btn-sm" onclick="openCasePicker()">Cambiar caso</button>
-        <button class="btn btn-gold btn-sm" onclick="newCase()">+ Nuevo caso</button>
+        <button class="btn btn-ghost btn-sm" id="btnTopPick" onclick="topPick()">Cambiar caso</button>
+        <button class="btn btn-gold btn-sm" id="btnTopNew" onclick="topNew()">+ Nuevo caso</button>
       </div>
     </header>
     <div class="content" id="content"></div>
@@ -949,6 +1009,8 @@ const STORAGE_KEY = 'garrigo_trc_v1';
 const state = {
   cases: [],
   activeCaseId: null,
+  bonds: [],
+  activeBondId: null,
   view: 'dashboard',
   config: {
     brokerName:'Garrigo Reasesores, SRL',
@@ -957,7 +1019,7 @@ const state = {
     address:'Calle Jacinto Ignacio Mañon 48, Edificio V&M, 4to. piso, Suite 404, Santo Domingo, República Dominicana',
     phone:'(809) 227-2677',
     email:'info@garrigo.com.do',
-    website:'[www.garrigo.com.do](https://www.garrigo.com.do)',
+    website:'www.garrigo.com.do',
     license:'',  // opcional: registro Sup. Seguros si aplica
     iscRate: 16,
     fxRate: 60.00,
@@ -968,7 +1030,7 @@ const state = {
 };
 /* ---------- PERSISTENCIA ---------- */
 function save(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({ cases:state.cases, activeCaseId:state.activeCaseId, config:state.config })); }catch(e){}
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({ cases:state.cases, activeCaseId:state.activeCaseId, bonds:state.bonds, activeBondId:state.activeBondId, config:state.config })); }catch(e){}
   scheduleRemoteSave();
 }
 /* Migra config viejo (placeholders genéricos) a los datos reales de Garrigo Reasesores */
@@ -991,14 +1053,17 @@ function migrateConfig(cfg){
   if(placeholders.address.includes(cfg.address)) cfg.address = 'Calle Jacinto Ignacio Mañon 48, Edificio V&M, 4to. piso, Suite 404, Santo Domingo, República Dominicana';
   if(placeholders.phone.includes(cfg.phone)) cfg.phone = '(809) 227-2677';
   if(placeholders.email.includes(cfg.email)) cfg.email = 'info@garrigo.com.do';
-  if(cfg.website === undefined || cfg.website === '') cfg.website = '[www.garrigo.com.do](https://www.garrigo.com.do)';
+  if(cfg.website === undefined || cfg.website === '') cfg.website = 'www.garrigo.com.do';
+  cfg.website = String(cfg.website).replace(/^\[([^\]]+)\]\(.*\)$/, '$1');
   return cfg;
 }
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw){ seedDemoData(); return; }
+    if(!raw){ seedDemoData(); state.bonds = [demoBond()]; state.activeBondId = state.bonds[0].id; return; }
     const data = JSON.parse(raw);
+    state.bonds = Array.isArray(data.bonds) ? data.bonds : [demoBond()];
+    state.activeBondId = data.activeBondId || ((state.bonds[0] || {}).id || null);
     state.cases = (data.cases || []).map(migrateCase);
     state.activeCaseId = data.activeCaseId;
     state.config = migrateConfig({ ...state.config, ...(data.config || {}) });
@@ -1036,7 +1101,7 @@ function fmtNum(n){ if(n===null||n===undefined||n==='')return '—'; return (+n)
 function fmtMoneyInput(n){ if(n===null||n===undefined||n===''||+n===0) return ''; return (+n).toLocaleString('en-US'); }
 function parseMoneyInput(s){ if(!s) return 0; return +(String(s).replace(/[^0-9.\-]/g,'')) || 0; }
 function fmtPct(n){ if(n===null||n===undefined||n==='')return '—'; return (+n).toFixed(2)+'%'; }
-function fmtDate(d){ if(!d) return '—'; const dt=new Date(d); if(isNaN(dt))return d; return dt.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDate(d){ if(!d) return '—'; const dt=new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? d+'T12:00:00' : d); if(isNaN(dt))return d; return dt.toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}); }
 function escapeHtml(s){ if(s===null||s===undefined)return ''; return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
 function nl2br(s){ return escapeHtml(s||'').replace(/\n/g,'<br>'); }
 /* ---------- NUEVO CASO ---------- */
@@ -1348,6 +1413,20 @@ function render(){
   // case chip
   const c = activeCase();
   const chip = document.getElementById('caseChipText');
+  const isBond = /^fz-/.test(state.view);
+  if(isBond){
+    const b = activeBond();
+    chip.textContent = b ? `${b.ref} · ${b.afianzado.name || 'Sin afianzado'}` : 'Sin fianza seleccionada';
+    const p = document.getElementById('btnTopPick'), n = document.getElementById('btnTopNew');
+    if(p) p.textContent = 'Cambiar fianza'; if(n) n.textContent = '+ Nueva fianza';
+    const [bt, bs] = BOND_TITLES[state.view] || ['Fianzas', ''];
+    document.getElementById('viewTitle').textContent = bt;
+    document.getElementById('viewSub').textContent = bs;
+    renderBondView(document.getElementById('content'));
+    return;
+  }
+  { const p = document.getElementById('btnTopPick'), n = document.getElementById('btnTopNew');
+    if(p) p.textContent = 'Cambiar caso'; if(n) n.textContent = '+ Nuevo caso'; }
   if(c){ chip.textContent = `${c.ref} · ${c.insured.name || 'Sin asegurado'}`; }
   else { chip.textContent = 'Sin caso seleccionado'; }
   const titles = {
@@ -2514,7 +2593,7 @@ function docHeader(c, titleEs, titleEn){
         <div class="doc-ref-type">${escapeHtml(c.header.type)}</div>
         <div class="doc-ref-num">${escapeHtml(c.ref)}</div>
         <div style="margin-top:6px"><strong>Emisión:</strong> ${fmtDate(c.header.dateIssue)}</div>
-        <div><strong>Deadline / Due:</strong> ${fmtDate(c.header.deadline)}</div>
+        ${c.header.deadline === null ? '' : `<div><strong>Deadline / Due:</strong> ${fmtDate(c.header.deadline)}</div>`}
       </div>
     </div>
     <h1 style="text-align:center;margin-bottom:4px;color:var(--grg-blue)">${titleEs}</h1>
@@ -3247,12 +3326,10 @@ function proposalData(c){
   const insName = id => { const i=DEFAULT_INSURERS.find(x=>x.id===id); return i?i.name:(id||'—'); };
   const selRaw = c.proposal.selectedInsurer ? c.quotes.find(q=>q.insurerId===c.proposal.selectedInsurer) : null;
   const sel = selRaw && hasQuoteData(selRaw) ? selRaw : null;
-  const sz = c.template || 'medium';
-  const cuotas = sz==='small'?3:(sz==='large'?7:5);
   const quotes = scored.map(s => { const q=s.q; return {
     insurer: insName(q.insurerId), tasa: fmtRate(calcRate(q,c)),
     premiumNet:+q.premiumNet||0, isc:+q.isc||0, premiumTotal:+q.premiumTotal||0,
-    facilidad: '25% + '+cuotas+' cuotas', deducibles: q.deductibles_proposed||'',
+    facilidad: trcPayPlan(c, q), deducibles: q.deductibles_proposed||'',
     score: s.totalScore, recommended: !!(sel && q.insurerId===sel.insurerId)
   }; });
   return {
@@ -3278,144 +3355,336 @@ function fallbackNarrative(d){
     deducibles: ded
   };
 }
-function buildProposalDeck(c, d, ai){
+/* ============================================================
+   PRESENTACIONES (PowerPoint) — sistema de diseño Garrigó
+   Se usa para la propuesta TRC y la propuesta de Fianzas.
+   Letra: Aptos Display (títulos) + Aptos (texto), la letra moderna de Office.
+   ============================================================ */
+const DK = {
+  NAVY:'06182C', NAVY2:'0B2747', BLUE:'004A88', BLUE2:'00335E', ORANGE:'FF5200', PEACH:'FFB89A',
+  INK:'1A2433', GRAY:'5F6B7A', MUTED:'9AA3AF', LINE:'E4E8EE', SOFT:'F4F6F9', GREEN:'E9F7EF', GREEN_T:'15803D',
+  WHITE:'FFFFFF', SUB:'C7D4E4', H:'Aptos Display', B:'Aptos', W:13.333, HH:7.5
+};
+function deckLoadImg(src){ return new Promise(r => { if(!src) return r(null); const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; }); }
+function deckCoverDraw(g, img, x, y, w, h){
+  const r = w / h; let sw = img.width, sh = img.width / r, sx = 0, sy = (img.height - sh) / 2;
+  if(sh > img.height){ sh = img.height; sw = img.height * r; sy = 0; sx = (img.width - sw) / 2; }
+  g.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+function deckRRPath(g, x, y, w, h, r){
+  g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+  g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h);
+  g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+}
+/* Fondo de portada y cierre: foto a pantalla completa con degradado azul (o fondo abstracto si no hay foto) */
+async function deckBackground(photo){
+  const W = 1920, H = 1080, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  g.fillStyle = '#06182C'; g.fillRect(0, 0, W, H);
+  const img = await deckLoadImg(photo);
+  if(img){
+    deckCoverDraw(g, img, 0, 0, W, H);
+    const lg = g.createLinearGradient(0, 0, W, 0);
+    lg.addColorStop(0, 'rgba(6,24,44,0.97)'); lg.addColorStop(0.36, 'rgba(6,24,44,0.90)');
+    lg.addColorStop(0.62, 'rgba(0,51,94,0.50)'); lg.addColorStop(1, 'rgba(0,74,136,0.12)');
+    g.fillStyle = lg; g.fillRect(0, 0, W, H);
+    const bg = g.createLinearGradient(0, H * 0.5, 0, H);
+    bg.addColorStop(0, 'rgba(6,24,44,0)'); bg.addColorStop(1, 'rgba(6,24,44,0.88)');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  } else {
+    const rg = g.createRadialGradient(W * 0.82, H * 0.18, 40, W * 0.82, H * 0.18, W * 0.85);
+    rg.addColorStop(0, '#0E4479'); rg.addColorStop(0.55, '#0A2949'); rg.addColorStop(1, '#06182C');
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+    g.save(); g.beginPath(); g.rect(W * 0.48, 0, W * 0.52, H); g.clip();
+    g.strokeStyle = 'rgba(255,255,255,0.055)'; g.lineWidth = 2;
+    for(let i = -H; i < W; i += 64){ g.beginPath(); g.moveTo(i, 0); g.lineTo(i + H * 0.9, H); g.stroke(); }
+    g.restore();
+    [[W * 0.78, H * 0.62, 260], [W * 0.78, H * 0.62, 380], [W * 0.78, H * 0.62, 500]].forEach(([x, y, r], k) => {
+      g.strokeStyle = 'rgba(255,255,255,' + (0.09 - k * 0.025) + ')'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+    });
+    const og = g.createRadialGradient(W * 0.95, H * 1.02, 0, W * 0.95, H * 1.02, 620);
+    og.addColorStop(0, 'rgba(255,82,0,0.42)'); og.addColorStop(1, 'rgba(255,82,0,0)');
+    g.fillStyle = og; g.fillRect(0, 0, W, H);
+    const lg = g.createLinearGradient(0, 0, W * 0.6, 0);
+    lg.addColorStop(0, 'rgba(6,24,44,0.85)'); lg.addColorStop(1, 'rgba(6,24,44,0)');
+    g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  }
+  return cv.toDataURL('image/jpeg', 0.86);
+}
+/* Foto con esquinas redondeadas (PNG) para láminas de contenido */
+async function deckRoundPhoto(photo, wIn, hIn){
+  const img = await deckLoadImg(photo); if(!img) return '';
+  const k = 160, W = Math.round(wIn * k), H = Math.round(hIn * k), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); deckRRPath(g, 0, 0, W, H, 0.16 * k); g.clip(); deckCoverDraw(g, img, 0, 0, W, H);
+  const bg = g.createLinearGradient(0, H * 0.55, 0, H); bg.addColorStop(0, 'rgba(6,24,44,0)'); bg.addColorStop(1, 'rgba(6,24,44,0.75)');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  return cv.toDataURL('image/png');
+}
+async function deckLogoRatio(src){ const i = await deckLoadImg(src); return i && i.height ? i.width / i.height : 420 / 237; }
+function deckNew(title){
   const P = new PptxGenJS();
-  P.defineLayout({ name:'W', width:13.333, height:7.5 }); P.layout='W';
-  P.title = 'Propuesta TRC — ' + (d.insured || '');
-  const BLUE='004A88', NAVY='0A1E35', ORANGE='FF5200', INK='1A2433', GRAYT='5F6B7A', LINE='E3E7ED', LIGHT='F4F6F9', SELBG='EEF4FB', WHITE='FFFFFF', SUB='C9D6E5';
-  const OK='15803D', WARN='B45309', BAD='C0262D', MUTED='9CA3AF';
-  const F='Arial', RR=P.ShapeType.roundRect, RC=P.ShapeType.rect;
-  const sym = d.currency==='USD'?'US$ ':'RD$ ';
-  const money = v => sym+Math.round(+v||0).toLocaleString('en-US');
-  const logo = (typeof LOGO_DOC_PNG!=='undefined') ? LOGO_DOC_PNG : null;
-  const mx = proposalMatrices(c);
-  const cols = mx.cols;
-  const fitSize = (txt, base, maxChars) => { const n = String(txt||'').length; return n <= maxChars ? base : Math.max(9, Math.round(base * maxChars / n)); };
-  let pageNo = 1;
-  /* Lámina estándar: título, línea naranja, logo y pie */
-  const frame = (eyebrow, title) => {
-    const s = P.addSlide(); s.background = { color: WHITE }; pageNo++;
-    s.addText(eyebrow, { x:0.6, y:0.42, w:8, h:0.28, fontFace:F, fontSize:11, bold:true, color:ORANGE, charSpacing:2 });
-    s.addText(title, { x:0.6, y:0.7, w:10, h:0.62, fontFace:F, fontSize:26, bold:true, color:NAVY });
-    if(logo) s.addImage({ data:logo, x:11.15, y:0.45, w:1.6, h:0.52 });
-    s.addShape(RC, { x:0.6, y:1.42, w:12.13, h:0.03, fill:{ color:LINE }, line:{ color:LINE } });
-    s.addText((d.insured||'') + (c.ref ? '  ·  ' + c.ref : '') + '  ·  Garrigó Seguros', { x:0.6, y:7.0, w:10.5, h:0.3, fontFace:F, fontSize:8.5, color:MUTED });
-    s.addText(String(pageNo), { x:12.2, y:7.0, w:0.53, h:0.3, fontFace:F, fontSize:8.5, color:MUTED, align:'right' });
-    return s;
-  };
-  /* Tabla comparativa: primera columna conceptos, una columna por aseguradora; la recomendada resaltada */
-  const firstW = 3.3, tableW = 12.13;
-  const colW = cols.length ? [firstW].concat(cols.map(() => (tableW - firstW) / cols.length)) : [tableW];
-  const head = [{ text:'', options:{ fill:{ color:NAVY } } }].concat(cols.map(col => ({
-    text: col.name + (col.selected ? '\nRecomendada' : ''),
-    options:{ bold:true, color:WHITE, fill:{ color: col.selected ? BLUE : NAVY }, align:'center', fontSize: fitSize(col.name, 11, 22) }
+  P.defineLayout({ name:'W', width:DK.W, height:DK.HH }); P.layout = 'W';
+  P.title = title; P.company = 'Garrigó Seguros'; P.author = (state.config && state.config.brokerName) || 'Garrigó Seguros';
+  P.theme = { headFontFace:DK.H, bodyFontFace:DK.B };
+  return P;
+}
+function deckFit(txt, base, maxChars, min){ const n = String(txt || '').length; return n <= maxChars ? base : Math.max(min || 9, Math.round(base * maxChars / n * 10) / 10); }
+function deckWebsite(){ return String((state.config && state.config.website) || '').replace(/^\[([^\]]+)\]\(.*\)$/, '$1'); }
+function deckMonthYear(){ const t = new Date().toLocaleDateString('es-DO', { month:'long', year:'numeric' }); return t.replace(/ de /, ' ').toUpperCase(); }
+/* Contexto compartido: logos con su proporción real */
+async function deckContext(footer){
+  return { footer: footer, page: 1, logoDark: (typeof LOGO_DOC_PNG !== 'undefined') ? LOGO_DOC_PNG : '', logoLight: (typeof LOGO_SIDEBAR_PNG !== 'undefined') ? LOGO_SIDEBAR_PNG : '',
+    ratio: await deckLogoRatio((typeof LOGO_DOC_PNG !== 'undefined') ? LOGO_DOC_PNG : '') };
+}
+function deckLogo(s, ctx, x, y, w, light){ const src = light ? ctx.logoLight : ctx.logoDark; if(src) s.addImage({ data:src, x:x, y:y, w:w, h:w / ctx.ratio }); }
+/* Lámina de contenido */
+function deckFrame(P, ctx, kicker, title){
+  const s = P.addSlide(); s.background = { color:DK.WHITE }; ctx.page++;
+  s.addShape(P.ShapeType.rect, { x:0.6, y:0.53, w:0.34, h:0.06, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+  s.addText(kicker, { x:1.02, y:0.4, w:8, h:0.32, fontFace:DK.B, fontSize:10.5, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+  s.addText(title, { x:0.6, y:0.74, w:9.8, h:0.72, fontFace:DK.H, fontSize: deckFit(title, 30, 42, 20), bold:true, color:DK.NAVY, margin:0, valign:'top' });
+  deckLogo(s, ctx, DK.W - 0.6 - 1.5, 0.4, 1.5, false);
+  s.addShape(P.ShapeType.line, { x:0.6, y:7.0, w:DK.W - 1.2, h:0, line:{ color:DK.LINE, width:0.75 } });
+  s.addText(ctx.footer, { x:0.6, y:7.06, w:10, h:0.28, fontFace:DK.B, fontSize:8.5, color:DK.MUTED, margin:0 });
+  s.addText(String(ctx.page).padStart(2, '0'), { x:DK.W - 1.6, y:7.06, w:1.0, h:0.28, fontFace:DK.B, fontSize:9, bold:true, color:DK.BLUE, align:'right', margin:0 });
+  return s;
+}
+/* Tarjeta de dato grande */
+function deckStat(P, s, x, y, w, h, value, label, dark){
+  s.addShape(P.ShapeType.roundRect, { x:x, y:y, w:w, h:h, fill:{ color: dark ? DK.NAVY : DK.SOFT }, line:{ type:'none' }, rectRadius:0.1 });
+  /* tamaño de letra para que el valor quepa en una línea */
+  const fs = Math.max(14, Math.min(30, Math.floor((w - 0.55) * 72 / (Math.max(4, String(value).length) * 0.62))));
+  s.addShape(P.ShapeType.rect, { x:x + 0.28, y:y + 0.26, w:0.3, h:0.05, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+  s.addText(value, { x:x + 0.26, y:y + 0.36, w:w - 0.45, h:0.6, fontFace:DK.H, fontSize:fs, bold:true, color:DK.ORANGE, margin:0, valign:'middle', fit:'shrink' });
+  s.addText(label, { x:x + 0.28, y:y + 1.0, w:w - 0.5, h:Math.max(0.3, h - 1.1), fontFace:DK.B, fontSize:10.5, color: dark ? DK.SUB : DK.GRAY, margin:0, valign:'top' });
+}
+/* Lista clave-valor con líneas finas */
+function deckKV(P, s, x, y, w, rows, labelW, rowH){
+  rows.forEach((r, i) => {
+    const yy = y + i * rowH;
+    s.addText(r[0], { x:x, y:yy, w:labelW, h:rowH, fontFace:DK.B, fontSize:11.5, bold:true, color:DK.BLUE, valign:'middle', margin:0 });
+    s.addText(String(r[1] || '—'), { x:x + labelW, y:yy, w:w - labelW, h:rowH, fontFace:DK.B, fontSize: deckFit(r[1], 12.5, Math.round((w - labelW) * 11 * (rowH / 0.55)), 9), color:DK.INK, valign:'middle', margin:0 });
+    s.addShape(P.ShapeType.line, { x:x, y:yy + rowH, w:w, h:0, line:{ color:DK.LINE, width:0.75 } });
+  });
+}
+/* Tabla comparativa: columnas = aseguradoras; la recomendada en verde con cifras en naranja */
+function deckCompareTable(P, s, o){
+  const cols = o.cols, firstW = o.firstW || 3.0, W = o.w || (DK.W - 1.2);
+  const cw = cols.length ? (W - firstW) / cols.length : W - firstW;
+  const none = { type:'none' }, bottom = [none, none, { type:'solid', pt:0.75, color:DK.LINE }, none];
+  const head = [{ text:o.corner || '', options:{ fill:{ color:DK.WHITE }, border:bottom, color:DK.MUTED, fontSize:9, bold:true, valign:'bottom' } }].concat(cols.map(col => ({
+    text: col.selected ? [{ text:'★ RECOMENDADA', options:{ fontSize:7.5, color:DK.PEACH, bold:true, charSpacing:1.5, breakLine:true } }, { text:col.name, options:{ fontSize: deckFit(col.name, 11.5, Math.round(cw * 9), 8.5), bold:true, color:DK.WHITE } }]
+                        : [{ text:col.name, options:{ fontSize: deckFit(col.name, 11.5, Math.round(cw * 9), 8.5), bold:true, color:DK.WHITE } }],
+    options:{ fill:{ color: col.selected ? DK.BLUE2 : DK.BLUE }, align:'center', valign:'middle', border:[none, { type:'solid', pt:2, color:DK.WHITE }, none, none] }
   })));
-  const cell = (txt, col, o) => ({ text: String(txt), options: Object.assign({ align:'center', color:INK, fill:{ color: col.selected ? SELBG : WHITE } }, o || {}) });
-  const label = (txt, sub) => ({ text: sub ? [{ text: txt, options:{ bold:true, color:NAVY, breakLine:true } }, { text: sub, options:{ fontSize:8.5, color:GRAYT } }] : txt,
-                                 options:{ bold:true, color:NAVY, fill:{ color:LIGHT } } });
-  const tableOpts = (y, rowH, fs) => ({ x:0.6, y:y, w:tableW, colW:colW, rowH:rowH, fontFace:F, fontSize:fs, border:{ type:'solid', color:LINE, pt:0.75 }, valign:'middle', margin:0.06 });
-  const sel = cols.find(x => x.selected);
+  const rows = o.rows.map(r => [{ text: r.sub ? [{ text:r.label, options:{ bold:true, color:DK.BLUE, breakLine:true } }, { text:r.sub, options:{ fontSize:8.5, color:DK.GRAY } }] : r.label,
+      options:{ bold:true, color:DK.BLUE, fill:{ color:DK.WHITE }, border:bottom } }]
+    .concat(r.cells.map((cl, i) => {
+      const sel = cols[i].selected, key = r.key && sel;
+      return { text:String(cl.t), options:{ align:'center', fill:{ color: sel ? DK.GREEN : DK.WHITE }, border:bottom, bold: !!(r.key || cl.bold),
+        color: cl.color || (key ? DK.ORANGE : (r.key ? DK.NAVY : DK.INK)), fontSize: cl.fs || (r.key ? (o.fs || 11) + 1.5 : (o.fs || 11)) } };
+    })));
+  s.addTable([head].concat(rows), { x:o.x || 0.6, y:o.y, w:W, colW:[firstW].concat(cols.map(() => cw)), rowH:o.rowH || 0.42, fontFace:DK.B, fontSize:o.fs || 11, valign:'middle', margin:[3, 6, 3, 6] });
+  return o.y + (o.rows.length + 1) * (o.rowH || 0.42);
+}
+/* Portada */
+function deckCover(P, ctx, bg, d){
+  const s = P.addSlide(); s.background = { data:bg };
+  /* Tarjetas blancas: logo y "preparado para" */
+  s.addShape(P.ShapeType.roundRect, { x:0.6, y:0.55, w:2.3, h:1.15, fill:{ color:DK.WHITE }, line:{ type:'none' }, rectRadius:0.1, shadow:{ type:'outer', blur:8, offset:2, angle:90, color:'000000', opacity:0.25 } });
+  const lw = 1.62; deckLogo(s, ctx, 0.6 + (2.3 - lw) / 2, 0.55 + (1.15 - lw / ctx.ratio) / 2, lw, false);
+  s.addShape(P.ShapeType.roundRect, { x:3.05, y:0.55, w:3.75, h:1.15, fill:{ color:DK.WHITE }, line:{ type:'none' }, rectRadius:0.1, shadow:{ type:'outer', blur:8, offset:2, angle:90, color:'000000', opacity:0.25 } });
+  s.addText([{ text:'PREPARADO PARA', options:{ fontSize:8.5, bold:true, color:DK.ORANGE, charSpacing:2, breakLine:true } },
+             { text:d.client || '—', options:{ fontFace:DK.H, fontSize: deckFit(d.client, 15, 30, 10), bold:true, color:DK.NAVY } }],
+            { x:3.3, y:0.6, w:3.3, h:1.05, fontFace:DK.B, valign:'middle', margin:0 });
+  s.addText(d.kicker, { x:0.62, y:2.3, w:8, h:0.34, fontFace:DK.B, fontSize:12, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+  s.addText(d.title, { x:0.6, y:2.7, w:7.4, h:1.85, fontFace:DK.H, fontSize: deckFit(d.title, 46, 34, 30), bold:true, color:DK.WHITE, valign:'top', margin:0, lineSpacingMultiple:0.95 });
+  s.addText(d.subtitle || '', { x:0.62, y:4.6, w:7.0, h:0.85, fontFace:DK.B, fontSize: deckFit(d.subtitle, 16, 95, 11), color:DK.SUB, valign:'top', margin:0 });
+  /* Tres tarjetas translúcidas */
+  const cw = 3.9, gap = 0.2;
+  d.cards.slice(0, 3).forEach((cd, i) => {
+    const x = 0.6 + i * (cw + gap);
+    s.addShape(P.ShapeType.roundRect, { x:x, y:5.7, w:cw, h:1.15, fill:{ color:DK.WHITE, transparency:88 }, line:{ color:DK.WHITE, transparency:70, width:0.75 }, rectRadius:0.1 });
+    s.addShape(P.ShapeType.rect, { x:x + 0.25, y:5.92, w:0.26, h:0.05, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+    s.addText(cd[0], { x:x + 0.25, y:6.0, w:cw - 0.45, h:0.28, fontFace:DK.B, fontSize:8.5, bold:true, color:DK.PEACH, charSpacing:2, margin:0 });
+    s.addText(String(cd[1] || '—'), { x:x + 0.25, y:6.28, w:cw - 0.45, h:0.48, fontFace:DK.H, fontSize: deckFit(cd[1], 15, 30, 9), bold:true, color:DK.WHITE, valign:'middle', margin:0 });
+  });
+  return s;
+}
+/* Barras horizontales de prima total (editables en PowerPoint) */
+function deckBars(P, s, x, y, w, items, money){
+  const max = Math.max(...items.map(i => i.v)) || 1, labelW = 2.5, valW = 1.9, barW = w - labelW - valW - 0.2, rowH = Math.min(0.78, 4.6 / items.length);
+  items.forEach((it, i) => {
+    const yy = y + i * rowH, bw = Math.max(0.08, barW * it.v / max), col = it.sel ? DK.ORANGE : (it.best ? DK.BLUE : 'AFC3D9');
+    s.addText([{ text:it.name, options:{ bold:true, color: it.sel ? DK.NAVY : DK.INK, breakLine: !!it.tag } }].concat(it.tag ? [{ text:it.tag, options:{ fontSize:8.5, color: it.sel ? DK.ORANGE : DK.GRAY, bold:true } }] : []),
+              { x:x, y:yy, w:labelW, h:rowH * 0.8, fontFace:DK.B, fontSize: deckFit(it.name, 12, 24, 9), valign:'middle', margin:0 });
+    s.addShape(P.ShapeType.roundRect, { x:x + labelW, y:yy + rowH * 0.2, w:barW, h:rowH * 0.4, fill:{ color:DK.SOFT }, line:{ type:'none' }, rectRadius:0.06 });
+    s.addShape(P.ShapeType.roundRect, { x:x + labelW, y:yy + rowH * 0.2, w:bw, h:rowH * 0.4, fill:{ color:col }, line:{ type:'none' }, rectRadius:0.06 });
+    s.addText(money(it.v), { x:x + labelW + barW + 0.15, y:yy, w:valW, h:rowH * 0.8, fontFace:DK.H, fontSize:13, bold:true, color: it.sel ? DK.ORANGE : DK.NAVY, valign:'middle', align:'right', margin:0 });
+  });
+  return y + items.length * rowH;
+}
+/* Pasos numerados en línea de tiempo */
+function deckSteps(P, s, x, y, w, steps){
+  const n = steps.length, step = w / n;
+  s.addShape(P.ShapeType.line, { x:x + 0.28, y:y + 0.28, w:w - step + 0.0, h:0, line:{ color:DK.LINE, width:1.5, dashType:'dash' } });
+  steps.forEach((t, i) => {
+    const xx = x + i * step;
+    s.addShape(P.ShapeType.ellipse, { x:xx, y:y, w:0.56, h:0.56, fill:{ color: i === 0 ? DK.ORANGE : DK.NAVY }, line:{ color:DK.WHITE, width:2 } });
+    s.addText(String(i + 1), { x:xx, y:y, w:0.56, h:0.56, fontFace:DK.H, fontSize:14, bold:true, color:DK.WHITE, align:'center', valign:'middle', margin:0 });
+    s.addText(t, { x:xx, y:y + 0.68, w:step - 0.2, h:0.75, fontFace:DK.B, fontSize:11, color:DK.INK, valign:'top', margin:0 });
+  });
+}
+/* Lista con marcas de verificación */
+function deckChecks(P, s, x, y, w, items, rowH){
+  items.forEach((t, i) => {
+    const yy = y + i * rowH;
+    s.addShape(P.ShapeType.ellipse, { x:x, y:yy + 0.06, w:0.34, h:0.34, fill:{ color:DK.GREEN }, line:{ type:'none' } });
+    s.addText('✓', { x:x, y:yy + 0.06, w:0.34, h:0.34, fontFace:DK.B, fontSize:11, bold:true, color:DK.GREEN_T, align:'center', valign:'middle', margin:0 });
+    s.addText(t, { x:x + 0.5, y:yy, w:w - 0.5, h:rowH, fontFace:DK.B, fontSize: deckFit(t, 13, 95, 10), color:DK.INK, valign:'top', margin:[2, 0, 0, 0] });
+  });
+}
+/* Panel azul de recomendación (lado izquierdo) */
+function deckRecPanel(P, s, ctx, name, rows){
+  s.addShape(P.ShapeType.rect, { x:0, y:0, w:4.9, h:DK.HH, fill:{ color:DK.NAVY }, line:{ type:'none' } });
+  s.addShape(P.ShapeType.rect, { x:0, y:0, w:0.14, h:DK.HH, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+  deckLogo(s, ctx, 0.62, 0.5, 1.45, true);
+  s.addText('NUESTRA RECOMENDACIÓN', { x:0.62, y:1.75, w:4, h:0.3, fontFace:DK.B, fontSize:10, bold:true, color:DK.PEACH, charSpacing:3, margin:0 });
+  s.addText(name, { x:0.6, y:2.05, w:3.95, h:1.05, fontFace:DK.H, fontSize: deckFit(name, 28, 18, 18), bold:true, color:DK.WHITE, valign:'top', margin:0 });
+  rows.forEach((r, i) => {
+    const y = 3.35 + i * 1.0;
+    s.addShape(P.ShapeType.line, { x:0.62, y:y, w:3.7, h:0, line:{ color:'24405F', width:0.75 } });
+    s.addText(r[0], { x:0.62, y:y + 0.1, w:3.7, h:0.26, fontFace:DK.B, fontSize:8.5, bold:true, color:DK.SUB, charSpacing:2, margin:0 });
+    s.addText(String(r[1]), { x:0.62, y:y + 0.36, w:3.8, h:0.5, fontFace:DK.H, fontSize: deckFit(r[1], i === 0 ? 24 : 18, 20, 11), bold:true, color: i === 0 ? DK.ORANGE : DK.WHITE, valign:'middle', margin:0 });
+  });
+}
+/* Cierre */
+function deckClosing(P, ctx, bg){
+  const s = P.addSlide(); s.background = { data:bg }; const cfg = state.config || {};
+  deckLogo(s, ctx, 0.75, 0.7, 2.1, true);
+  s.addText('Gracias', { x:0.72, y:2.55, w:7, h:1.2, fontFace:DK.H, fontSize:60, bold:true, color:DK.WHITE, margin:0 });
+  s.addText('Quedamos a su disposición para cualquier consulta sobre esta propuesta.', { x:0.75, y:3.75, w:6.6, h:0.7, fontFace:DK.B, fontSize:15, color:DK.SUB, margin:0, valign:'top' });
+  const items = [['TELÉFONO', cfg.phone], ['CORREO', cfg.email], ['WEB', deckWebsite()]].filter(x => x[1]);
+  items.forEach((it, i) => {
+    const x = 0.75 + i * 3.1;
+    s.addShape(P.ShapeType.rect, { x:x, y:5.35, w:0.26, h:0.05, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+    s.addText(it[0], { x:x, y:5.45, w:2.9, h:0.28, fontFace:DK.B, fontSize:8.5, bold:true, color:DK.PEACH, charSpacing:2, margin:0 });
+    s.addText(String(it[1]), { x:x, y:5.72, w:3.0, h:0.4, fontFace:DK.B, fontSize:13, bold:true, color:DK.WHITE, margin:0 });
+  });
+  if(cfg.address) s.addText(cfg.address, { x:0.75, y:6.5, w:10, h:0.4, fontFace:DK.B, fontSize:9.5, color:DK.SUB, margin:0 });
+  return s;
+}
+
+/* ---------------- PROPUESTA TRC ---------------- */
+function trcPayPlan(c, q){ const sz = c.template || 'medium'; return (q && q.paymentPlan) || ('25% + ' + (sz === 'small' ? 3 : (sz === 'large' ? 7 : 5)) + ' cuotas'); }
+async function buildProposalDeck(c, d, ai){
+  const P = deckNew('Propuesta TRC — ' + (d.insured || ''));
+  const ctx = await deckContext((d.insured || '') + (c.ref ? '  ·  ' + c.ref : '') + '  ·  Garrigó Seguros');
+  const sym = d.currency === 'USD' ? 'US$ ' : 'RD$ ';
+  const money = v => sym + Math.round(+v || 0).toLocaleString('en-US');
+  const mx = proposalMatrices(c), cols = mx.cols, sel = cols.find(x => x.selected);
+  const bg = await deckBackground(d.projectImage);
+  const projTitle = (d.project || '').split(/[,.;]/)[0].slice(0, 90);
 
   /* 1 · Portada */
-  let s = P.addSlide(); s.background = { color:NAVY };
-  if(d.projectImage){
-    try{ s.addImage({ data:d.projectImage, x:6.2, y:0, w:7.133, h:7.5, sizing:{ type:'cover', w:7.133, h:7.5 } }); }catch(e){}
-    s.addShape(RC, { x:6.2, y:0, w:7.133, h:7.5, fill:{ color:NAVY, transparency:35 }, line:{ color:NAVY, transparency:100 } });
-  }
-  s.addShape(RC, { x:0, y:0, w:0.22, h:7.5, fill:{ color:ORANGE }, line:{ color:ORANGE } });
-  s.addShape(RR, { x:0.7, y:0.6, w:3.0, h:1.15, fill:{ color:WHITE }, line:{ color:WHITE }, rectRadius:0.08 });
-  if(logo) s.addImage({ data:logo, x:0.9, y:0.78, w:2.6, h:0.82 });
-  s.addText('PROPUESTA DE SEGURO · ' + new Date().toLocaleDateString('es-DO', { month:'long', year:'numeric' }).toUpperCase(), { x:0.72, y:2.55, w:5.4, h:0.35, fontFace:F, fontSize:12, bold:true, color:ORANGE, charSpacing:2 });
-  s.addText('Todo Riesgo\nConstrucción', { x:0.68, y:2.95, w:5.6, h:1.75, fontFace:F, fontSize:40, bold:true, color:WHITE, lineSpacing:44, valign:'top' });
-  const projShort = (d.project || '').length > 150 ? (d.project || '').slice(0, 147).replace(/\s+\S*$/, '') + '…' : (d.project || '');
-  s.addText(projShort, { x:0.72, y:4.75, w:5.3, h:0.95, fontFace:F, fontSize: projShort.length > 90 ? 12.5 : 15, color:SUB, valign:'top' });
-  s.addText([{ text:'PREPARADO PARA', options:{ fontSize:9, color:'FFB89A', charSpacing:1.5, breakLine:true } }, { text: d.insured || '—', options:{ fontSize: fitSize(d.insured, 15, 34), bold:true, color:WHITE } }],
-            { x:0.72, y:5.85, w:5.3, h:0.9, fontFace:F, valign:'top' });
+  deckCover(P, ctx, bg, {
+    client: d.insured, kicker: 'COMPARATIVO DE PROPUESTAS · ' + deckMonthYear(),
+    title: 'Seguro Todo Riesgo de Construcción', subtitle: projTitle,
+    cards: [['ASEGURADO', d.insured], ['VALOR ASEGURABLE', money(d.sumaI)], ['MERCADOS', cols.length ? cols.map(x => x.name.replace(/^Seguros\s+/i, '')).join(' · ') : '—']]
+  });
 
   /* 2 · Perfil del riesgo */
-  s = frame('EL PROYECTO', 'Perfil del riesgo');
-  const stat = (x, big, small) => {
-    s.addShape(RR, { x:x, y:1.75, w:3.9, h:1.25, fill:{ color:LIGHT }, line:{ color:LIGHT }, rectRadius:0.06 });
-    s.addText(big, { x:x+0.25, y:1.88, w:3.45, h:0.6, fontFace:F, fontSize: fitSize(big, 22, 18), bold:true, color:BLUE });
-    s.addText(small, { x:x+0.25, y:2.45, w:3.45, h:0.45, fontFace:F, fontSize:10.5, color:GRAYT });
-  };
-  stat(0.6, money(d.sumaI), 'Suma asegurada · Sección I');
-  stat(4.715, money(d.rc), 'Responsabilidad civil por evento');
-  stat(8.83, d.constMonths + ' + ' + d.maint + ' meses', 'Construcción + mantenimiento');
-  const kv = [
-    ['Asegurado', (d.insured||'—') + ' y/o contratistas y/o subcontratistas'],
+  let s = deckFrame(P, ctx, 'EL PROYECTO', 'Perfil del riesgo asegurado');
+  const photo = d.projectImage ? await deckRoundPhoto(d.projectImage, 4.1, 5.05) : '';
+  const cx = photo ? 5.0 : 0.6, cw = DK.W - 0.6 - cx;
+  if(photo){
+    s.addImage({ data:photo, x:0.6, y:1.75, w:4.1, h:5.05 });
+    s.addText(d.location || '', { x:0.85, y:5.95, w:3.6, h:0.65, fontFace:DK.B, fontSize: deckFit(d.location, 11, 70, 8.5), bold:true, color:DK.WHITE, valign:'bottom', margin:0 });
+  }
+  deckStat(P, s, cx, 1.75, (cw - 0.25) / 2, 1.6, money(d.sumaI), 'Valor asegurable de la obra (Sección I)');
+  deckStat(P, s, cx + (cw - 0.25) / 2 + 0.25, 1.75, (cw - 0.25) / 2, 1.6, (d.constMonths + (+d.maint || 0)) + ' meses', 'Construcción ' + d.constMonths + ' meses + ' + (d.maint || 0) + ' meses de mantenimiento');
+  deckKV(P, s, cx, 3.6, cw, [
+    ['Asegurado', (d.insured || '—') + ' y/o contratistas y/o subcontratistas'],
     ['Obra', (ai && ai.obraDesc) || d.project || '—'],
     ['Ubicación', d.location || '—'],
-    ['Tipo de póliza', 'Todo Riesgo Construcción, condicionado ' + (d.formato || 'Munich Re')]
-  ];
-  s.addTable(kv.map(r => [{ text:r[0], options:{ bold:true, color:NAVY, fill:{ color:LIGHT } } }, { text:String(r[1]).slice(0, 260), options:{ color:INK } }]),
-             { x:0.6, y:3.35, w:tableW, colW:[2.4, tableW - 2.4], rowH:0.62, fontFace:F, fontSize:12.5, border:{ type:'solid', color:LINE, pt:0.75 }, valign:'middle', margin:0.1 });
+    ['Interés asegurable', 'Sección I: daños materiales a la obra · Sección II: RC a terceros hasta ' + money(d.rc)],
+    ['Tipo de póliza', 'Todo Riesgo Construcción, base ' + (d.formato || 'Munich Re')]
+  ], 1.95, 0.62);
 
   if(cols.length){
-    /* 3 · Primas */
-    s = frame('COMPARATIVO ECONÓMICO', 'Primas por aseguradora');
-    const minP = Math.min(...cols.map(x => +x.q.premiumTotal || Infinity));
-    const rowsE = [
-      [label('Tasa'), col => cell(fmtRate(calcRate(col.q, c)), col)],
-      [label('Prima neta'), col => cell(money(col.q.premiumNet), col)],
-      [label('ISC'), col => cell(money(col.q.isc), col)],
-      [label('Prima total'), col => cell(money(col.q.premiumTotal), col, { bold:true, color: col.selected ? BLUE : NAVY, fontSize:14 })],
-      [label('Contra la más barata'), col => { const t = +col.q.premiumTotal; return cell(t === minP ? 'La más barata' : '+' + money(t - minP) + ' (' + ((t - minP) / minP * 100).toFixed(1) + '%)', col, { color: t === minP ? OK : GRAYT, fontSize:10.5 }); }],
-      [label('Puntaje Garrigó', 'de 100'), col => cell(String(col.score), col, { bold:true, color: col.selected ? ORANGE : NAVY, fontSize:14 })]
-    ];
-    s.addTable([head].concat(rowsE.map(r => [r[0]].concat(cols.map(r[1])))), tableOpts(1.75, 0.62, 12));
-    s.addText('Puntaje: Precio ' + scoreWeights().raw.price + '% · Cobertura ' + scoreWeights().raw.coverage + '% · Deducibles ' + scoreWeights().raw.deductibles + '%. Primas en ' + (d.currency === 'USD' ? 'dólares' : 'pesos dominicanos') + ', ISC incluido en la prima total.',
-              { x:0.6, y:6.45, w:12, h:0.35, fontFace:F, fontSize:9, color:GRAYT });
+    /* 3 · Comparativo económico + deducibles */
+    s = deckFrame(P, ctx, 'COMPARATIVO', 'Comparativo económico');
+    const fs = cols.length > 4 ? 10 : 11;
+    let y = deckCompareTable(P, s, { cols:cols, y:1.65, rowH:0.42, fs:fs, corner:'CONCEPTO', rows:[
+      { label:'Tasa negociada', key:true, cells: cols.map(col => ({ t: fmtRate(calcRate(col.q, c)) })) },
+      { label:'Prima neta', cells: cols.map(col => ({ t: money(col.q.premiumNet) })) },
+      { label:'ISC (16%)', cells: cols.map(col => ({ t: money(col.q.isc) })) },
+      { label:'Prima total', key:true, cells: cols.map(col => ({ t: money(col.q.premiumTotal) })) },
+      { label:'Facilidad de pago', key:true, cells: cols.map(col => ({ t: trcPayPlan(c, col.q), fs: fs })) }
+    ] });
+    s.addShape(P.ShapeType.rect, { x:0.6, y:y + 0.3, w:0.26, h:0.05, fill:{ color:DK.ORANGE }, line:{ type:'none' } });
+    s.addText('DEDUCIBLES', { x:0.95, y:y + 0.18, w:4, h:0.3, fontFace:DK.B, fontSize:10, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+    const dedOf = k => DED_KINDS.findIndex(x => x.k === k);
+    const dedRow = (label, k) => ({ label:label, cells: cols.map(col => { const v = quoteDeductible(col.q, k).v || '—'; return { t:v, fs: deckFit(v, fs, 26, 8) }; }) });
+    deckCompareTable(P, s, { cols:cols, y:y + 0.55, rowH:0.46, fs:fs, rows:[
+      dedRow('Riesgos catastróficos / de la naturaleza', 'cat'), dedRow('Responsabilidad civil', 'rc'), dedRow('Daños a la obra / otros riesgos', 'otros')
+    ].filter((r, i) => dedOf(['cat', 'rc', 'otros'][i]) !== -1) });
 
-    /* 4 · Deducibles */
-    s = frame('COMPARATIVO TÉCNICO', 'Deducibles');
-    const rowsD = mx.ded.map(r => [label(r.label, r.asked ? 'Solicitado: ' + r.asked : '')].concat(r.values.map((v, i) => cell(v, cols[i], { fontSize: fitSize(v, 11.5, 34) }))));
-    s.addTable([head].concat(rowsD), tableOpts(1.75, 1.05, 11.5));
+    /* 4 · Primas en barras */
+    s = deckFrame(P, ctx, 'COMPARATIVO', 'Así se comparan las primas');
+    const priced = cols.filter(x => +x.q.premiumTotal > 0);
+    const minT = Math.min(...priced.map(x => +x.q.premiumTotal)), maxT = Math.max(...priced.map(x => +x.q.premiumTotal));
+    const items = priced.slice().sort((a, b) => (+a.q.premiumTotal) - (+b.q.premiumTotal)).map(x => ({ name:x.name, v:+x.q.premiumTotal, sel:x.selected, best:+x.q.premiumTotal === minT,
+      tag: x.selected ? 'RECOMENDADA' : (+x.q.premiumTotal === minT ? 'LA MÁS BAJA' : '+' + ((+x.q.premiumTotal - minT) / minT * 100).toFixed(1) + '% vs. la más baja') }));
+    deckBars(P, s, 0.6, 1.85, 8.3, items, money);
+    const avg = priced.reduce((a, x) => a + (+x.q.premiumTotal), 0) / (priced.length || 1);
+    deckStat(P, s, 9.35, 1.85, 3.38, 1.55, money(maxT - minT), 'Diferencia entre la prima más alta y la más baja', true);
+    deckStat(P, s, 9.35, 3.6, 3.38, 1.55, priced.length + ' de ' + cols.length, 'Aseguradoras con prima cotizada');
+    if(sel) deckStat(P, s, 9.35, 5.35, 3.38, 1.4, (sel.q.premiumTotal <= avg ? '−' : '+') + Math.abs((+sel.q.premiumTotal - avg) / avg * 100).toFixed(1) + '%', 'Recomendada frente al promedio del mercado');
+    s.addText('Prima total con ISC incluido, en ' + (d.currency === 'USD' ? 'dólares' : 'pesos dominicanos') + '.', { x:0.6, y:6.55, w:8, h:0.3, fontFace:DK.B, fontSize:9, color:DK.MUTED, margin:0 });
 
     /* 5 · Coberturas y endosos */
     if(mx.cov.length){
-      s = frame('COMPARATIVO TÉCNICO', 'Coberturas y endosos');
-      const STAT = { accepted:['✓', OK], modified:['⚠', WARN], rejected:['✗', BAD], unknown:['—', MUTED] };
-      const rowH = Math.min(0.42, 4.6 / (mx.cov.length + 1));
-      const fs = rowH < 0.32 ? 9 : 10.5;
-      const rowsC = mx.cov.map(r => [{ text:[{ text: r.code + '  ', options:{ bold:true, color:BLUE } }, { text: r.title, options:{ color:INK } }], options:{ fill:{ color:LIGHT } } }]
-        .concat(r.statuses.map((st, i) => { const t = STAT[st] || STAT.unknown; return cell(t[0], cols[i], { bold:true, color:t[1], fontSize: fs + 2 }); })));
-      s.addTable([head].concat(rowsC), Object.assign(tableOpts(1.65, rowH, fs), { margin:0.04 }));
-      s.addText('✓ incluido   ⚠ incluido con cambios   ✗ no incluido   — la cotización no lo menciona', { x:0.6, y:Math.min(6.68, 1.65 + (mx.cov.length + 1) * rowH + 0.22), w:12, h:0.28, fontFace:F, fontSize:9, color:GRAYT });
+      s = deckFrame(P, ctx, 'COMPARATIVO TÉCNICO', 'Coberturas y endosos');
+      const STAT = { accepted:['✓', DK.GREEN_T], modified:['⚠', 'B45309'], rejected:['✗', 'C0262D'], unknown:['—', DK.MUTED] };
+      const n = mx.cov.length, rowH = Math.min(0.4, 4.75 / (n + 2)), fsC = rowH < 0.3 ? 8.5 : 10;
+      const rows = mx.cov.map(r => ({ label: r.code + '  ' + r.title, cells: r.statuses.map(st => { const t = STAT[st] || STAT.unknown; return { t:t[0], color:t[1], bold:true, fs:fsC + 2 }; }) }));
+      rows.push({ label:'Endosos incluidos', key:true, cells: cols.map(col => ({ t: col.vs && col.vs.total ? col.vs.accepted.length + ' de ' + col.vs.total : '—' })) });
+      const yEnd = deckCompareTable(P, s, { cols:cols, y:1.6, rowH:rowH, fs:fsC, firstW:3.8, rows:rows });
+      s.addText('✓ incluido     ⚠ con cambios     ✗ no incluido     — no lo menciona', { x:0.6, y:Math.min(6.62, yEnd + 0.12), w:10, h:0.28, fontFace:DK.B, fontSize:9, color:DK.GRAY, margin:0 });
     }
 
     /* 6 · Recomendación */
     if(sel){
-      s = frame('NUESTRA RECOMENDACIÓN', sel.name);
-      s.addShape(RR, { x:0.6, y:1.75, w:4.2, h:4.6, fill:{ color:NAVY }, line:{ color:NAVY }, rectRadius:0.08 });
-      const big = (y, k, v) => { s.addText(k, { x:0.9, y:y, w:3.6, h:0.3, fontFace:F, fontSize:9.5, color:'FFB89A', charSpacing:1.5 }); s.addText(v, { x:0.9, y:y+0.3, w:3.6, h:0.6, fontFace:F, fontSize: fitSize(v, 22, 16), bold:true, color:WHITE }); };
-      big(2.0, 'PRIMA TOTAL', money(sel.q.premiumTotal));
-      big(3.3, 'PUNTAJE', sel.score + ' / 100');
-      big(4.6, 'ENDOSOS DEL SLIP', (sel.vs ? sel.vs.accepted.length + ' de ' + sel.vs.total : '—'));
-      const recTxt = (c.proposal && c.proposal.recommendation) || '';
-      const txt = (recTxt && recTxt.indexOf(sel.name) !== -1) ? recTxt
-        : ('Recomendamos ' + sel.name + ' por el mejor balance entre prima, coberturas y deducibles' + (sel.vs && sel.vs.total ? ', con ' + sel.vs.accepted.length + ' de los ' + sel.vs.total + ' endosos solicitados incluidos' : '') + '.');
-      s.addText(txt, { x:5.2, y:1.75, w:7.5, h:3.3, fontFace:F, fontSize: fitSize(txt, 15, 420), color:INK, valign:'top', paraSpaceAfter:6 });
-      s.addText([{ text:'Próximos pasos', options:{ bold:true, color:NAVY, breakLine:true } },
-                 { text:'1. Confirmar la aseguradora seleccionada.', options:{ breakLine:true } },
-                 { text:'2. Emisión de la póliza y envío de la factura.', options:{ breakLine:true } },
-                 { text:'3. Pago de la prima para activar la cobertura.' }],
-                { x:5.2, y:5.1, w:7.5, h:1.3, fontFace:F, fontSize:11.5, color:GRAYT, valign:'top' });
+      s = P.addSlide(); s.background = { color:DK.WHITE }; ctx.page++;
+      deckRecPanel(P, s, ctx, sel.name, [['PRIMA TOTAL', money(sel.q.premiumTotal)], ['FACILIDAD DE PAGO', trcPayPlan(c, sel.q)], ['PUNTAJE GARRIGÓ', sel.score + ' / 100']]);
+      s.addText('POR QUÉ LA RECOMENDAMOS', { x:5.5, y:0.6, w:7, h:0.3, fontFace:DK.B, fontSize:10.5, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+      s.addText('El mejor balance entre precio, coberturas y deducibles', { x:5.5, y:0.92, w:7.3, h:0.95, fontFace:DK.H, fontSize:24, bold:true, color:DK.NAVY, valign:'top', margin:0 });
+      const sc = scoreQuotes(c).find(x => x.q.insurerId === sel.q.insurerId) || {};
+      const why = [];
+      const t = +sel.q.premiumTotal;
+      why.push(t === minT ? 'La prima total más baja del panel: ' + money(t) + '.' : 'Prima total de ' + money(t) + ', a ' + ((t - minT) / minT * 100).toFixed(1) + '% de la más baja.');
+      if(sel.vs && sel.vs.total) why.push('Incluye ' + sel.vs.accepted.length + ' de los ' + sel.vs.total + ' endosos solicitados' + (sel.vs.rejected.length ? ' (' + sel.vs.rejected.length + ' no incluidos).' : ', sin endosos rechazados.'));
+      why.push(sc.dedScore >= 75 ? 'Deducibles entre los más bajos del mercado consultado.' : 'Deducibles dentro del rango del mercado consultado.');
+      why.push('Facilidad de pago: ' + trcPayPlan(c, sel.q) + '.');
+      deckChecks(P, s, 5.5, 2.05, 7.3, why, 0.62);
+      s.addText('PRÓXIMOS PASOS', { x:5.5, y:4.85, w:7, h:0.3, fontFace:DK.B, fontSize:10.5, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+      deckSteps(P, s, 5.5, 5.3, 7.3, ['Confirmar la aseguradora seleccionada', 'Emisión de la póliza y envío de la factura', 'Pago de la prima para activar la cobertura']);
     }
   }
+  /* 7 · Cierre */
+  deckClosing(P, ctx, bg);
   return P;
 }
 async function generateProposalPPT(){
   const c = activeCase(); if(!c) return;
-  if(typeof PptxGenJS === 'undefined'){ alert('La librería de PowerPoint no cargó. Revisa tu conexión a internet.'); return; }
+  if(typeof PptxGenJS === 'undefined'){ syncToast('⚠ La librería de PowerPoint no cargó. Recarga la página.', false); return; }
   const d = proposalData(c);
   syncToast('Generando presentación…', true);
-  const ai = fallbackNarrative(d);
   try{
-    const P = buildProposalDeck(c, d, ai);
-    await P.writeFile({ fileName:'Propuesta-'+((c.ref||'TRC').replace(/[^a-zA-Z0-9_-]/g,'_'))+'.pptx' });
+    const P = await buildProposalDeck(c, d, fallbackNarrative(d));
+    await P.writeFile({ fileName:'Propuesta-' + ((c.ref || 'TRC').replace(/[^a-zA-Z0-9_-]/g, '_')) + '.pptx' });
     syncToast('Presentación lista ✓', true);
-  }catch(e){ console.error(e); syncToast('⚠ No se pudo generar el PPT: '+_errTxt(e), false); }
+  }catch(e){ console.error(e); syncToast('⚠ No se pudo generar el PPT: ' + _errTxt(e), false); }
 }
 function viewProposal(c){
   const filledQuotes = activeQuotes(c);
@@ -3485,7 +3754,7 @@ function viewProposal(c){
         <div class="row">
           <button class="btn btn-ghost btn-sm" onclick="exportDocx('proposal')">⬇ Word</button>
           <button class="btn btn-ghost btn-sm" onclick="exportPdf('proposal')">⬇ PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generateProposalPPT()">📊 PPT (IA)</button>
+          <button class="btn btn-primary btn-sm" onclick="generateProposalPPT()">📊 PowerPoint</button>
         </div>
       </div>
       <div class="preview-body">
@@ -3676,6 +3945,7 @@ function viewCompare(c){
             <tr><td>ISC ${state.config.iscRate || 16}%</td>${c.quotes.map((q, i) => `<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.isc)}" onchange="updMoneyQuote(${i},'isc',this)"></td>`).join('')}</tr>
             <tr><td><strong>Prima total</strong></td>${c.quotes.map((q, i) => `<td class="${(+q.premiumTotal === minP && priced.length > 1) ? 'best' : ((+q.premiumTotal === maxP && priced.length > 1) ? 'worst' : '')}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumTotal)}" onchange="updMoneyQuote(${i},'premiumTotal',this)"></td>`).join('')}</tr>
             <tr><td>Contra la más barata</td>${c.quotes.map(q => { const t = +q.premiumTotal; if(!t || !minP) return '<td class="cmp-sub">—</td>'; if(t === minP) return '<td class="cmp-diff cmp-diff-best">La más barata</td>'; const d = t - minP; return `<td class="cmp-diff">+${M(d)} <span>(+${(d / minP * 100).toFixed(1)}%)</span></td>`; }).join('')}</tr>
+            <tr><td>Facilidad de pago</td>${c.quotes.map((q, i) => `<td><input class="input" value="${escapeHtml(q.paymentPlan || '')}" placeholder="${escapeHtml(trcPayPlan(c, null))}" onchange="updQuote(${i},'paymentPlan',this.value)"></td>`).join('')}</tr>
             ${req.length ? group('Coberturas y endosos pedidos en el Slip', 'Clic en una marca para corregirla') + endoRows + missingRow : ''}
             ${subRows ? group('Sub-límites', 'Verde: igual o mayor a lo pedido · Rojo: menor') + subRows : ''}
             ${group('Deducibles', 'Verde: más bajo que lo pedido · Rojo: más alto')}
@@ -3904,7 +4174,7 @@ function viewConfig(){
         <div class="field full"><label>Dirección</label><input class="input" value="${escapeHtml(cf.address)}" onchange="updConfig('address',this.value)" placeholder="Calle Jacinto Ignacio Mañon 48, Edificio V&M, 4to. piso, Suite 404, Santo Domingo, R.D."></div>
         <div class="field"><label>Teléfono</label><input class="input" value="${escapeHtml(cf.phone)}" onchange="updConfig('phone',this.value)" placeholder="(809) 227-2677"></div>
         <div class="field"><label>Email</label><input class="input" value="${escapeHtml(cf.email)}" onchange="updConfig('email',this.value)" placeholder="info@garrigo.com.do"></div>
-        <div class="field"><label>Sitio web</label><input class="input" value="${escapeHtml(cf.website||'')}" onchange="updConfig('website',this.value)" placeholder="[www.garrigo.com.do](https://www.garrigo.com.do)"></div>
+        <div class="field"><label>Sitio web</label><input class="input" value="${escapeHtml(cf.website||'')}" onchange="updConfig('website',this.value)" placeholder="www.garrigo.com.do"></div>
         <div class="field"><label>Licencia Sup. Seguros (opcional)</label><input class="input" value="${escapeHtml(cf.license||'')}" onchange="updConfig('license',this.value)" placeholder="Si tienes registro Sup. Seguros"></div>
       </div>
       <div class="section-title">Parámetros</div>
@@ -4011,7 +4281,7 @@ function docHeaderForExport(c, titleEs, titleEn){
           <div style="display:inline-block;background:#FF5200;color:#ffffff;font-weight:700;font-size:8pt;letter-spacing:1pt;padding:2pt 8pt;font-family:Arial,sans-serif">${escapeHtml(c.header.type)}</div>
           <div style="font-size:13pt;font-weight:700;color:#004A88;font-family:Arial,sans-serif;margin-top:3pt">${escapeHtml(c.ref)}</div>
           <div style="margin-top:4pt"><strong>Emisión:</strong> ${fmtDate(c.header.dateIssue)}</div>
-          <div><strong>Deadline:</strong> ${fmtDate(c.header.deadline)}</div>
+          ${c.header.deadline === null ? '' : `<div><strong>Deadline:</strong> ${fmtDate(c.header.deadline)}</div>`}
         </td>
       </tr>
     </table>
@@ -4932,10 +5202,9 @@ function showPdfLoadingModal(filename){
     <h3>📄 Procesando PDF</h3>
     <p>${escapeHtml(filename)}</p>
     <div style="margin:20px 0;text-align:center;color:var(--grg-blue)">
-      <div style="font-size:32px;animation:pulse 1s infinite">⏳</div>
+      <div class="spinner" role="status" aria-label="Procesando"></div>
       <div style="font-size:13px;margin-top:8px">Extrayendo texto y detectando primas, deducibles, coberturas...</div>
     </div>
-    <style>@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}</style>
   `;
   modal.classList.add('open');
 }
@@ -5211,6 +5480,1019 @@ function openCasePicker(){
 function pickCase(id){ state.activeCaseId=id; save(); closeModal(); render(); }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 /* ============================================================
+   MÓDULO FIANZAS
+   Fianzas públicas (Ley 47-25 de Contrataciones Públicas) y privadas.
+   Se guardan en la misma tabla "cases" de Supabase con data.kind = 'fianza'.
+   ============================================================ */
+const BOND_TYPES = [
+  { k:'seriedad',      label:'Seriedad / mantenimiento de oferta', base:'oferta',   pct:1,   months:3,  pub:true,  priv:true,
+    note:'Pliegos públicos: normalmente 1% del monto ofertado. Las MIPYME no están obligadas a presentarla (Art. 175, Ley 47-25).',
+    docs:['pliego','oferta'] },
+  { k:'fiel',          label:'Fiel cumplimiento de contrato',      base:'contrato', pct:4,   months:12, pub:true,  priv:true,
+    note:'Pliegos públicos: normalmente 4% del monto del contrato adjudicado.', docs:['contrato'] },
+  { k:'anticipo',      label:'Buen uso del anticipo',              base:'anticipo', pct:100, months:12, pub:true,  priv:true,
+    note:'Cubre el 100% del anticipo recibido.', docs:['contrato'] },
+  { k:'vicios',        label:'Vicios ocultos / calidad de obra',   base:'contrato', pct:'',  months:12, pub:true,  priv:true,
+    note:'Porcentaje y plazo según contrato o pliego.', docs:['contrato','recepcion'] },
+  { k:'mantenimiento', label:'Garantía de mantenimiento de obra',  base:'contrato', pct:'',  months:12, pub:true,  priv:true,
+    note:'Porcentaje y plazo según contrato.', docs:['contrato','recepcion'] },
+  { k:'pago',          label:'Pago a suplidores y mano de obra',   base:'contrato', pct:'',  months:12, pub:false, priv:true,
+    note:'Garantiza el pago a subcontratistas, suplidores y trabajadores.', docs:['contrato'] },
+  { k:'judicial',      label:'Judicial',                           base:'manual',   pct:'',  months:12, pub:false, priv:true,
+    note:'Monto fijado por el tribunal.', docs:['sentencia'] },
+  { k:'aduanal',       label:'Aduanal (DGA)',                      base:'manual',   pct:'',  months:12, pub:true,  priv:true,
+    note:'Monto según la Dirección General de Aduanas.', docs:['dga'] },
+  { k:'arrendamiento', label:'Arrendamiento / alquiler',           base:'manual',   pct:'',  months:12, pub:false, priv:true,
+    note:'Garantiza el pago del alquiler.', docs:['alquiler'] },
+  { k:'otra',          label:'Otra',                               base:'manual',   pct:'',  months:12, pub:true,  priv:true,
+    note:'Describe la obligación garantizada.', docs:[] }
+];
+const BOND_BASE_LABEL = { oferta:'Monto ofertado', contrato:'Monto del contrato', anticipo:'Monto del anticipo', manual:'Monto de la fianza' };
+const BOND_DOCS = {
+  /* comunes */
+  registro:   'Registro mercantil y RNC vigentes',
+  financieros:'Estados financieros (últimos 2 años)',
+  dgii:       'Certificación DGII al día',
+  tss:        'Certificación TSS al día',
+  acta:       'Acta / poder de quien firma',
+  cedula:     'Cédula del representante',
+  contragarantia:'Contragarantía firmada (pagaré / contrato)',
+  solicitud:  'Formulario de solicitud de la aseguradora',
+  rpe:        'Registro de Proveedor del Estado (RPE)',
+  /* por tipo */
+  pliego:     'Pliego de condiciones',
+  oferta:     'Oferta económica / monto ofertado',
+  contrato:   'Contrato firmado o acto de adjudicación',
+  recepcion:  'Acta de recepción de la obra',
+  sentencia:  'Sentencia u ordenanza judicial',
+  dga:        'Documento de Aduanas (DGA)',
+  alquiler:   'Contrato de alquiler'
+};
+const BOND_STATUS = ['Cotizando','Solicitada','Emitida','Vencida','Liberada'];
+function bondType(b){ return BOND_TYPES.find(t => t.k === (b && b.type)) || BOND_TYPES[1]; }
+function bondDocsFor(b){
+  const t = bondType(b);
+  const common = ['registro','financieros','dgii','tss','acta','cedula','contragarantia','solicitud'];
+  if(b.sector === 'publico') common.push('rpe');
+  return common.concat(t.docs);
+}
+function bondPct(b){ const o = b.obligacion || {}; return (o.pct !== undefined && o.pct !== '') ? +o.pct : (bondType(b).pct === '' ? '' : +bondType(b).pct); }
+function bondBaseAmount(b){
+  const o = b.obligacion || {}, base = bondType(b).base;
+  if(base === 'oferta') return +o.offerAmount || 0;
+  if(base === 'contrato') return +o.contractAmount || 0;
+  if(base === 'anticipo') return +o.advanceAmount || 0;
+  return 0;
+}
+/* Monto de la fianza: manual si se escribió, si no base × % */
+function bondAmount(b){
+  const o = b.obligacion || {};
+  if(bondType(b).base === 'manual' || (o.amountOverride !== undefined && o.amountOverride !== '' && +o.amountOverride > 0)) return +o.amountOverride || 0;
+  const pct = bondPct(b);
+  return pct === '' ? 0 : Math.round(bondBaseAmount(b) * pct / 100);
+}
+function bondCcy(b){ return (b.obligacion && b.obligacion.currency) || 'DOP'; }
+function bondMoney(b, v){ return (+v > 0) ? (bondCcy(b) === 'USD' ? 'US$ ' : 'RD$ ') + Math.round(+v).toLocaleString('en-US') : '—'; }
+function bondEnd(b){
+  const o = b.obligacion || {};
+  if(o.endDate) return o.endDate;
+  if(o.startDate && +o.months) return addMonths(o.startDate, +o.months);
+  return '';
+}
+function daysTo(dateStr){ if(!dateStr) return null; const d = new Date(dateStr + 'T12:00:00'); if(isNaN(d)) return null; return Math.round((d - new Date()) / 86400000); }
+function bondInsurerName(id, q){
+  if(id === 'otra') return (q && q.insurerName) || 'Otra aseguradora';
+  const i = DEFAULT_INSURERS.find(x => x.id === id); return i ? i.name : (id || '—');
+}
+function blankBond(){
+  const n = (state.bonds || []).length + 1;
+  return {
+    id: 'fz_' + Math.random().toString(36).slice(2, 9), kind:'fianza',
+    ref: 'FZ-' + new Date().getFullYear() + '-' + String(n).padStart(4, '0'),
+    status:'Cotizando', sector:'publico', type:'fiel',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    afianzado:{ name:'', rnc:'', address:'', activity:'', contact:'', phone:'', email:'', mipyme:false },
+    beneficiario:{ name:'', rnc:'', address:'', contact:'' },
+    obligacion:{ process:'', description:'', currency:'DOP', offerAmount:'', contractAmount:'', advanceAmount:'', pct:'', amountOverride:'', startDate:'', months:'', endDate:'' },
+    docs:{}, notes:'',
+    quotes:['universal','mapfre','colonial','banreservas'].map(id => ({ insurerId:id, rate:'', premiumNet:'', isc:'', premiumTotal:'', minPremium:'', counter:'', issueDays:'', conditions:'' })),
+    selectedInsurer:'', slipTarget:'', policyNo:'', issuedInsurer:'', rateBasis:'prorrata'
+  };
+}
+function demoBond(){
+  const b = blankBond();
+  b.ref = 'FZ-2026-0001'; b.sector = 'publico'; b.type = 'fiel'; b.status = 'Cotizando';
+  b.afianzado = { name:'FASA Constructores, S.R.L.', rnc:'1-30-12345-6', address:'Av. 27 de Febrero No. 200, Santo Domingo, D.N.', activity:'Construcción de obras civiles', contact:'Ing. Pedro Martínez', phone:'(809) 555-0101', email:'compras@fasa.com.do', mipyme:false };
+  b.beneficiario = { name:'Ministerio de la Vivienda, Hábitat y Edificaciones (MIVHED)', rnc:'', address:'Santo Domingo, D.N.', contact:'' };
+  b.obligacion = { process:'MIVHED-CCC-LPN-2026-0012', description:'Construcción de 120 viviendas en Santo Domingo Este, Lote 3', currency:'DOP', offerAmount:'', contractAmount:185000000, advanceAmount:37000000, pct:'', amountOverride:'', startDate:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10), months:18, endDate:'' };
+  b.docs = { registro:true, financieros:true, dgii:true, tss:true, acta:true, cedula:true, rpe:true, contrato:true };
+  b.quotes = [
+    { insurerId:'universal', rate:1.0, premiumNet:'', isc:'', premiumTotal:'', minPremium:5000, counter:'Pagaré firmado por los socios', issueDays:2, conditions:'' },
+    { insurerId:'mapfre',    rate:0.9, premiumNet:'', isc:'', premiumTotal:'', minPremium:5000, counter:'Contragarantía + estados financieros', issueDays:3, conditions:'' },
+    { insurerId:'colonial',  rate:1.1, premiumNet:'', isc:'', premiumTotal:'', minPremium:3500, counter:'Pagaré notarial', issueDays:1, conditions:'' }
+  ];
+  return b;
+}
+function activeBond(){ return (state.bonds || []).find(b => b.id === state.activeBondId) || null; }
+function touchBond(b){ b.updatedAt = new Date().toISOString(); save(); }
+function updBond(path, v){
+  const b = activeBond(); if(!b) return;
+  const parts = path.split('.'); let o = b;
+  for(let i = 0; i < parts.length - 1; i++){ o[parts[i]] = o[parts[i]] || {}; o = o[parts[i]]; }
+  o[parts[parts.length - 1]] = v; touchBond(b);
+}
+function updBondMoney(path, input, rerender){
+  const n = parseMoneyInput(input.value); updBond(path, n || '');
+  input.value = n > 0 ? n.toLocaleString('en-US') : '';
+  if(rerender !== false) render();
+}
+function setBondType(k){
+  const b = activeBond(); if(!b) return;
+  b.type = k; b.obligacion.pct = ''; b.obligacion.amountOverride = '';
+  if(!+b.obligacion.months) b.obligacion.months = bondType(b).months;
+  touchBond(b); render();
+}
+function newBond(){
+  state.bonds = state.bonds || [];
+  const b = blankBond(); b.obligacion.months = bondType(b).months;
+  state.bonds.unshift(b); state.activeBondId = b.id; state.view = 'fz-data'; save(); render();
+}
+function deleteBond(id){
+  if(!confirm('¿Eliminar esta fianza?')) return;
+  state.bonds = (state.bonds || []).filter(b => b.id !== id);
+  if(typeof sbClient !== 'undefined' && sbClient && typeof currentUser !== 'undefined' && currentUser){ sbClient.from('cases').delete().eq('id', id).then(function(){}, function(){}); }
+  if(state.activeBondId === id) state.activeBondId = (state.bonds[0] || {}).id || null;
+  save(); render();
+}
+function pickBond(id){ state.activeBondId = id; if(!/^fz-/.test(state.view) || state.view === 'fz-list') state.view = 'fz-data'; save(); closeModal(); render(); }
+function openBondPicker(){
+  const modal = document.getElementById('modal');
+  document.getElementById('modalContent').innerHTML = `
+    <h3>Seleccionar fianza</h3>
+    <div style="max-height:50vh;overflow:auto;margin:-4px 0 16px">
+      ${(state.bonds || []).map(b => `
+        <div class="insurer-card" style="cursor:pointer" onclick="pickBond('${b.id}')">
+          <div class="insurer-info">
+            <div class="insurer-name">${escapeHtml(b.ref)} — ${escapeHtml(b.afianzado.name || 'Sin afianzado')}</div>
+            <div class="insurer-meta">${escapeHtml(bondType(b).label)} · ${bondMoney(b, bondAmount(b))} · ${escapeHtml(b.status)}</div>
+          </div>
+        </div>`).join('') || '<div class="empty">Sin fianzas</div>'}
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-gold right" onclick="closeModal();newBond()">+ Nueva fianza</button>
+    </div>`;
+  modal.classList.add('open');
+}
+/* RNC → DGII para afianzado y beneficiario */
+const BOND_DGII_UI = {};
+async function lookupBondRNC(who, v){
+  const b = activeBond(); if(!b) return;
+  const digits = String(v || '').replace(/\D/g, ''); if(!digits) return;
+  const key = b.id + who;
+  if(digits.length !== 9 && digits.length !== 11){ BOND_DGII_UI[key] = { msg:'El RNC debe tener 9 dígitos (cédula: 11).', err:true }; render(); return; }
+  if(typeof LOCAL_DEV !== 'undefined' && LOCAL_DEV){ BOND_DGII_UI[key] = { msg:'La consulta DGII funciona en la versión publicada (Vercel), no en modo local.', err:true }; render(); return; }
+  BOND_DGII_UI[key] = { msg:'Consultando DGII…', err:false }; render();
+  try{
+    const r = await fetch('/api/rnc?rnc=' + digits); let j = {}; try{ j = await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    const p = b[who]; p.rnc = j.rnc || p.rnc; if(j.nombre) p.name = j.nombre; if(j.actividad && who === 'afianzado') p.activity = j.actividad; p.dgii = j;
+    delete BOND_DGII_UI[key]; touchBond(b); render(); syncToast('DGII: ' + (j.nombre || 'datos cargados') + ' ✓', true);
+  }catch(e){ BOND_DGII_UI[key] = { msg:'⚠ ' + (e.message || e), err:true }; render(); }
+}
+function bondRncField(b, who){
+  const ui = BOND_DGII_UI[b.id + who] || {}, d = b[who].dgii;
+  let st = '';
+  if(ui.msg) st = `<div class="hint" style="margin-top:4px;color:${ui.err ? '#C0262D' : 'var(--ink-500)'}">${escapeHtml(ui.msg)}</div>`;
+  else if(d && d.nombre){ const ok = (d.estado || '').toUpperCase() === 'ACTIVO'; st = `<div class="hint" style="margin-top:4px;color:${ok ? '#15803D' : '#C0262D'}">${ok ? '✓' : '⚠'} DGII: ${escapeHtml(d.estado || '—')}${d.regimen ? ' · Régimen ' + escapeHtml(d.regimen) : ''}</div>`; }
+  return `<div class="row" style="gap:6px"><input class="input" value="${escapeHtml(b[who].rnc || '')}" placeholder="1-30-XXXXX-X" style="flex:1" onchange="updBond('${who}.rnc',this.value);lookupBondRNC('${who}',this.value)">
+    <button class="btn btn-ghost btn-sm" type="button" onclick="lookupBondRNC('${who}', activeBond()['${who}'].rnc)">🔍 DGII</button></div>${st}`;
+}
+
+/* ---------------- VISTAS ---------------- */
+const BOND_TITLES = {
+  'fz-list':['Fianzas','Cartera de fianzas, vencimientos y fianzas en trámite'],
+  'fz-data':['Datos de la Fianza','Afianzado, beneficiario, obligación y documentos'],
+  'fz-request':['Solicitud de Fianza','Documento para enviar a las aseguradoras'],
+  'fz-form':['Formulario de Solicitud','Formulario para firma del cliente, listo para la aseguradora'],
+  'fz-compare':['Comparador de Fianzas','Cotizaciones recibidas lado a lado'],
+  'fz-proposal':['Propuesta de Fianza','Documento para el cliente con las opciones y la recomendación']
+};
+function renderBondView(content){
+  const v = state.view;
+  if(v === 'fz-list'){ content.innerHTML = viewBondList(); return; }
+  const b = activeBond();
+  if(!b){ content.innerHTML = `<div class="card empty"><div class="empty-ico">🛡</div><div>No hay fianza activa. <a href="#" onclick="newBond();return false;">Crear una nueva</a> o elegir una de la <a href="#" onclick="state.view='fz-list';render();return false;">cartera</a>.</div></div>`; return; }
+  if(v === 'fz-data') content.innerHTML = viewBondData(b);
+  else if(v === 'fz-request') content.innerHTML = viewBondRequest(b);
+  else if(v === 'fz-compare') content.innerHTML = viewBondCompare(b);
+  else if(v === 'fz-form') content.innerHTML = viewBondForm(b);
+  else if(v === 'fz-proposal') content.innerHTML = viewBondProposal(b);
+}
+function bondStatusPill(s){
+  const m = { Cotizando:'badge-cot', Solicitada:'badge-comp', Emitida:'badge-coloc', Vencida:'badge-ren', Liberada:'badge-emit' };
+  return `<span class="badge ${m[s] || 'badge-cot'}">${escapeHtml(s || '—')}</span>`;
+}
+function viewBondList(){
+  const L = state.bonds || [];
+  const active = L.filter(b => b.status === 'Emitida');
+  const tramite = L.filter(b => b.status === 'Cotizando' || b.status === 'Solicitada');
+  const soon = active.filter(b => { const d = daysTo(bondEnd(b)); return d !== null && d <= 30; });
+  const tot = active.reduce((a, b) => a + (bondCcy(b) === 'USD' ? bondAmount(b) * (state.config.fxRate || 60) : bondAmount(b)), 0);
+  const rows = L.map(b => {
+    const end = bondEnd(b), d = daysTo(end);
+    const due = !end ? '—' : `${fmtDate(end)}${b.status === 'Emitida' && d !== null ? ` <span class="badge ${d < 0 ? 'badge-ren' : d <= 30 ? 'badge-cot' : 'badge-coloc'}" style="margin-left:4px">${d < 0 ? 'vencida' : d === 0 ? 'hoy' : d + ' días'}</span>` : ''}`;
+    const ins = b.issuedInsurer || b.selectedInsurer;
+    return `<tr style="cursor:pointer" onclick="pickBond('${b.id}')">
+      <td><strong>${escapeHtml(b.ref)}</strong><div class="cmp-sub">${b.sector === 'publico' ? 'Pública' : 'Privada'}</div></td>
+      <td>${escapeHtml(b.afianzado.name || '—')}</td>
+      <td>${escapeHtml(bondType(b).label)}</td>
+      <td>${escapeHtml(b.beneficiario.name || '—')}</td>
+      <td class="num">${bondMoney(b, bondAmount(b))}</td>
+      <td>${ins ? escapeHtml(bondInsurerName(ins, (b.quotes || []).find(q => q.insurerId === ins))) : '—'}</td>
+      <td>${due}</td>
+      <td>${bondStatusPill(b.status)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Fianzas emitidas</div><div class="kpi-value">${active.length}</div><div class="kpi-sub">vigentes en cartera</div></div>
+      <div class="kpi"><div class="kpi-label">Monto afianzado</div><div class="kpi-value" style="font-size:18px">RD$ ${Math.round(tot).toLocaleString('en-US')}</div><div class="kpi-sub">fianzas emitidas (US$ × ${state.config.fxRate || 60})</div></div>
+      <div class="kpi kpi-alert"><div class="kpi-label">Vencen en 30 días</div><div class="kpi-value">${soon.length}</div><div class="kpi-sub">renovar o liberar</div></div>
+      <div class="kpi"><div class="kpi-label">En trámite</div><div class="kpi-value">${tramite.length}</div><div class="kpi-sub">cotizando o solicitadas</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div><h2 class="card-title">Cartera de fianzas</h2><div class="card-subtitle">Haz clic en una fianza para abrirla.</div></div>
+        <button class="btn btn-gold btn-sm" onclick="newBond()">+ Nueva fianza</button></div>
+      ${L.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Ref.</th><th>Afianzado</th><th>Tipo</th><th>Beneficiario</th><th class="num">Monto</th><th>Aseguradora</th><th>Vence</th><th>Estado</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>` : `<div class="empty"><div class="empty-ico">🛡</div>Aún no hay fianzas. Crea la primera con <strong>+ Nueva fianza</strong>.</div>`}
+    </div>`;
+}
+function viewBondData(b){
+  const t = bondType(b), o = b.obligacion, base = t.base;
+  const docs = bondDocsFor(b);
+  const nDocs = docs.filter(k => b.docs[k]).length;
+  const pct = bondPct(b), amt = bondAmount(b);
+  const mipymeWarn = b.sector === 'publico' && b.afianzado.mipyme && b.type === 'seriedad';
+  const typeOpts = BOND_TYPES.filter(x => b.sector === 'publico' ? x.pub : x.priv);
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div><h2 class="card-title">${escapeHtml(b.ref)} — ${escapeHtml(t.label)}</h2>
+          <div class="card-subtitle">Estado: ${bondStatusPill(b.status)} · Actualizada ${fmtDate(b.updatedAt)}</div></div>
+        <div class="row">
+          <select class="select" style="width:auto" onchange="updBond('status',this.value);render()">${BOND_STATUS.map(s => `<option ${s === b.status ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          <button class="btn btn-danger btn-sm" onclick="deleteBond('${b.id}')">Eliminar</button>
+        </div>
+      </div>
+      <div class="section-title">Tipo de fianza</div>
+      <div class="form-grid cols-3">
+        <div class="field"><label>Sector</label>
+          <select class="select" onchange="updBond('sector',this.value);render()">
+            <option value="publico" ${b.sector === 'publico' ? 'selected' : ''}>Pública (Estado · Ley 47-25)</option>
+            <option value="privado" ${b.sector === 'privado' ? 'selected' : ''}>Privada</option>
+          </select></div>
+        <div class="field"><label>Tipo</label>
+          <select class="select" onchange="setBondType(this.value)">${typeOpts.map(x => `<option value="${x.k}" ${x.k === b.type ? 'selected' : ''}>${x.label}</option>`).join('')}</select></div>
+        <div class="field"><label>Moneda</label>
+          <select class="select" onchange="updBond('obligacion.currency',this.value);render()"><option ${o.currency === 'DOP' ? 'selected' : ''}>DOP</option><option ${o.currency === 'USD' ? 'selected' : ''}>USD</option></select></div>
+        ${b.type === 'otra' ? `<div class="field full"><label>Nombre de la fianza</label><input class="input" value="${escapeHtml(b.otherName || '')}" onchange="updBond('otherName',this.value)" placeholder="Ej: Fianza de licencia de operación"></div>` : ''}
+      </div>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">${escapeHtml(t.note)}</p>
+      ${mipymeWarn ? `<div style="margin-top:10px;background:#FFF6E5;border:1px solid #F3D9A6;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400E">El afianzado está marcado como MIPYME: en contrataciones públicas no se le puede exigir garantía de seriedad de la oferta (Art. 175, Ley 47-25). Confirma con el pliego si de todos modos la requieren.</div>` : ''}
+
+      <div class="section-title">Afianzado (quien da la garantía)</div>
+      <div class="form-grid cols-2">
+        <div class="field"><label>RNC <span class="hint">(completa los datos desde la DGII)</span></label>${bondRncField(b, 'afianzado')}</div>
+        <div class="field"><label>Razón social</label><input class="input" value="${escapeHtml(b.afianzado.name)}" onchange="updBond('afianzado.name',this.value)"></div>
+        <div class="field"><label>Actividad</label><input class="input" value="${escapeHtml(b.afianzado.activity || '')}" onchange="updBond('afianzado.activity',this.value)"></div>
+        <div class="field"><label>Dirección</label><input class="input" value="${escapeHtml(b.afianzado.address || '')}" onchange="updBond('afianzado.address',this.value)"></div>
+        <div class="field"><label>Contacto</label><input class="input" value="${escapeHtml(b.afianzado.contact || '')}" onchange="updBond('afianzado.contact',this.value)"></div>
+        <div class="field"><label>Teléfono / email</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input class="input" value="${escapeHtml(b.afianzado.phone || '')}" onchange="updBond('afianzado.phone',this.value)" placeholder="Teléfono"><input class="input" value="${escapeHtml(b.afianzado.email || '')}" onchange="updBond('afianzado.email',this.value)" placeholder="Email"></div></div>
+        ${b.sector === 'publico' ? `<label class="check-row full"><input type="checkbox" ${b.afianzado.mipyme ? 'checked' : ''} onchange="updBond('afianzado.mipyme',this.checked);render()"> Es MIPYME certificada (MICM)</label>` : ''}
+      </div>
+
+      <div class="section-title">Beneficiario (a favor de quien se emite)</div>
+      <div class="form-grid cols-2">
+        <div class="field"><label>RNC <span class="hint">(opcional)</span></label>${bondRncField(b, 'beneficiario')}</div>
+        <div class="field"><label>Nombre</label><input class="input" value="${escapeHtml(b.beneficiario.name)}" onchange="updBond('beneficiario.name',this.value)" placeholder="${b.sector === 'publico' ? 'Ej: Ministerio de Obras Públicas y Comunicaciones (MOPC)' : 'Ej: Promotora XYZ, S.R.L.'}"></div>
+        <div class="field full"><label>Dirección / contacto</label><input class="input" value="${escapeHtml(b.beneficiario.address || '')}" onchange="updBond('beneficiario.address',this.value)"></div>
+      </div>
+
+      <div class="section-title">Obligación garantizada</div>
+      <div class="form-grid cols-2">
+        <div class="field"><label>${b.sector === 'publico' ? 'Referencia del proceso' : 'Contrato / referencia'}</label><input class="input" value="${escapeHtml(o.process || '')}" onchange="updBond('obligacion.process',this.value)" placeholder="${b.sector === 'publico' ? 'Ej: MOPC-CCC-LPN-2026-0012' : 'Ej: Contrato de obra No. 45-2026'}"></div>
+        <div class="field"><label>Descripción</label><input class="input" value="${escapeHtml(o.description || '')}" onchange="updBond('obligacion.description',this.value)" placeholder="Objeto del contrato o de la licitación"></div>
+        ${base === 'oferta' ? `<div class="field"><label>${BOND_BASE_LABEL.oferta}</label><input class="input money-input" value="${fmtMoneyInput(o.offerAmount)}" onchange="updBondMoney('obligacion.offerAmount',this)"></div>` : ''}
+        ${base === 'contrato' || base === 'anticipo' ? `<div class="field"><label>${BOND_BASE_LABEL.contrato}</label><input class="input money-input" value="${fmtMoneyInput(o.contractAmount)}" onchange="updBondMoney('obligacion.contractAmount',this)"></div>` : ''}
+        ${base === 'anticipo' ? `<div class="field"><label>${BOND_BASE_LABEL.anticipo}</label><input class="input money-input" value="${fmtMoneyInput(o.advanceAmount)}" onchange="updBondMoney('obligacion.advanceAmount',this)"></div>` : ''}
+        ${base !== 'manual' ? `<div class="field"><label>Porcentaje de la fianza (%)</label><input class="input" type="number" step="0.01" value="${pct === '' ? '' : pct}" placeholder="Según pliego / contrato" onchange="updBond('obligacion.pct',this.value===''?'':+this.value);render()"></div>` : ''}
+        <div class="field"><label>Monto de la fianza ${base !== 'manual' ? '<span class="hint">(calculado; puedes escribir otro)</span>' : ''}</label>
+          <input class="input money-input" value="${fmtMoneyInput(amt)}" onchange="updBondMoney('obligacion.amountOverride',this)" style="font-weight:700"></div>
+      </div>
+      <div class="form-grid cols-3" style="margin-top:14px">
+        <div class="field"><label>Inicio de vigencia</label><input class="input" type="date" value="${o.startDate || ''}" onchange="updBond('obligacion.startDate',this.value);updBond('obligacion.endDate','');render()"></div>
+        <div class="field"><label>Plazo (meses)</label><input class="input" type="number" min="1" value="${o.months || ''}" onchange="updBond('obligacion.months',+this.value||'');updBond('obligacion.endDate','');render()"></div>
+        <div class="field"><label>Vence <span class="hint">(calculado, editable)</span></label><input class="input" type="date" value="${bondEnd(b)}" onchange="updBond('obligacion.endDate',this.value);render()"></div>
+      </div>
+
+      <div class="section-title">Documentos del afianzado <span class="muted" style="font-weight:500;font-size:12px;margin-left:6px">${nDocs} de ${docs.length} recibidos</span></div>
+      <div class="form-grid cols-2" style="gap:4px 18px">
+        ${docs.map(k => `<label class="check-row"><input type="checkbox" ${b.docs[k] ? 'checked' : ''} onchange="updBond('docs.${k}',this.checked);render()"> ${escapeHtml(BOND_DOCS[k] || k)}</label>`).join('')}
+      </div>
+
+      ${b.status === 'Emitida' ? `<div class="section-title">Emisión</div>
+      <div class="form-grid cols-3">
+        <div class="field"><label>No. de fianza / póliza</label><input class="input" value="${escapeHtml(b.policyNo || '')}" onchange="updBond('policyNo',this.value)"></div>
+        <div class="field"><label>Aseguradora que emitió</label><select class="select" onchange="updBond('issuedInsurer',this.value);render()"><option value="">—</option>${b.quotes.map(q => `<option value="${q.insurerId}" ${b.issuedInsurer === q.insurerId ? 'selected' : ''}>${escapeHtml(bondInsurerName(q.insurerId, q))}</option>`).join('')}</select></div>
+      </div>` : ''}
+
+      <div class="section-title">Notas</div>
+      <textarea class="textarea" rows="3" onchange="updBond('notes',this.value)" placeholder="Condiciones especiales, contacto en la entidad, etc.">${escapeHtml(b.notes || '')}</textarea>
+      <div class="sep"></div>
+      <div class="row"><button class="btn btn-primary" onclick="state.view='fz-request';save();render()">Ver solicitud →</button>
+        <button class="btn btn-ghost" onclick="state.view='fz-compare';save();render()">Comparador</button></div>
+    </div>`;
+}
+/* Encabezado de documentos (sirve para pantalla y Word) */
+function bondDocShim(b){ return { ref: b.ref, header:{ type:'FIANZA', dateIssue: b.createdAt || '', deadline: null } }; }
+function bondKv(rows){
+  return `<table style="width:100%;border-collapse:collapse;margin:6pt 0;font-family:Arial,sans-serif;font-size:10pt">${rows.filter(r => r[1] !== null).map(r => `<tr><td style="width:34%;padding:4pt 6pt;border-bottom:0.5pt solid #E5E7EB;font-weight:700;color:#004A88;vertical-align:top">${r[0]}</td><td style="padding:4pt 6pt;border-bottom:0.5pt solid #E5E7EB;color:#1A2433">${r[1] || '—'}</td></tr>`).join('')}</table>`;
+}
+function bondH2(n, title){ return `<h2 style="font-family:Arial,sans-serif;color:#004A88;font-size:13pt;margin:14pt 0 6pt;border-bottom:1.5pt solid #FF5200;padding-bottom:3pt"><span style="color:#FF5200;font-weight:700;margin-right:6pt">${n}</span>${title}</h2>`; }
+function bondTypeName(b){ return b.type === 'otra' && b.otherName ? b.otherName : bondType(b).label; }
+function renderBondRequestBody(b){
+  const t = bondType(b), o = b.obligacion;
+  const target = b.slipTarget ? DEFAULT_INSURERS.find(i => i.id === b.slipTarget) : null;
+  const docs = bondDocsFor(b).filter(k => b.docs[k]);
+  return `
+    ${target ? `<table style="width:100%;border-collapse:collapse;margin:0 0 12pt;background:#FFF8F2;border:1pt solid #FF5200"><tr><td style="padding:8pt 12pt;font-family:Arial,sans-serif">
+      <div style="font-size:8pt;font-weight:700;color:#FF5200;letter-spacing:1pt">DIRIGIDO A</div>
+      <div style="font-size:13pt;font-weight:700;color:#004A88;margin-top:2pt">${escapeHtml(target.name)}</div>
+      <div style="font-size:9.5pt;color:#6b7280">Departamento de Fianzas</div></td></tr></table>` : ''}
+    <p style="font-family:Arial,sans-serif;font-size:10.5pt;color:#1A2433">Les solicitamos cotizar la siguiente fianza para nuestro cliente. Anexamos la documentación indicada al final.</p>
+    ${bondH2(1, 'Fianza solicitada')}
+    ${bondKv([
+      ['Tipo de fianza', escapeHtml(bondTypeName(b))],
+      ['Sector', b.sector === 'publico' ? 'Pública — Ley 47-25 de Contrataciones Públicas' : 'Privada'],
+      ['Monto de la fianza', `<strong>${bondMoney(b, bondAmount(b))}</strong>${t.base !== 'manual' && bondPct(b) !== '' ? ` (${bondPct(b)}% de ${bondMoney(b, bondBaseAmount(b))})` : ''}`],
+      ['Vigencia', o.startDate ? `${fmtDate(o.startDate)} al ${fmtDate(bondEnd(b))}${o.months ? ' (' + o.months + ' meses)' : ''}` : (o.months ? o.months + ' meses' : '')]
+    ])}
+    ${bondH2(2, 'Afianzado')}
+    ${bondKv([
+      ['Razón social', escapeHtml(b.afianzado.name)], ['RNC', escapeHtml(b.afianzado.rnc)], ['Actividad', escapeHtml(b.afianzado.activity)],
+      ['Dirección', escapeHtml(b.afianzado.address)], ['Contacto', escapeHtml([b.afianzado.contact, b.afianzado.phone, b.afianzado.email].filter(Boolean).join(' · '))],
+      ['MIPYME', b.sector === 'publico' ? (b.afianzado.mipyme ? 'Sí' : 'No') : null]
+    ])}
+    ${bondH2(3, 'Beneficiario')}
+    ${bondKv([['Nombre', escapeHtml(b.beneficiario.name)], ['RNC', b.beneficiario.rnc ? escapeHtml(b.beneficiario.rnc) : null], ['Dirección', escapeHtml(b.beneficiario.address)]])}
+    ${bondH2(4, 'Obligación garantizada')}
+    ${bondKv([
+      [b.sector === 'publico' ? 'Proceso' : 'Contrato', escapeHtml(o.process)], ['Descripción', escapeHtml(o.description)],
+      [BOND_BASE_LABEL[t.base] || 'Monto', t.base !== 'manual' ? bondMoney(b, bondBaseAmount(b)) : null],
+      ['Monto del contrato', t.base === 'anticipo' ? bondMoney(b, o.contractAmount) : null]
+    ])}
+    ${bondH2(5, 'Documentos anexos')}
+    ${docs.length ? `<ul style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;line-height:1.6;margin:4pt 0;padding-left:16pt">${docs.map(k => `<li>${escapeHtml(BOND_DOCS[k] || k)}</li>`).join('')}</ul>` : '<p style="font-family:Arial,sans-serif;font-size:10pt;color:#6b7280;font-style:italic">Se enviarán por separado.</p>'}
+    ${b.notes ? bondH2(6, 'Observaciones') + `<p style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;white-space:pre-line">${escapeHtml(b.notes)}</p>` : ''}
+    <p style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;margin-top:14pt">Agradecemos indicarnos la tasa anual, la prima mínima, la contragarantía requerida y el plazo de emisión.</p>`;
+}
+function viewBondRequest(b){
+  return `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><div><h2 class="card-title">¿A qué aseguradora va dirigida?</h2><div class="card-subtitle">Elige una para que su nombre salga en el documento, o déjalo general.</div></div></div>
+      <div class="form-grid cols-2"><div class="field"><label>Aseguradora</label>
+        <select class="select" onchange="updBond('slipTarget',this.value);render()"><option value="">General (sin destinatario)</option>${DEFAULT_INSURERS.map(i => `<option value="${i.id}" ${b.slipTarget === i.id ? 'selected' : ''}>${escapeHtml(i.name)}</option>`).join('')}</select></div></div>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-toolbar"><div class="row"><strong>${escapeHtml(b.ref)} — Solicitud de fianza</strong></div>
+        <div class="row"><button class="btn btn-ghost btn-sm" onclick="exportBondDoc('request','docx')">⬇ Word</button><button class="btn btn-ghost btn-sm" onclick="exportBondDoc('request','pdf')">⬇ PDF</button></div></div>
+      <div class="preview-body"><div class="doc" id="docBondRequest">${docHeader(bondDocShim(b), 'Solicitud de Cotización de Fianza', '')}${renderBondRequestBody(b)}${docFooter()}</div></div>
+    </div>`;
+}
+/* ---------------- COMPARADOR ---------------- */
+/* Cómo se aplica la tasa anual a la vigencia */
+const BOND_RATE_BASIS = {
+  prorrata: { label:'Tasa anual a prorrata por meses', hint:'Prima = monto × tasa × meses ÷ 12' },
+  anual:    { label:'Tasa anual por año o fracción',   hint:'Cada año empezado se cobra completo (18 meses = 2 años)' },
+  vigencia: { label:'Tasa por toda la vigencia',       hint:'La tasa se aplica una sola vez, sin importar el plazo' }
+};
+function bondRateFactor(b){
+  const m = +b.obligacion.months || 12, basis = b.rateBasis || 'prorrata';
+  if(basis === 'vigencia') return 1;
+  if(basis === 'anual') return Math.max(1, Math.ceil(m / 12));
+  return m / 12;
+}
+/* Prima de una cotización: si hay tasa, se calcula; si no, se usan los montos escritos */
+function bondCalc(b, q){
+  const amt = bondAmount(b), r = (state.config.iscRate || 16) / 100, rate = +q.rate || 0, min = +q.minPremium || 0;
+  if(rate > 0){
+    const base = amt * rate / 100 * bondRateFactor(b);
+    const net = Math.round(Math.max(base, min)), isc = Math.round(net * r);
+    return { fromRate:true, rate, net, isc, total: net + isc, minApplied: min > 0 && base < min && amt > 0 };
+  }
+  const net = +q.premiumNet || 0, total = +q.premiumTotal || (net ? Math.round(net * (1 + r)) : 0);
+  const f = bondRateFactor(b);
+  return { fromRate:false, rate: (amt && net && f) ? net / amt / f * 100 : 0, net, isc: +q.isc || (total - net), total, minApplied:false };
+}
+function bondQuoteRate(b, q){ return bondCalc(b, q).rate; }
+function bondPriced(b){ return (b.quotes || []).filter(q => bondCalc(b, q).total > 0); }
+function updBondQuote(i, k, v){ const b = activeBond(); if(!b || !b.quotes[i]) return; b.quotes[i][k] = v; touchBond(b); }
+function updBondQuoteMoney(i, k, input){
+  const b = activeBond(); if(!b || !b.quotes[i]) return;
+  const n = parseMoneyInput(input.value), q = b.quotes[i];
+  q[k] = n || '';
+  const isc = (state.config.iscRate || 16) / 100;
+  if(k === 'premiumNet' && n){ q.isc = Math.round(n * isc); q.premiumTotal = q.premiumNet + q.isc; q.rate = ''; }
+  if(k === 'premiumTotal' && n) q.rate = '';
+  if(k === 'premiumTotal' && n && !+q.premiumNet){ q.premiumNet = Math.round(n / (1 + isc)); q.isc = n - q.premiumNet; }
+  touchBond(b); render();
+}
+function addBondQuote(){
+  const b = activeBond(); if(!b) return;
+  const used = b.quotes.map(q => q.insurerId);
+  const next = DEFAULT_INSURERS.find(i => !used.includes(i.id));
+  b.quotes.push({ insurerId: next ? next.id : 'otra', insurerName:'', rate:'', premiumNet:'', isc:'', premiumTotal:'', minPremium:'', counter:'', issueDays:'', conditions:'' });
+  touchBond(b); render();
+}
+function rmBondQuote(i){ const b = activeBond(); if(!b) return; if(!confirm('¿Quitar esta cotización?')) return; b.quotes.splice(i, 1); touchBond(b); render(); }
+function setBondQuoteRate(i, v){
+  const b = activeBond(); if(!b || !b.quotes[i]) return;
+  const n = parseFloat(String(v).replace(',', '.').replace(/[^0-9.]/g, ''));
+  b.quotes[i].rate = n > 0 ? n : '';
+  touchBond(b); render();
+}
+function chooseBondInsurer(id){ const b = activeBond(); if(!b) return; b.selectedInsurer = id; touchBond(b); render(); syncToast('Elegida para la propuesta: ' + bondInsurerName(id, b.quotes.find(q => q.insurerId === id)), true); }
+function viewBondCompare(b){
+  const Q = b.quotes || [];
+  const priced = bondPriced(b);
+  const C = Q.map(q => bondCalc(b, q));
+  const tot = q => bondCalc(b, q).total;
+  const minP = priced.length ? Math.min(...priced.map(tot)) : 0;
+  const maxP = priced.length ? Math.max(...priced.map(tot)) : 0;
+  const M = v => bondMoney(b, v);
+  const cheapest = priced.find(q => tot(q) === minP);
+  const basis = b.rateBasis || 'prorrata';
+  const fastest = priced.filter(q => +q.issueDays > 0).sort((a, c) => (+a.issueDays) - (+c.issueDays))[0];
+  const sel = b.selectedInsurer;
+  const insOpts = (q) => DEFAULT_INSURERS.map(i => `<option value="${i.id}" ${q.insurerId === i.id ? 'selected' : ''}>${escapeHtml(i.name)}</option>`).join('') + `<option value="otra" ${q.insurerId === 'otra' ? 'selected' : ''}>Otra…</option>`;
+  const ncol = Q.length;
+  const group = t => `<tr class="cmp-group"><td colspan="${ncol + 1}">${t}</td></tr>`;
+  const moneyRow = (label, k, cls) => `<tr><td>${label}</td>${Q.map((q, i) => `<td class="${cls ? cls(q) : ''}"><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q[k])}" onchange="updBondQuoteMoney(${i},'${k}',this)"></td>`).join('')}</tr>`;
+  const textRow = (label, k, ph) => `<tr><td>${label}</td>${Q.map((q, i) => `<td><input class="input" value="${escapeHtml(q[k] || '')}" placeholder="${ph || ''}" onchange="updBondQuote(${i},'${k}',this.value)"></td>`).join('')}</tr>`;
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div><h2 class="card-title">Comparador de fianzas</h2>
+          <div class="card-subtitle">${escapeHtml(bondTypeName(b))} · ${M(bondAmount(b))} · ${b.obligacion.months || '—'} meses · Afianzado: ${escapeHtml(b.afianzado.name || '—')}</div></div>
+        <button class="btn btn-gold btn-sm" onclick="addBondQuote()">+ Agregar aseguradora</button>
+      </div>
+      <div class="row" style="gap:10px;margin:-4px 0 16px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-700)">Cómo cobran la tasa:</label>
+        <select class="select" style="width:auto;padding:6px 10px;font-size:12.5px" onchange="updBond('rateBasis',this.value);render()">${Object.entries(BOND_RATE_BASIS).map(([k, v]) => `<option value="${k}" ${basis === k ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
+        <span class="muted" style="font-size:12px">${BOND_RATE_BASIS[basis].hint}${b.obligacion.months ? ' · ' + b.obligacion.months + ' meses' : ''}</span>
+      </div>
+      <div class="row" style="gap:10px;margin:-6px 0 16px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-700)">Acuerdo de pago para todas:</label>
+        ${bondPayControls(b, null)}
+        <span class="muted" style="font-size:12px">Normalmente 25% de inicial y hasta 6 cuotas iguales. Puedes cambiarlo por aseguradora abajo.</span>
+      </div>
+      ${!bondAmount(b) ? `<div style="margin-bottom:14px;background:#FFF6E5;border:1px solid #F3D9A6;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400E">Falta el monto de la fianza en <a href="#" onclick="state.view='fz-data';render();return false;">Datos de la Fianza</a>: sin él no se puede calcular la prima con la tasa.</div>` : ''}
+      ${priced.length ? `<div class="cmp-summary">
+        <div class="cmp-stat"><div class="cmp-stat-k">Más barata</div><div class="cmp-stat-v">${escapeHtml(bondInsurerName(cheapest.insurerId, cheapest))}</div><div class="cmp-stat-s">${M(tot(cheapest))} prima total${+cheapest.rate ? ' · tasa ' + (+cheapest.rate) + '%' : ''}</div></div>
+        <div class="cmp-stat"><div class="cmp-stat-k">Emisión más rápida</div><div class="cmp-stat-v">${fastest ? escapeHtml(bondInsurerName(fastest.insurerId, fastest)) : '—'}</div><div class="cmp-stat-s">${fastest ? fastest.issueDays + ' día(s)' : 'Indica el plazo de emisión'}</div></div>
+        <div class="cmp-stat"><div class="cmp-stat-k">Rango de primas</div><div class="cmp-stat-v">${M(maxP - minP)}</div><div class="cmp-stat-s">${minP ? ((maxP - minP) / minP * 100).toFixed(1) : '0'}% entre la más barata y la más cara</div></div>
+        <div class="cmp-rec"><div class="cmp-stat-k">Recomendada</div><div class="cmp-rec-t">${sel ? `<strong>${escapeHtml(bondInsurerName(sel, Q.find(q => q.insurerId === sel)))}</strong> está elegida para la propuesta al cliente.` : 'Elige la aseguradora que recomiendas con el botón en su columna.'}</div>
+          ${!sel && cheapest ? `<button class="btn btn-primary btn-sm" onclick="chooseBondInsurer('${cheapest.insurerId}')">Elegir la más barata</button>` : ''}</div>
+      </div>` : ''}
+      <div class="compare-grid"><table>
+        <thead><tr><th>Concepto</th>${Q.map((q, i) => `<th style="min-width:240px">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+            <select class="select" style="padding:5px 8px;font-size:12px" onchange="updBondQuote(${i},'insurerId',this.value);render()">${insOpts(q)}</select>
+            ${q.insurerId === 'otra' ? `<input class="input" style="padding:5px 8px;font-size:12px" value="${escapeHtml(q.insurerName || '')}" placeholder="Nombre de la aseguradora" onchange="updBondQuote(${i},'insurerName',this.value);render()">` : ''}
+            <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:11px" onclick="importBondQuotePdf(${i})">📄 ${q.extraction ? 'Otro PDF' : 'Importar PDF'}</button>
+              <button class="btn ${sel === q.insurerId ? 'btn-gold' : 'btn-ghost'} btn-sm" style="padding:4px 8px;font-size:11px" onclick="chooseBondInsurer('${q.insurerId}')">${sel === q.insurerId ? '★ Elegida' : 'Elegir'}</button>
+              <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px" onclick="rmBondQuote(${i})">×</button>
+            </div>
+            ${q.extraction ? `<div class="cmp-file">📎 ${escapeHtml((q.extraction.filename || 'PDF leído').slice(0, 34))}</div>` : ''}
+          </div></th>`).join('')}</tr></thead>
+        <tbody>
+          ${group('Tasa')}
+          <tr><td><strong>Tasa anual (%)</strong><div class="cmp-sub" style="font-weight:400">la que te da la aseguradora</div></td>${Q.map((q, i) => `<td><div class="row" style="gap:6px;flex-wrap:nowrap"><input class="input" type="text" inputmode="decimal" value="${+q.rate ? q.rate : ''}" placeholder="${C[i].rate && !C[i].fromRate ? C[i].rate.toFixed(2) : 'Ej: 1.25'}" onchange="setBondQuoteRate(${i},this.value)" style="text-align:right;font-weight:700;font-size:15px"><span class="muted" style="font-size:13px;font-weight:700">%</span></div></td>`).join('')}</tr>
+          ${moneyRow('Prima mínima', 'minPremium')}
+          ${group('Prima calculada')}
+          <tr><td>Prima neta</td>${Q.map((q, i) => C[i].fromRate ? `<td style="text-align:right;font-weight:600">${M(C[i].net)}${C[i].minApplied ? '<div class="cmp-sub" style="color:#B45309">se aplicó la prima mínima</div>' : ''}</td>` : `<td><input class="input money-input" type="text" inputmode="numeric" value="${fmtMoneyInput(q.premiumNet)}" placeholder="o escribe la prima" onchange="updBondQuoteMoney(${i},'premiumNet',this)"></td>`).join('')}</tr>
+          <tr><td>ISC ${state.config.iscRate || 16}%</td>${Q.map((q, i) => `<td style="text-align:right">${C[i].isc ? M(C[i].isc) : '—'}</td>`).join('')}</tr>
+          <tr><td><strong>Prima total</strong></td>${Q.map((q, i) => { const t = C[i].total; const cls = (priced.length > 1 && t && t === minP) ? 'best' : (priced.length > 1 && t && t === maxP) ? 'worst' : ''; return `<td class="${cls}" style="text-align:right;font-weight:800;color:var(--navy-800);font-size:14px">${t ? M(t) : '—'}</td>`; }).join('')}</tr>
+          <tr><td>Contra la más barata</td>${Q.map((q, i) => { const t = C[i].total; if(!t || !minP) return '<td class="cmp-sub">—</td>'; if(t === minP) return '<td class="cmp-diff cmp-diff-best">La más barata</td>'; const d = t - minP; return `<td class="cmp-diff">+${M(d)} <span>(+${(d / minP * 100).toFixed(1)}%)</span></td>`; }).join('')}</tr>
+          ${group('Acuerdo de pago')}
+          <tr><td>Plan</td>${Q.map((q, i) => `<td>${bondPayControls(b, i)}</td>`).join('')}</tr>
+          <tr><td>Inicial</td>${Q.map(q => { const p = bondPay(b, q); return `<td style="text-align:right;font-weight:600">${p.total ? M(p.initAmt) : '—'}</td>`; }).join('')}</tr>
+          <tr><td>Cuotas</td>${Q.map(q => { const p = bondPay(b, q); return `<td style="text-align:right">${!p.total ? '—' : p.contado ? 'Contado' : `<strong>${p.n} × ${M(p.cuota)}</strong><div class="cmp-sub">mensuales</div>`}</td>`; }).join('')}</tr>
+          ${group('Condiciones')}
+          ${textRow('Contragarantía exigida', 'counter', 'Ej: pagaré de los socios')}
+          <tr><td>Plazo de emisión</td>${Q.map((q, i) => `<td><div class="row" style="gap:6px;flex-wrap:nowrap"><input class="input" type="number" min="0" value="${q.issueDays || ''}" onchange="updBondQuote(${i},'issueDays',+this.value||'');render()" style="text-align:right"><span class="muted" style="font-size:12px">días</span></div></td>`).join('')}</tr>
+          ${textRow('Otras condiciones', 'conditions', 'Requisitos, exclusiones…')}
+        </tbody></table></div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Escribe la tasa que te dio cada aseguradora y la prima, el ISC y el total salen solos (si la prima calculada es menor que la prima mínima, se usa la mínima). Si alguna te da un monto en vez de tasa, deja la tasa vacía y escribe la prima neta.</p>
+    </div>`;
+}
+/* Lector de PDF para cotizaciones de fianza */
+function importBondQuotePdf(i){
+  const b = activeBond(); if(!b || !b.quotes[i]) return;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,application/pdf'; inp.style.display = 'none'; document.body.appendChild(inp);
+  inp.onchange = async e => {
+    const file = e.target.files[0]; document.body.removeChild(inp); if(!file) return;
+    if(!window.pdfjsLib){ syncToast('⚠ El lector de PDF no cargó. Recarga la página.', false); return; }
+    syncToast('Leyendo ' + file.name + '…', true);
+    try{
+      const text = await extractPdfText(file);
+      const q = b.quotes[i], insName = bondInsurerName(q.insurerId, q);
+      let ai = null;
+      try{
+        const L = learnedFor(q.insurerId);
+        const resp = await fetch('/api/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ text:text, insurer:insName, kind:'fianza', hints: L.count ? { labels: L.aliases } : undefined }) });
+        const j = await resp.json().catch(() => ({})); if(!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status)); ai = j;
+      }catch(err){ console.warn('IA no disponible para fianza, uso lector local:', err); }
+      let net = ai && +ai.premiumNet, isc = ai && +ai.isc, tot = ai && +ai.premiumTotal;
+      try{
+        const local = extractQuoteFields(text, q.insurerId);
+        if(!net && +local.premiumNet) net = +local.premiumNet; if(!isc && +local.isc) isc = +local.isc; if(!tot && +local.premiumTotal) tot = +local.premiumTotal;
+      }catch(err){}
+      const r = (state.config.iscRate || 16) / 100;
+      if(net && !tot){ isc = isc || Math.round(net * r); tot = net + isc; }
+      if(tot && !net){ net = Math.round(tot / (1 + r)); isc = tot - net; }
+      if(net) q.premiumNet = Math.round(net); if(isc) q.isc = Math.round(isc); if(tot) q.premiumTotal = Math.round(tot);
+      if(ai){
+        if(+ai.rate && !net && !tot) q.rate = +ai.rate;
+        if(+ai.minPremium) q.minPremium = Math.round(+ai.minPremium);
+        if(ai.counterGuarantee) q.counter = String(ai.counterGuarantee);
+        if(+ai.issueDays) q.issueDays = +ai.issueDays;
+        if(ai.conditions) q.conditions = String(ai.conditions).slice(0, 300);
+      }
+      q.extraction = { filename:file.name, at:new Date().toISOString(), text:String(text).slice(0, 60000) };
+      touchBond(b); render();
+      syncToast(net || tot ? 'Cotización leída ✓ Revisa los montos' : '⚠ No se encontraron montos. Escríbelos en la tabla.', !!(net || tot));
+    }catch(err){ console.error(err); syncToast('⚠ No se pudo leer el PDF: ' + (err.message || err), false); }
+  };
+  inp.click();
+}
+/* ---------------- PROPUESTA AL CLIENTE ---------------- */
+function renderBondProposalBody(b){
+  const priced = bondPriced(b).slice().sort((a, c) => bondCalc(b, a).total - bondCalc(b, c).total);
+  const sel = priced.find(q => q.insurerId === b.selectedInsurer);
+  const M = v => bondMoney(b, v), o = b.obligacion;
+  const pending = bondDocsFor(b).filter(k => !b.docs[k]);
+  const th = t => `<th style="background:#004A88;color:#fff;padding:5pt 6pt;font-family:Arial,sans-serif;font-size:9pt;text-align:left">${t}</th>`;
+  const td = (t, isSel, right) => `<td style="padding:5pt 6pt;border-bottom:0.5pt solid #E5E7EB;font-family:Arial,sans-serif;font-size:9.5pt;${right ? 'text-align:right;' : ''}${isSel ? 'background:#EEF4FB;font-weight:700;' : ''}">${t}</td>`;
+  return `
+    <p style="text-align:center;font-family:Arial,sans-serif;color:#6b7280;font-style:italic;margin-top:-6pt">Preparada para ${escapeHtml(b.afianzado.name || '—')} · ${fmtDate(new Date().toISOString())}</p>
+    ${sel ? `<table style="width:100%;border-collapse:collapse;margin:8pt 0 12pt"><tr><td style="background:#0A1E35;color:#fff;padding:14pt 18pt;font-family:Arial,sans-serif;text-align:center">
+      <div style="font-size:8pt;letter-spacing:2pt;color:#FFB89A">RECOMENDACIÓN DE GARRIGÓ</div>
+      <div style="font-size:18pt;font-weight:700;margin:4pt 0">${escapeHtml(bondInsurerName(sel.insurerId, sel))}</div>
+      <div style="font-size:11pt">Prima total ${M(bondCalc(b, sel).total)}${sel.issueDays ? ' · emisión en ' + sel.issueDays + ' día(s)' : ''}</div></td></tr></table>` : ''}
+    ${bondH2(1, 'La fianza')}
+    ${bondKv([
+      ['Tipo', escapeHtml(bondTypeName(b))], ['Beneficiario', escapeHtml(b.beneficiario.name)],
+      [b.sector === 'publico' ? 'Proceso' : 'Contrato', escapeHtml(o.process)], ['Objeto', escapeHtml(o.description)],
+      ['Monto de la fianza', `<strong>${M(bondAmount(b))}</strong>`],
+      ['Vigencia', o.startDate ? `${fmtDate(o.startDate)} al ${fmtDate(bondEnd(b))}` : (o.months ? o.months + ' meses' : '')]
+    ])}
+    ${bondH2(2, 'Opciones cotizadas')}
+    ${priced.length ? `<table style="width:100%;border-collapse:collapse;margin:6pt 0">
+      <tr>${th('Aseguradora')}${th('Prima total')}${th('Tasa anual')}${th('Acuerdo de pago')}${th('Contragarantía')}${th('Emisión')}</tr>
+      ${priced.map(q => { const s = q.insurerId === b.selectedInsurer, r = bondQuoteRate(b, q); return `<tr>${td(escapeHtml(bondInsurerName(q.insurerId, q)) + (s ? ' ★' : ''), s)}${td(M(bondCalc(b, q).total), s, true)}${td(r ? (+r.toFixed(3)) + '%' : '—', s, true)}${td(escapeHtml(bondPayText(b, q)), s)}${td(escapeHtml(q.counter || '—'), s)}${td(q.issueDays ? q.issueDays + ' día(s)' : '—', s)}</tr>`; }).join('')}
+    </table>
+    <p style="font-family:Arial,sans-serif;font-size:8.5pt;color:#6b7280;margin:3pt 0">Primas con ISC incluido. ${escapeHtml(BOND_RATE_BASIS[b.rateBasis || 'prorrata'].label)}.</p>` : '<p style="font-family:Arial,sans-serif;font-size:10pt;color:#6b7280;font-style:italic">Pendiente: aún no se han recibido cotizaciones.</p>'}
+    ${(() => { const q = sel || priced[0]; if(!q) return ''; const sch = bondPaySchedule(b, q), p = bondPay(b, q);
+      return bondH2(3, 'Forma de pago') + `<p style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;margin:4pt 0">${escapeHtml(bondInsurerName(q.insurerId, q))}: ${p.contado ? 'pago de contado' : escapeHtml(p.label)}.</p>
+      <table style="width:100%;border-collapse:collapse;margin:4pt 0"><tr>${th('Pago')}${th('Cuándo')}${th('Fecha estimada')}${th('Monto')}</tr>
+      ${sch.map((k, i) => `<tr>${td(escapeHtml(k.label), i === 0)}${td(k.when, i === 0)}${td(fmtDate(k.date), i === 0)}${td(M(k.amount), i === 0, true)}</tr>`).join('')}
+      <tr>${td('<strong>Total</strong>')}${td('')}${td('')}${td('<strong>' + M(p.total) + '</strong>', false, true)}</tr></table>`; })()}
+    ${bondH2(4, 'Documentos pendientes')}
+    ${pending.length ? `<ul style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;line-height:1.6;margin:4pt 0;padding-left:16pt">${pending.map(k => `<li>${escapeHtml(BOND_DOCS[k] || k)}</li>`).join('')}</ul>` : '<p style="font-family:Arial,sans-serif;font-size:10pt;color:#15803D">Toda la documentación está completa.</p>'}
+    ${bondH2(5, 'Próximos pasos')}
+    <ol style="font-family:Arial,sans-serif;font-size:10pt;color:#1A2433;line-height:1.7;padding-left:16pt">
+      <li>Confirmar la aseguradora seleccionada.</li>
+      <li>Firmar la contragarantía${pending.length ? ' y completar los documentos pendientes' : ''}.</li>
+      <li>Pago ${bondPay(b, sel || priced[0] || null).contado ? 'de la prima' : 'inicial'} y emisión de la fianza.</li>
+    </ol>`;
+}
+function viewBondProposal(b){
+  return `
+    <div class="preview-wrap">
+      <div class="preview-toolbar"><div class="row"><strong>${escapeHtml(b.ref)} — Propuesta de fianza</strong></div>
+        <div class="row"><button class="btn btn-primary btn-sm" onclick="generateBondPPT()">📊 PowerPoint</button><button class="btn btn-ghost btn-sm" onclick="exportBondDoc('proposal','docx')">⬇ Word</button><button class="btn btn-ghost btn-sm" onclick="exportBondDoc('proposal','pdf')">⬇ PDF</button></div></div>
+      <div class="preview-body"><div class="doc" id="docBondProposal">${docHeader(bondDocShim(b), 'Propuesta de Fianza', '')}${renderBondProposalBody(b)}${docFooter()}</div></div>
+    </div>`;
+}
+/* Exportar Word / PDF */
+async function exportBondDoc(which, fmt){
+  const b = activeBond(); if(!b) return;
+  const title = which === 'request' ? 'Solicitud de Cotización de Fianza' : 'Propuesta de Fianza';
+  const fname = (which === 'request' ? 'Solicitud-Fianza-' : 'Propuesta-Fianza-') + b.ref;
+  if(fmt === 'pdf'){
+    const el = document.getElementById(which === 'request' ? 'docBondRequest' : 'docBondProposal'); if(!el) return;
+    el.classList.add('exporting-pdf'); void el.offsetHeight;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try{
+      await html2pdf().set({ margin:[10,10,12,10], filename: fname + '.pdf', image:{ type:'jpeg', quality:0.96 },
+        html2canvas:{ scale:2, useCORS:true, scrollX:0, scrollY:0, backgroundColor:'#ffffff' }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
+        pagebreak:{ mode:['css','legacy'], avoid:['tr','h2','h3'] } }).from(el).save();
+    } finally { el.classList.remove('exporting-pdf'); }
+    return;
+  }
+  try{
+    const ok = await waitForGlobal('htmlDocx', 3500);
+    if(!ok){ syncToast('⚠ La librería de Word no cargó. Recarga la página.', false); return; }
+    const body = which === 'request' ? renderBondRequestBody(b) : renderBondProposalBody(b);
+    const html = htmlToWordCompatible(`<!DOCTYPE html><html><head><meta charset="utf-8">${getDocStyles()}</head><body>${docHeaderForExport(bondDocShim(b), title, '')}${body}${docFooterForExport()}</body></html>`);
+    const blob = htmlDocx.asBlob(html, { orientation:'portrait', pageSize:{ width:11906, height:16838 }, margins:{ top:800, right:800, bottom:800, left:800 } });
+    saveAs(blob, fname + '.docx');
+  }catch(err){ console.error(err); syncToast('⚠ No se pudo generar el Word: ' + (err.message || err), false); }
+}
+/* Botones del encabezado según el módulo */
+function topNew(){ if(/^fz-/.test(state.view)) newBond(); else newCase(); }
+function topPick(){ if(/^fz-/.test(state.view)) openBondPicker(); else openCasePicker(); }
+
+/* ---------------- ACUERDO DE PAGO (fianzas) ----------------
+   Normalmente 25% de inicial y el resto en cuotas iguales (hasta 6). Se define un plan por defecto
+   para la fianza y cada aseguradora puede tener el suyo. */
+function bondPayDefaults(b){
+  return { mode: b.payMode || 'financiado', init: (b.payInit === undefined || b.payInit === '') ? 25 : +b.payInit, n: (b.payN === undefined || b.payN === '') ? 6 : +b.payN };
+}
+function bondPay(b, q){
+  const D = bondPayDefaults(b);
+  const mode = (q && q.payMode) || D.mode;
+  const init = (q && q.payInit !== undefined && q.payInit !== '') ? +q.payInit : D.init;
+  const n = Math.max(1, Math.round((q && q.payN !== undefined && q.payN !== '') ? +q.payN : D.n));
+  const total = q ? bondCalc(b, q).total : 0;
+  if(mode === 'contado') return { contado:true, total:total, init:100, n:0, initAmt:total, cuota:0, last:0, label:'Contado' };
+  const initAmt = Math.round(total * init / 100), cuota = Math.round((total - initAmt) / n), last = total - initAmt - cuota * (n - 1);
+  return { contado:false, total:total, init:init, n:n, initAmt:initAmt, cuota:cuota, last:last, label: init + '% inicial + ' + n + (n === 1 ? ' cuota' : ' cuotas') };
+}
+function bondPayText(b, q){
+  const p = bondPay(b, q);
+  if(!p.total) return p.label;
+  if(p.contado) return 'Contado: ' + bondMoney(b, p.total);
+  return 'Inicial ' + bondMoney(b, p.initAmt) + ' + ' + p.n + ' × ' + bondMoney(b, p.cuota);
+}
+/* Calendario: inicial al emitir y cuotas mensuales */
+function bondPaySchedule(b, q){
+  const p = bondPay(b, q); if(!p.total) return [];
+  const t = new Date(), base = b.obligacion.startDate || (t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'));
+  if(p.contado) return [{ label:'Pago único', when:'Al emitir', date:base, amount:p.total }];
+  const out = [{ label:'Inicial (' + p.init + '%)', when:'Al emitir', date:base, amount:p.initAmt }];
+  for(let i = 1; i <= p.n; i++) out.push({ label:'Cuota ' + i, when:'Mes ' + i, date:addMonths(base, i), amount: i === p.n ? p.last : p.cuota });
+  return out;
+}
+function setBondPay(i, k, v){
+  const b = activeBond(); if(!b) return;
+  const o = i === null ? b : b.quotes[i]; if(!o) return;
+  const key = { mode:'payMode', init:'payInit', n:'payN' }[k];
+  if(k === 'init'){ const n = parseFloat(String(v).replace(',', '.')); v = (n >= 0 && n <= 100) ? n : ''; }
+  if(k === 'n'){ const n = parseInt(v, 10); v = (n >= 1 && n <= 12) ? n : ''; }
+  o[key] = v;
+  if(i === null) (b.quotes || []).forEach(q => { delete q.payMode; delete q.payInit; delete q.payN; });
+  touchBond(b); render();
+}
+function bondPayControls(b, i){
+  const q = i === null ? null : b.quotes[i], D = bondPayDefaults(b);
+  const mode = (q && q.payMode) || D.mode;
+  const init = (q && q.payInit !== undefined && q.payInit !== '') ? q.payInit : D.init;
+  const n = (q && q.payN !== undefined && q.payN !== '') ? q.payN : D.n;
+  const ix = i === null ? 'null' : i;
+  return `<div class="row" style="gap:6px;flex-wrap:nowrap;align-items:center">
+    <select class="select" style="width:auto;padding:5px 8px;font-size:12px" onchange="setBondPay(${ix},'mode',this.value)"><option value="financiado" ${mode !== 'contado' ? 'selected' : ''}>Financiado</option><option value="contado" ${mode === 'contado' ? 'selected' : ''}>Contado</option></select>
+    ${mode === 'contado' ? '' : `<input class="input" type="number" min="0" max="100" value="${init}" onchange="setBondPay(${ix},'init',this.value)" style="width:58px;padding:5px 6px;text-align:right;font-size:12px"><span class="muted" style="font-size:12px;white-space:nowrap">% +</span>
+    <input class="input" type="number" min="1" max="12" value="${n}" onchange="setBondPay(${ix},'n',this.value)" style="width:50px;padding:5px 6px;text-align:right;font-size:12px"><span class="muted" style="font-size:12px">cuotas</span>`}
+  </div>`;
+}
+
+/* ---------------- PRESENTACIÓN DE FIANZA ---------------- */
+async function buildBondDeck(b){
+  const P = deckNew('Propuesta de fianza — ' + (b.afianzado.name || ''));
+  const ctx = await deckContext((b.afianzado.name || '') + '  ·  ' + b.ref + '  ·  Garrigó Seguros');
+  const M = v => bondMoney(b, v), o = b.obligacion, t = bondType(b);
+  const priced = bondPriced(b).slice().sort((x, y) => bondCalc(b, x).total - bondCalc(b, y).total);
+  const sel = priced.find(q => q.insurerId === b.selectedInsurer) || null;
+  const cols = priced.map(q => ({ q:q, name: bondInsurerName(q.insurerId, q), selected: !!sel && q === sel }));
+  const bg = await deckBackground('');
+
+  /* 1 · Portada */
+  deckCover(P, ctx, bg, {
+    client: b.afianzado.name, kicker: 'PROPUESTA DE FIANZA · ' + deckMonthYear(),
+    title: bondTypeName(b), subtitle: [b.beneficiario.name, o.process].filter(Boolean).join(' · '),
+    cards: [['AFIANZADO', b.afianzado.name], ['MONTO DE LA FIANZA', M(bondAmount(b))], ['MERCADOS', cols.length ? cols.map(x => x.name.replace(/^Seguros\s+/i, '')).join(' · ') : '—']]
+  });
+
+  /* 2 · La fianza */
+  let s = deckFrame(P, ctx, 'LA GARANTÍA', 'Datos de la fianza');
+  const cw = (DK.W - 1.2 - 0.5) / 3;
+  deckStat(P, s, 0.6, 1.75, cw, 1.6, M(bondAmount(b)), 'Monto de la fianza' + (t.base !== 'manual' && bondPct(b) !== '' ? ' · ' + bondPct(b) + '% de ' + M(bondBaseAmount(b)) : ''));
+  deckStat(P, s, 0.6 + cw + 0.25, 1.75, cw, 1.6, (o.months || '—') + ' meses', o.startDate ? 'Del ' + fmtDate(o.startDate) + ' al ' + fmtDate(bondEnd(b)) : 'Vigencia de la fianza');
+  deckStat(P, s, 0.6 + (cw + 0.25) * 2, 1.75, cw, 1.6, b.sector === 'publico' ? 'Pública' : 'Privada', b.sector === 'publico' ? 'Contratación pública · Ley 47-25' : 'Contrato entre privados', true);
+  deckKV(P, s, 0.6, 3.65, DK.W - 1.2, [
+    ['Afianzado', (b.afianzado.name || '—') + (b.afianzado.rnc ? '  ·  RNC ' + b.afianzado.rnc : '')],
+    ['Beneficiario', b.beneficiario.name || '—'],
+    [b.sector === 'publico' ? 'Proceso' : 'Contrato', o.process || '—'],
+    ['Objeto', o.description || '—'],
+    ['Tipo de fianza', bondTypeName(b)]
+  ], 2.2, 0.58);
+
+  if(cols.length){
+    /* 3 · Comparativo */
+    s = deckFrame(P, ctx, 'COMPARATIVO', 'Opciones de las aseguradoras');
+    const fs = cols.length > 4 ? 10 : 11;
+    deckCompareTable(P, s, { cols:cols, y:1.65, rowH:0.5, fs:fs, corner:'CONCEPTO', firstW:2.8, rows:[
+      { label:'Tasa anual', key:true, cells: cols.map(x => { const r = bondCalc(b, x.q).rate; return { t: r ? (+r.toFixed(3)) + '%' : '—' }; }) },
+      { label:'Prima neta', cells: cols.map(x => ({ t: M(bondCalc(b, x.q).net) })) },
+      { label:'ISC (16%)', cells: cols.map(x => ({ t: M(bondCalc(b, x.q).isc) })) },
+      { label:'Prima total', key:true, cells: cols.map(x => ({ t: M(bondCalc(b, x.q).total) })) },
+      { label:'Acuerdo de pago', key:true, cells: cols.map(x => { const p = bondPay(b, x.q); return { t: p.contado ? 'Contado' : p.init + '% + ' + p.n + ' cuotas', fs:fs }; }) },
+      { label:'Cuota', cells: cols.map(x => { const p = bondPay(b, x.q); return { t: p.contado ? '—' : p.n + ' × ' + M(p.cuota) }; }) },
+      { label:'Contragarantía', cells: cols.map(x => ({ t: x.q.counter || '—', fs: deckFit(x.q.counter, fs - 1, 30, 8) })) },
+      { label:'Emisión', cells: cols.map(x => ({ t: x.q.issueDays ? x.q.issueDays + ' día(s)' : '—' })) }
+    ] });
+    s.addText('Primas con ISC incluido. ' + BOND_RATE_BASIS[b.rateBasis || 'prorrata'].label + '.', { x:0.6, y:6.6, w:10, h:0.28, fontFace:DK.B, fontSize:9, color:DK.MUTED, margin:0 });
+
+    /* 4 · Recomendación y plan de pagos */
+    const rec = sel || null;
+    if(rec){
+      s = P.addSlide(); s.background = { color:DK.WHITE }; ctx.page++;
+      const p = bondPay(b, rec), c0 = bondCalc(b, rec);
+      deckRecPanel(P, s, ctx, bondInsurerName(rec.insurerId, rec), [['PRIMA TOTAL', M(c0.total)], ['ACUERDO DE PAGO', p.label], ['EMISIÓN', rec.issueDays ? rec.issueDays + ' día(s)' : '—']]);
+      s.addText('PLAN DE PAGOS', { x:5.5, y:0.6, w:7, h:0.3, fontFace:DK.B, fontSize:10.5, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+      s.addText(p.contado ? 'Pago único al emitir la fianza' : p.init + '% de inicial y ' + p.n + (p.n === 1 ? ' cuota' : ' cuotas iguales'), { x:5.5, y:0.92, w:7.3, h:0.75, fontFace:DK.H, fontSize:24, bold:true, color:DK.NAVY, valign:'top', margin:0 });
+      const sch = bondPaySchedule(b, rec);
+      /* Inicial: tarjeta grande */
+      s.addShape(P.ShapeType.roundRect, { x:5.5, y:1.9, w:2.45, h:2.5, fill:{ color:DK.NAVY }, line:{ type:'none' }, rectRadius:0.1 });
+      s.addText(sch[0].label.toUpperCase(), { x:5.75, y:2.1, w:2.0, h:0.3, fontFace:DK.B, fontSize:9, bold:true, color:DK.PEACH, charSpacing:2, margin:0 });
+      s.addText(M(sch[0].amount), { x:5.75, y:2.5, w:2.05, h:0.9, fontFace:DK.H, fontSize: deckFit(M(sch[0].amount), 22, 12, 13), bold:true, color:DK.ORANGE, valign:'middle', margin:0 });
+      s.addText('Al emitir · ' + fmtDate(sch[0].date), { x:5.75, y:3.6, w:2.05, h:0.55, fontFace:DK.B, fontSize:10, color:DK.SUB, valign:'top', margin:0 });
+      /* Cuotas */
+      const cuotas = sch.slice(1), cols3 = 3, gw = (7.3 - 2.45 - 0.25 - (cols3 - 1) * 0.15) / cols3, gh = cuotas.length > 3 ? 1.175 : 2.5;
+      cuotas.slice(0, 12).forEach((k, i) => {
+        const r = Math.floor(i / cols3), cI = i % cols3, x = 5.5 + 2.45 + 0.25 + cI * (gw + 0.15), y = 1.9 + r * (gh + 0.15);
+        if(y + gh > 6.4) return;
+        s.addShape(P.ShapeType.roundRect, { x:x, y:y, w:gw, h:gh, fill:{ color:DK.SOFT }, line:{ type:'none' }, rectRadius:0.08 });
+        s.addText(k.label.toUpperCase(), { x:x + 0.18, y:y + 0.14, w:gw - 0.3, h:0.24, fontFace:DK.B, fontSize:8, bold:true, color:DK.GRAY, charSpacing:1.5, margin:0 });
+        s.addText(M(k.amount), { x:x + 0.18, y:y + 0.4, w:gw - 0.3, h:0.4, fontFace:DK.H, fontSize: deckFit(M(k.amount), 15, 11, 10), bold:true, color:DK.NAVY, margin:0, valign:'middle' });
+        s.addText(fmtDate(k.date), { x:x + 0.18, y:y + gh - 0.36, w:gw - 0.3, h:0.24, fontFace:DK.B, fontSize:8.5, color:DK.MUTED, margin:0 });
+      });
+      s.addText('PRÓXIMOS PASOS', { x:5.5, y:4.85, w:7, h:0.3, fontFace:DK.B, fontSize:10.5, bold:true, color:DK.ORANGE, charSpacing:3, margin:0 });
+      const pend = bondDocsFor(b).filter(k => !b.docs[k]).length;
+      deckSteps(P, s, 5.5, 5.3, 7.3, ['Confirmar la aseguradora seleccionada', 'Firmar la contragarantía' + (pend ? ' y entregar ' + pend + ' documento' + (pend === 1 ? '' : 's') + ' pendiente' + (pend === 1 ? '' : 's') : ''), (p.contado ? 'Pago' : 'Pago inicial') + ' y emisión de la fianza']);
+    }
+  }
+  deckClosing(P, ctx, bg);
+  return P;
+}
+async function generateBondPPT(){
+  const b = activeBond(); if(!b) return;
+  if(typeof PptxGenJS === 'undefined'){ syncToast('⚠ La librería de PowerPoint no cargó. Recarga la página.', false); return; }
+  syncToast('Generando presentación…', true);
+  try{
+    const P = await buildBondDeck(b);
+    await P.writeFile({ fileName:'Propuesta-Fianza-' + b.ref.replace(/[^a-zA-Z0-9_-]/g, '_') + '.pptx' });
+    syncToast('Presentación lista ✓', true);
+  }catch(e){ console.error(e); syncToast('⚠ No se pudo generar el PPT: ' + _errTxt(e), false); }
+}
+
+/* ---------------- FORMULARIO DE SOLICITUD DE FIANZA (genérico) ----------------
+   Lo que ya está en la fianza se llena solo; el resto se completa aquí una vez
+   y se genera el formulario listo para firmar, en Word o PDF. */
+function numeroALetras(n, moneda){
+  n = Math.abs(+n || 0);
+  const U = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte', 'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve'];
+  const D = ['', '', '', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+  const C = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+  const lt100 = x => x < 30 ? U[x] : D[Math.floor(x / 10)] + (x % 10 ? ' y ' + U[x % 10] : '');
+  const lt1000 = x => { if(x === 100) return 'cien'; const c = Math.floor(x / 100), r = x % 100; return ((c ? C[c] : '') + (c && r ? ' ' : '') + (r ? lt100(r) : '')).trim(); };
+  const apoc = s => s.replace(/veintiuno$/, 'veintiún').replace(/uno$/, 'un');
+  const lt1e6 = x => { const m = Math.floor(x / 1000), u = x % 1000; let s = ''; if(m) s = m === 1 ? 'mil' : apoc(lt1000(m)) + ' mil'; if(u) s += (s ? ' ' : '') + lt1000(u); return s; };
+  const ent = Math.floor(n + 1e-9), cents = Math.round((n - ent) * 100);
+  let s;
+  if(ent === 0) s = 'cero';
+  else {
+    const mill = Math.floor(ent / 1e6), rest = ent % 1e6;
+    s = mill ? (mill === 1 ? 'un millón' : apoc(lt1e6(mill)) + ' millones') : '';
+    if(rest) s += (s ? ' ' : '') + lt1e6(rest);
+    if(mill && !rest && moneda) s += ' de';
+  }
+  return s.charAt(0).toUpperCase() + s.slice(1) + (moneda ? ' ' + moneda : '') + ' con ' + String(cents).padStart(2, '0') + '/100';
+}
+const BOND_FORM_LEGAL = 'Al firmar esta solicitud, el solicitante y los fiadores solidarios se comprometen, en caso de que la fianza sea emitida, a reembolsar a {ASEGURADORA}, a su primer requerimiento, cualquier suma que esta deba pagar por la ejecución parcial o total de la fianza, junto con los gastos en que incurra. Dichos pagos constituyen una deuda cierta, líquida y exigible a cargo del solicitante, garantizada con todos sus bienes presentes y futuros. Las personas que firman como fiadores solidarios se obligan junto con el solicitante, con renuncia al beneficio de excusión. Este compromiso se extiende a cualquier extensión de vigencia, aumento o renovación de la fianza.\n\nEl solicitante autoriza a {ASEGURADORA} a consultar y suministrar su información crediticia y patrimonial a las sociedades de información crediticia autorizadas, a los fines de evaluar esta solicitud, y declara que los datos de este formulario son verdaderos y completos.';
+function bondFormInsurer(b){ const F = b.form || {}; return F.insurer || b.selectedInsurer || b.slipTarget || ''; }
+function bondFormTypeKey(b){ return ({ seriedad:'Licitación', fiel:'Cumplimiento', anticipo:'Avance', aduanal:'Aduanal' })[b.type] || 'Otro'; }
+function bondFormDefaults(b){
+  const a = b.afianzado, t = new Date();
+  return { repName: a.contact || '', cobCalle: a.address || '', cel: a.phone || '', email: a.email || '', signName: a.contact || '',
+    signDate: t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'),
+    repIdType:'cedula', veh:'', vivienda:'', legal: BOND_FORM_LEGAL, sameAddress:'si' };
+}
+function bfv(b, k){ const F = b.form || {}; if(F[k] !== undefined && F[k] !== '') return F[k]; const d = bondFormDefaults(b)[k]; return d === undefined ? '' : d; }
+const BOND_FORM_REQUIRED = [['fechaConst', 'Fecha de constitución'], ['repName', 'Nombre del representante'], ['repId', 'Cédula / pasaporte'], ['cobCalle', 'Dirección'], ['cobCiudad', 'Ciudad'], ['cel', 'Celular'], ['email', 'Correo'], ['signName', 'Nombre de quien firma'], ['signPos', 'Posición de quien firma']];
+function bondFormMissing(b){ return BOND_FORM_REQUIRED.filter(([k]) => !String(bfv(b, k)).trim()).map(x => x[1]); }
+/* Pantalla */
+function bondFormMissHtml(b){
+  const miss = bondFormMissing(b);
+  return miss.length ? `<div style="background:#FFF6E5;border:1px solid #F3D9A6;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400E;margin-bottom:6px">Faltan ${miss.length} dato${miss.length === 1 ? '' : 's'}: ${miss.join(' · ')}. Puedes generar el formulario igual; esos espacios saldrán en blanco.</div>`
+    : `<div style="background:#E9F7EF;border:1px solid #BFE3CC;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#166534;margin-bottom:6px">✓ Formulario completo.</div>`;
+}
+/* Actualiza la vista previa sin redibujar los campos (no se pierde el foco al pasar de un campo a otro) */
+function bondFormRefresh(){
+  const b = activeBond(); if(!b) return;
+  const d = document.getElementById('docBondForm'); if(d) d.innerHTML = renderBondFormBody(b);
+  const m = document.getElementById('bondFormMiss'); if(m) m.innerHTML = bondFormMissHtml(b);
+}
+function viewBondForm(b){
+  const ins = bondFormInsurer(b), o = b.obligacion;
+  const inp = (k, label, o2) => { o2 = o2 || {}; return `<div class="field ${o2.full ? 'full' : ''}"><label>${label}${o2.hint ? ` <span class="hint">${o2.hint}</span>` : ''}</label><input class="input" ${o2.type ? `type="${o2.type}"` : ''} ${o2.max ? `maxlength="${o2.max}" inputmode="numeric"` : ''} value="${escapeHtml(bfv(b, k))}" placeholder="${escapeHtml(o2.ph || '')}" onchange="updBond('form.${k}',this.value);bondFormRefresh()"></div>`; };
+  const sel = (k, label, opts, rr) => `<div class="field"><label>${label}</label><select class="select" onchange="updBond('form.${k}',this.value)${rr ? ';render()' : ';bondFormRefresh()'}"><option value="">—</option>${opts.map(([v, t]) => `<option value="${v}" ${bfv(b, k) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
+  const idOpts = [['cedula', 'Cédula'], ['pasaporte', 'Pasaporte']];
+  const same = bfv(b, 'sameAddress') !== 'no';
+  return `
+    <div class="card">
+      <div class="card-header"><div><h2 class="card-title">Formulario de solicitud de fianza</h2>
+        <div class="card-subtitle">Lo que ya está en la fianza se llena solo. Completa lo demás y genera el formulario listo para firmar.</div></div>
+        <div class="row"><button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-primary btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button></div></div>
+      <div id="bondFormMiss">${bondFormMissHtml(b)}</div>
+
+      <div class="section-title">Datos que vienen de la fianza</div>
+      <div class="kv" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px;font-size:13px">
+        <div><div class="muted" style="font-size:11px">Empresa · RNC</div><strong>${escapeHtml(b.afianzado.name || '—')}</strong> · ${escapeHtml(b.afianzado.rnc || '—')}</div>
+        <div><div class="muted" style="font-size:11px">Tipo de fianza</div><strong>${escapeHtml(bondTypeName(b))}</strong> (${bondFormTypeKey(b)})</div>
+        <div><div class="muted" style="font-size:11px">Valor de la fianza</div><strong>${bondMoney(b, bondAmount(b))}</strong></div>
+        <div><div class="muted" style="font-size:11px">Vigencia</div>${o.startDate ? fmtDate(o.startDate) + ' al ' + fmtDate(bondEnd(b)) : '—'}</div>
+        <div><div class="muted" style="font-size:11px">Beneficiario</div>${escapeHtml(b.beneficiario.name || '—')}</div>
+        <div><div class="muted" style="font-size:11px">Actividad</div>${escapeHtml(b.afianzado.activity || '—')}</div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Para cambiarlos ve a <a href="#" onclick="state.view='fz-data';render();return false;">Datos de la Fianza</a>.</p>
+
+      <div class="section-title">Aseguradora</div>
+      <div class="form-grid cols-3">
+        <div class="field"><label>Se presenta a</label><select class="select" onchange="updBond('form.insurer',this.value);render()"><option value="">—</option>${DEFAULT_INSURERS.map(i => `<option value="${i.id}" ${ins === i.id ? 'selected' : ''}>${escapeHtml(i.name)}</option>`).join('')}</select></div>
+        ${inp('brokerCode', 'Código del intermediario', { ph:'Código asignado por la aseguradora' })}
+      </div>
+
+      <div class="section-title">Solicitante (persona física que representa la empresa)</div>
+      <div class="form-grid cols-3">
+        ${inp('fechaConst', 'Fecha de constitución de la empresa', { type:'date' })}
+        ${inp('repName', 'Nombre completo')}
+        ${sel('repIdType', 'Tipo de identificación', idOpts)}
+        ${inp('repId', 'Número', { ph:'001-0000000-0' })}
+        ${inp('repBirth', 'Fecha de nacimiento', { type:'date' })}
+        ${sel('repSex', 'Sexo', [['M', 'M'], ['F', 'F']])}
+        ${inp('repProfession', 'Nivel académico / profesión', { ph:'Ej: Ingeniero civil' })}
+      </div>
+
+      <div class="section-title">Dirección de cobro</div>
+      <div class="form-grid cols-3">
+        ${inp('cobCalle', 'Calle y número', { full:true })}
+        ${inp('cobEdif', 'Edificio / torre / residencial')}
+        ${inp('cobApto', 'Apartamento / casa no.')}
+        ${inp('cobSector', 'Barrio / sector')}
+        ${inp('cobCiudad', 'Ciudad / municipio')}
+      </div>
+      <label class="check-row"><input type="checkbox" ${same ? 'checked' : ''} onchange="updBond('form.sameAddress',this.checked?'si':'no');render()"> La dirección del domicilio es la misma</label>
+      ${same ? '' : `<div class="form-grid cols-3" style="margin-top:6px">
+        ${inp('domCalle', 'Domicilio: calle y número', { full:true })}
+        ${inp('domEdif', 'Edificio / torre / residencial')}
+        ${inp('domApto', 'Apartamento / casa no.')}
+        ${inp('domSector', 'Barrio / sector')}
+        ${inp('domCiudad', 'Ciudad / municipio')}
+      </div>`}
+
+      <div class="section-title">Contacto y otros datos</div>
+      <div class="form-grid cols-3">
+        ${inp('telRes', 'Tel. residencial')}
+        ${inp('telOfi', 'Tel. oficina')}
+        ${inp('cel', 'Celular')}
+        ${inp('email', 'Correo electrónico')}
+        ${sel('veh', 'Vehículo', [['si', 'Sí'], ['no', 'No']], true)}
+        ${bfv(b, 'veh') === 'si' ? inp('vehMarca', 'Marca') + inp('vehModelo', 'Modelo') + inp('vehAnio', 'Año') : ''}
+        ${sel('vivienda', 'Vivienda', [['propia', 'Propia'], ['alquilada', 'Alquilada']])}
+      </div>
+
+      <div class="section-title">Ubicación del riesgo <span class="muted" style="font-weight:500;font-size:12px;margin-left:6px">opcional</span></div>
+      <div class="form-grid cols-2">${[1, 2, 3, 4].map(i => inp('ubic' + i, 'Dirección ' + i)).join('')}</div>
+
+      <div class="section-title">Referencias bancarias</div>
+      ${[1, 2].map(i => `<div class="form-grid cols-3">${inp('bank' + i + 'Name', 'Banco ' + i)}${sel('bank' + i + 'Type', 'Tipo de cuenta', [['ahorro', 'Ahorro'], ['corriente', 'Corriente'], ['certificado', 'Certificado']])}${inp('bank' + i + 'Acct', 'Cuenta no.')}</div>`).join('<div style="height:8px"></div>')}
+      <div class="section-title">Tarjetas de crédito</div>
+      ${[1, 2].map(i => `<div class="form-grid cols-3">${inp('card' + i + 'Bank', 'Banco')}${inp('card' + i + 'Last4', 'Número', { hint:'(solo últimos 4 dígitos)', max:4, ph:'1234' })}${sel('card' + i + 'Type', 'Tipo', [['mastercard', 'Mastercard'], ['visa', 'Visa'], ['otra', 'Otra']])}</div>`).join('<div style="height:8px"></div>')}
+
+      <div class="section-title">Fiadores solidarios</div>
+      ${[1, 2, 3].map(i => `<div class="form-grid cols-3">${inp('f' + i + 'Name', 'Nombre completo fiador ' + i)}${sel('f' + i + 'IdType', 'Tipo de identificación', idOpts)}${inp('f' + i + 'Id', 'Número')}</div>`).join('<div style="height:8px"></div>')}
+
+      <div class="section-title">Firma</div>
+      <div class="form-grid cols-3">
+        ${inp('signName', 'Nombre del solicitante')}
+        ${inp('signPos', 'Posición que ocupa', { ph:'Ej: Gerente general' })}
+        ${inp('signDate', 'Fecha', { type:'date' })}
+      </div>
+
+      <details style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--navy-800)">Texto legal del formulario</summary>
+        <p class="muted" style="font-size:12px">{ASEGURADORA} se cambia por el nombre de la aseguradora elegida. Si una aseguradora exige su propio texto, pégalo aquí.</p>
+        <textarea class="textarea" rows="7" onchange="updBond('form.legal',this.value);render()">${escapeHtml(bfv(b, 'legal'))}</textarea>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="updBond('form.legal','');render()">Volver al texto genérico</button>
+      </details>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-toolbar"><div class="row"><strong>Vista previa del formulario</strong></div>
+        <div class="row"><button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-ghost btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button></div></div>
+      <div class="preview-body"><div class="doc" id="docBondForm">${renderBondFormBody(b)}</div></div>
+    </div>`;
+}
+/* Documento */
+function renderBondFormBody(b){
+  const v = k => escapeHtml(bfv(b, k)), o = b.obligacion, a = b.afianzado;
+  const insObj = DEFAULT_INSURERS.find(i => i.id === bondFormInsurer(b)), insName = insObj ? insObj.name : 'LA ASEGURADORA';
+  const BORDER = '0.75pt solid #B8C4D2', FONT = 'font-family:Arial,sans-serif;';
+  const cell = (label, value, span) => `<td colspan="${span || 1}" style="border:${BORDER};padding:2pt 5pt 3pt;vertical-align:top;${FONT}"><div style="font-size:6.5pt;color:#5F6B7A;text-transform:uppercase;letter-spacing:.3pt">${label}</div><div style="font-size:9.5pt;color:#111827;min-height:12pt">${value || '&nbsp;'}</div></td>`;
+  const box = on => `<span style="font-family:'Segoe UI Symbol','DejaVu Sans',Arial;font-size:10pt">${on ? '☒' : '☐'}</span>`;
+  const opt = (on, t) => `${box(on)}&nbsp;${t}&nbsp;&nbsp;&nbsp;`;
+  const bar = t => `<tr><td colspan="6" style="background:#374151;color:#ffffff;font-weight:700;padding:3pt 6pt;font-size:9pt;${FONT}">${t}</td></tr>`;
+  const T = rows => `<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 8pt"><colgroup>${'<col style="width:16.66%">'.repeat(6)}</colgroup>${rows}</table>`;
+  const d = k => { const x = bfv(b, k); return x ? fmtDate(x) : ''; };
+  const same = bfv(b, 'sameAddress') !== 'no';
+  const typeK = bondFormTypeKey(b), ccy = bondCcy(b), amt = bondAmount(b), pct = bondPct(b);
+  const idT = k => bfv(b, k) === 'pasaporte' ? opt(false, 'Cédula') + opt(true, 'Pasaporte') : opt(bfv(b, k) === 'cedula', 'Cédula') + opt(false, 'Pasaporte');
+  const legal = escapeHtml(bfv(b, 'legal')).split('{ASEGURADORA}').join('<strong>' + escapeHtml(insName.toUpperCase()) + '</strong>').split(/\n\s*\n/).map(p => `<p style="margin:0 0 5pt">${p.replace(/\n/g, '<br>')}</p>`).join('');
+  const sign = t => `<td style="border:none;padding:22pt 8pt 0;vertical-align:bottom;${FONT}"><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">${t}</div></td>`;
+  const head = `<h1 style="${FONT}font-size:14pt;color:#111827;margin:0 0 4pt;text-align:center">Formulario de solicitud de seguro de fianza</h1>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 8pt"><colgroup>${'<col style="width:16.66%">'.repeat(6)}</colgroup><tr>${cell('Aseguradora', escapeHtml(insObj ? insObj.name : ''), 4)}${cell('Fecha de la solicitud', d('signDate'), 2)}</tr></table>`;
+  const p1 = T(
+    bar('Datos del solicitante')
+    + `<tr>${cell('Empresa', escapeHtml(a.name), 3)}${cell('RNC', escapeHtml(a.rnc), 1)}${cell('Fecha de constitución', d('fechaConst'), 2)}</tr>`
+    + `<tr>${cell('Nombre completo persona física', v('repName'), 3)}${cell('Tipo de identificación', idT('repIdType'), 2)}${cell('Número', v('repId'), 1)}</tr>`
+    + `<tr>${cell('Fecha de nacimiento', d('repBirth'), 2)}${cell('Sexo', opt(bfv(b, 'repSex') === 'M', 'M') + opt(bfv(b, 'repSex') === 'F', 'F'), 1)}${cell('Nivel académico / profesión', v('repProfession'), 3)}</tr>`
+    + `<tr>${cell('Dirección de cobro (calle y número)', v('cobCalle'), 6)}</tr>`
+    + `<tr>${cell('Edificio / torre / residencial', v('cobEdif'), 3)}${cell('Apartamento / casa no.', v('cobApto'), 3)}</tr>`
+    + `<tr>${cell('Barrio / sector', v('cobSector'), 3)}${cell('Ciudad / municipio', v('cobCiudad'), 3)}</tr>`
+    + `<tr>${cell('Dirección domicilio (si es distinta a la de cobro)', same ? 'La misma de cobro' : v('domCalle'), 6)}</tr>`
+    + (same ? '' : `<tr>${cell('Edificio / torre / residencial', v('domEdif'), 3)}${cell('Apartamento / casa no.', v('domApto'), 3)}</tr><tr>${cell('Barrio / sector', v('domSector'), 3)}${cell('Ciudad / municipio', v('domCiudad'), 3)}</tr>`)
+    + `<tr>${cell('Tel. residencial', v('telRes'), 1)}${cell('Tel. oficina', v('telOfi'), 1)}${cell('Celular', v('cel'), 1)}${cell('Correo electrónico', v('email'), 3)}</tr>`
+    + `<tr>${cell('Vehículo', opt(bfv(b, 'veh') === 'si', 'Sí') + opt(bfv(b, 'veh') === 'no', 'No'), 1)}${cell('Marca', v('vehMarca'), 2)}${cell('Modelo', v('vehModelo'), 2)}${cell('Año', v('vehAnio'), 1)}</tr>`
+    + `<tr>${cell('Vivienda', opt(bfv(b, 'vivienda') === 'propia', 'Propia') + opt(bfv(b, 'vivienda') === 'alquilada', 'Alquilada'), 2)}${cell('Actividad del negocio', escapeHtml(a.activity), 4)}</tr>`
+    + `<tr>${cell('Vigencia del seguro', o.startDate ? 'Desde: ' + fmtDate(o.startDate) + '&nbsp;&nbsp;&nbsp;Hasta: ' + fmtDate(bondEnd(b)) : '', 4)}${cell('Moneda de la póliza', opt(ccy === 'DOP', 'RD$') + opt(ccy === 'USD', 'US$'), 2)}</tr>`
+    + `<tr>${cell('Tipo de fianza', ['Licitación', 'Cumplimiento', 'Avance', 'Aduanal'].map(x => opt(typeK === x, x)).join('') + opt(typeK === 'Otro', 'Otro' + (typeK === 'Otro' ? ': ' + escapeHtml(bondTypeName(b)) : '')), 6)}</tr>`
+    + `<tr>${cell('Ubicación del riesgo: direcciones', [1, 2, 3, 4].map(i => bfv(b, 'ubic' + i) ? i + '. ' + v('ubic' + i) : '').filter(Boolean).join('<br>'), 6)}</tr>`
+  ) + T(
+    bar('Especificaciones del seguro solicitado')
+    + `<tr>${cell('Valor de la fianza deseada', `<strong>${bondMoney(b, amt)}</strong>`, 2)}${cell('En letras', escapeHtml(numeroALetras(amt, ccy === 'USD' ? 'dólares estadounidenses' : 'pesos dominicanos')), 4)}</tr>`
+    + `<tr>${cell('Porcentaje', pct !== '' && bondType(b).base !== 'manual' ? pct + '%' : '', 1)}${cell('Sobre la suma de (moneda de curso legal)', bondType(b).base !== 'manual' ? bondMoney(b, bondBaseAmount(b)) : '', 2)}${cell(b.sector === 'publico' ? 'Proceso / referencia' : 'Contrato / referencia', escapeHtml(o.process), 3)}</tr>`
+    + `<tr>${cell('Para responder a las obligaciones siguientes', escapeHtml(o.description), 6)}</tr>`
+    + `<tr>${cell('Beneficiario', escapeHtml(b.beneficiario.name) + (b.beneficiario.rnc ? ' · RNC ' + escapeHtml(b.beneficiario.rnc) : ''), 6)}</tr>`
+  );
+  const p2 = T(
+    bar('Referencias bancarias y de crédito')
+    + [1, 2].map(i => { const t = bfv(b, 'bank' + i + 'Type'); return `<tr>${cell('Nombre del banco', v('bank' + i + 'Name'), 2)}${cell('Tipo de cuenta', opt(t === 'ahorro', 'Ahorro') + opt(t === 'corriente', 'Corriente') + opt(t === 'certificado', 'Certificado'), 3)}${cell('Cuenta no.', v('bank' + i + 'Acct'), 1)}</tr>`; }).join('')
+    + [1, 2].map(i => { const t = bfv(b, 'card' + i + 'Type'), l4 = bfv(b, 'card' + i + 'Last4'); return `<tr>${cell('Tarjeta de crédito: banco', v('card' + i + 'Bank'), 2)}${cell('Número', l4 ? '**** ' + escapeHtml(l4) : '', 1)}${cell('Tipo', opt(t === 'mastercard', 'Mastercard') + opt(t === 'visa', 'Visa') + opt(t === 'otra', 'Otra'), 3)}</tr>`; }).join('')
+  ) + T(
+    bar('Datos de los fiadores solidarios')
+    + [1, 2, 3].map(i => `<tr>${cell('Nombre completo fiador solidario ' + i, v('f' + i + 'Name'), 3)}${cell('Tipo de identificación', idT('f' + i + 'IdType'), 2)}${cell('Número', v('f' + i + 'Id'), 1)}</tr>`).join('')
+  ) + `<div style="${FONT}font-size:7.5pt;color:#374151;text-align:justify;line-height:1.45;margin:4pt 0 6pt">${legal}</div>`
+    + `<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4pt"><tr>
+        <td style="border:none;padding:20pt 8pt 0;vertical-align:bottom;${FONT}"><div style="font-size:9.5pt;text-align:center">${v('signName')}</div><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">Nombre del solicitante</div></td>
+        <td style="border:none;padding:20pt 8pt 0;vertical-align:bottom;${FONT}"><div style="font-size:9.5pt;text-align:center">${v('signPos')}</div><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">Posición que ocupa</div></td>
+        <td style="border:none;padding:20pt 8pt 0;vertical-align:bottom;${FONT}"><div style="font-size:9.5pt;text-align:center">${d('signDate')}</div><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">Fecha</div></td>
+      </tr></table>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td style="border:none"></td>${sign('Firma y sello del solicitante')}<td style="border:none"></td></tr></table>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${sign('Firma del fiador solidario 1')}${sign('Firma del fiador solidario 2')}${sign('Firma del fiador solidario 3')}</tr></table>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6pt"><tr>
+        <td style="border:none;padding:16pt 8pt 0;vertical-align:bottom;${FONT}"><div style="font-size:9.5pt;text-align:center;font-weight:700">${escapeHtml((state.config && state.config.brokerName) || 'Garrigó Seguros')}</div><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">Intermediario</div></td>
+        <td style="border:none;padding:16pt 8pt 0;vertical-align:bottom;${FONT}"><div style="font-size:9.5pt;text-align:center">${v('brokerCode')}</div><div style="border-top:0.75pt solid #374151;padding-top:2pt;font-size:7.5pt;color:#374151;text-align:center">Código</div></td>
+      </tr></table>`;
+  return head + p1 + '<div class="html2pdf__page-break" style="page-break-before:always"></div>' + p2;
+}
+async function exportBondForm(fmt){
+  const b = activeBond(); if(!b) return;
+  const fname = 'Formulario-Fianza-' + b.ref.replace(/[^a-zA-Z0-9_-]/g, '_');
+  if(fmt === 'pdf'){
+    const el = document.getElementById('docBondForm'); if(!el) return;
+    el.classList.add('exporting-pdf'); void el.offsetHeight;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try{
+      await html2pdf().set({ margin:[10, 10, 10, 10], filename: fname + '.pdf', image:{ type:'jpeg', quality:0.96 },
+        html2canvas:{ scale:2, useCORS:true, scrollX:0, scrollY:0, backgroundColor:'#ffffff' }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
+        pagebreak:{ mode:['css', 'legacy'], avoid:['tr'] } }).from(el).save();
+    } finally { el.classList.remove('exporting-pdf'); }
+    return;
+  }
+  try{
+    const ok = await waitForGlobal('htmlDocx', 3500);
+    if(!ok){ syncToast('⚠ La librería de Word no cargó. Recarga la página.', false); return; }
+    const html = htmlToWordCompatible(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${renderBondFormBody(b).replace('<div class="html2pdf__page-break" style="page-break-before:always"></div>', '<br style="page-break-before:always" clear="all">')}</body></html>`);
+    const blob = htmlDocx.asBlob(html, { orientation:'portrait', pageSize:{ width:11906, height:16838 }, margins:{ top:700, right:700, bottom:700, left:700 } });
+    saveAs(blob, fname + '.docx');
+  }catch(err){ console.error(err); syncToast('⚠ No se pudo generar el Word: ' + (err.message || err), false); }
+}
+
+/* ============================================================
    NAV LISTENER + BOOTSTRAP
    ============================================================ */
 document.querySelectorAll('.nav-item').forEach(n => {
@@ -5247,8 +6529,11 @@ function syncToast(msg, ok){
   t.style.background = ok ? '#ECFDF3' : '#FEF2F2';
   t.style.color = ok ? '#166534' : '#9F1D24';
   t.style.border = '1px solid '+(ok?'#9AD9B1':'#F3B4B7');
-  t.textContent = msg; t.style.display='block';
-  clearTimeout(t._h); t._h=setTimeout(function(){ t.style.display='none'; }, ok?1500:8000);
+  t.textContent = msg; t.classList.add('toast-anim');
+  if(t.style.display !== 'block'){ t.classList.remove('show'); t.style.display = 'block'; void t.offsetWidth; }
+  t.classList.add('show');
+  clearTimeout(t._h); clearTimeout(t._h2);
+  t._h = setTimeout(function(){ t.classList.remove('show'); t._h2 = setTimeout(function(){ t.style.display = 'none'; }, 160); }, ok ? 1800 : 8000);
 }
 async function remoteSaveNow(){
   if(!sbClient || !currentUser) return;
@@ -5259,6 +6544,11 @@ async function remoteSaveNow(){
     if(c){
       const r2 = await sbClient.from('cases').upsert({ id:c.id, ref:c.ref||'', status:c.status||'', data:c, updated_by: currentUser.id, updated_at:new Date().toISOString() });
       if(r2.error) throw r2.error;
+    }
+    const b = (state.bonds || []).find(x=>x.id===state.activeBondId);
+    if(b){
+      const r3 = await sbClient.from('cases').upsert({ id:b.id, ref:b.ref||'', status:b.status||'', data:b, updated_by: currentUser.id, updated_at:new Date().toISOString() });
+      if(r3.error) throw r3.error;
     }
     syncToast('Guardado en la nube \u2713', true);
   }catch(e){ console.error('Guardado remoto falló:', e); syncToast('\u26A0 No guardó en la nube: '+_errTxt(e), false); }
@@ -5283,7 +6573,10 @@ async function loadRemote(){
     ]);
     if(caseRes.error) throw caseRes.error;
     if(cartRes.error) throw cartRes.error;
-    state.cases = (caseRes.data||[]).map(x=>migrateCase(x.data));
+    const rows = (caseRes.data||[]).map(x=>x.data).filter(Boolean);
+    state.cases = rows.filter(d=>d.kind!=='fianza').map(migrateCase);
+    state.bonds = rows.filter(d=>d.kind==='fianza');
+    state.activeBondId = (state.bonds[0] && state.bonds[0].id) || null;
     if(cfgRes && cfgRes.data && cfgRes.data.data) state.config = migrateConfig({ ...state.config, ...cfgRes.data.data });
     if(Array.isArray(cartRes.data)) CARTERA_DB = cartRes.data.map(mapCarteraRow);
     state.activeCaseId = (state.cases[0] && state.cases[0].id) || null;
