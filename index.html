@@ -653,6 +653,8 @@ const DEFAULT_INSURERS = [
   { id:'sura',        name:'Seguros Sura',              color:'#003594', short:'SR',  email:'tecnicos@segurossura.com.do',   phone:'(809) 535-1010' },
   { id:'humano',      name:'Humano Seguros',            color:'#ff6900', short:'HU',  email:'corporativos@humano.com.do',    phone:'(809) 476-1212' },
   { id:'crecer',      name:'Seguros Crecer',            color:'#2da44e', short:'CR',  email:'suscripcion@segurroscrecer.com.do', phone:'(809) 476-9292' },
+  { id:'general',     name:'La General de Seguros',     color:'#c8102e', short:'LG',  email:'', phone:'' },
+  { id:'aps',         name:'APS Seguros',               color:'#1f6fb5', short:'AP',  email:'', phone:'(809) 231-5555' },
 ];
 /* ---------- COBERTURAS BÁSICAS MUNICH RE LATAM (A-G) ---------- */
 const COVERAGES_LATAM = [
@@ -5491,7 +5493,7 @@ const BOND_TYPES = [
   { k:'fiel',          label:'Fiel cumplimiento de contrato',      base:'contrato', pct:4,   months:12, pub:true,  priv:true,
     note:'Pliegos públicos: normalmente 4% del monto del contrato adjudicado.', docs:['contrato'] },
   { k:'anticipo',      label:'Buen uso del anticipo',              base:'anticipo', pct:100, months:12, pub:true,  priv:true,
-    note:'Cubre el 100% del anticipo recibido.', docs:['contrato'] },
+    note:'Cubre el 100% del anticipo. El anticipo normalmente es entre el 10% y el 20% del contrato: al poner el monto del contrato se calcula solo.', docs:['contrato'] },
   { k:'vicios',        label:'Vicios ocultos / calidad de obra',   base:'contrato', pct:'',  months:12, pub:true,  priv:true,
     note:'Porcentaje y plazo según contrato o pliego.', docs:['contrato','recepcion'] },
   { k:'mantenimiento', label:'Garantía de mantenimiento de obra',  base:'contrato', pct:'',  months:12, pub:true,  priv:true,
@@ -5541,8 +5543,42 @@ function bondBaseAmount(b){
   const o = b.obligacion || {}, base = bondType(b).base;
   if(base === 'oferta') return +o.offerAmount || 0;
   if(base === 'contrato') return +o.contractAmount || 0;
-  if(base === 'anticipo') return +o.advanceAmount || 0;
+  if(base === 'anticipo') return bondAdvanceAmount(b);
   return 0;
+}
+/* Anticipo: normalmente entre el 10% y el 20% del contrato (20% por defecto) */
+const ADVANCE_PCT_DEFAULT = 20;
+function bondAdvancePct(b){
+  const o = b.obligacion || {};
+  if(o.advancePct !== undefined && o.advancePct !== '') return +o.advancePct;
+  if(+o.advanceAmount > 0 && +o.contractAmount > 0) return +(o.advanceAmount / o.contractAmount * 100).toFixed(2);
+  return ADVANCE_PCT_DEFAULT;
+}
+function bondAdvanceAmount(b){
+  const o = b.obligacion || {};
+  if(+o.contractAmount > 0) return Math.round(+o.contractAmount * bondAdvancePct(b) / 100 * 100) / 100;
+  return +o.advanceAmount || 0;
+}
+function setBondAdvancePct(v){
+  const b = activeBond(); if(!b) return;
+  const n = parseFloat(String(v).replace(',', '.'));
+  b.obligacion.advancePct = n > 0 ? n : ''; b.obligacion.advanceAmount = bondAdvanceAmount(b) || '';
+  touchBond(b); render();
+}
+function setBondAdvanceAmount(input){
+  const b = activeBond(); if(!b) return;
+  const n = parseMoneyInput(input.value), o = b.obligacion;
+  o.advanceAmount = n || '';
+  if(n > 0 && +o.contractAmount > 0) o.advancePct = n / o.contractAmount * 100;
+  touchBond(b); render();
+}
+/* Qué % del contrato (o de la oferta) representa la fianza */
+function bondShareText(b){
+  const o = b.obligacion || {}, amt = bondAmount(b);
+  if(!amt) return '';
+  if(+o.contractAmount > 0 && bondType(b).base !== 'oferta') return 'Equivale al ' + (+(amt / o.contractAmount * 100).toFixed(2)) + '% del contrato.';
+  if(bondType(b).base === 'oferta' && +o.offerAmount > 0) return 'Equivale al ' + (+(amt / o.offerAmount * 100).toFixed(2)) + '% de la oferta.';
+  return '';
 }
 /* Monto de la fianza: manual si se escribió, si no base × % */
 function bondAmount(b){
@@ -5686,7 +5722,7 @@ function renderBondView(content){
   if(v === 'fz-data') content.innerHTML = viewBondData(b);
   else if(v === 'fz-request') content.innerHTML = viewBondRequest(b);
   else if(v === 'fz-compare') content.innerHTML = viewBondCompare(b);
-  else if(v === 'fz-form') content.innerHTML = viewBondForm(b);
+  else if(v === 'fz-form'){ content.innerHTML = viewBondForm(b); if(insurerFormFor(bondFormInsurer(b))) setTimeout(() => previewInsurerForm(true), 30); }
   else if(v === 'fz-proposal') content.innerHTML = viewBondProposal(b);
 }
 function bondStatusPill(s){
@@ -5786,10 +5822,11 @@ function viewBondData(b){
         <div class="field"><label>Descripción</label><input class="input" value="${escapeHtml(o.description || '')}" onchange="updBond('obligacion.description',this.value)" placeholder="Objeto del contrato o de la licitación"></div>
         ${base === 'oferta' ? `<div class="field"><label>${BOND_BASE_LABEL.oferta}</label><input class="input money-input" value="${fmtMoneyInput(o.offerAmount)}" onchange="updBondMoney('obligacion.offerAmount',this)"></div>` : ''}
         ${base === 'contrato' || base === 'anticipo' ? `<div class="field"><label>${BOND_BASE_LABEL.contrato}</label><input class="input money-input" value="${fmtMoneyInput(o.contractAmount)}" onchange="updBondMoney('obligacion.contractAmount',this)"></div>` : ''}
-        ${base === 'anticipo' ? `<div class="field"><label>${BOND_BASE_LABEL.anticipo}</label><input class="input money-input" value="${fmtMoneyInput(o.advanceAmount)}" onchange="updBondMoney('obligacion.advanceAmount',this)"></div>` : ''}
+        ${base === 'anticipo' ? (() => { const ap = bondAdvancePct(b), out = ap < 10 || ap > 20; return `<div class="field"><label>Anticipo (% del contrato) <span class="hint">(normalmente 10% – 20%)</span></label><input class="input" type="number" step="0.01" min="0" max="100" value="${+ap.toFixed(2)}" onchange="setBondAdvancePct(this.value)">${out ? `<div class="hint" style="margin-top:4px;color:#B45309">⚠ Fuera del rango usual (10% – 20%). Verifica el contrato.</div>` : ''}</div>
+        <div class="field"><label>${BOND_BASE_LABEL.anticipo} <span class="hint">(${+o.contractAmount > 0 ? 'calculado del contrato; puedes escribir otro' : 'escribe el contrato para calcularlo'})</span></label><input class="input money-input" value="${fmtMoneyInput(bondAdvanceAmount(b))}" onchange="setBondAdvanceAmount(this)"></div>`; })() : ''}
         ${base !== 'manual' ? `<div class="field"><label>Porcentaje de la fianza (%)</label><input class="input" type="number" step="0.01" value="${pct === '' ? '' : pct}" placeholder="Según pliego / contrato" onchange="updBond('obligacion.pct',this.value===''?'':+this.value);render()"></div>` : ''}
         <div class="field"><label>Monto de la fianza ${base !== 'manual' ? '<span class="hint">(calculado; puedes escribir otro)</span>' : ''}</label>
-          <input class="input money-input" value="${fmtMoneyInput(amt)}" onchange="updBondMoney('obligacion.amountOverride',this)" style="font-weight:700"></div>
+          <input class="input money-input" value="${fmtMoneyInput(amt)}" onchange="updBondMoney('obligacion.amountOverride',this)" style="font-weight:700">${bondShareText(b) ? `<div class="hint" style="margin-top:4px">${bondShareText(b)}</div>` : ''}</div>
       </div>
       <div class="form-grid cols-3" style="margin-top:14px">
         <div class="field"><label>Inicio de vigencia</label><input class="input" type="date" value="${o.startDate || ''}" onchange="updBond('obligacion.startDate',this.value);updBond('obligacion.endDate','');render()"></div>
@@ -6291,25 +6328,69 @@ function bondFormDefaults(b){
   const a = b.afianzado, t = new Date();
   return { repName: a.contact || '', cobCalle: a.address || '', cel: a.phone || '', email: a.email || '', signName: a.contact || '',
     signDate: t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'),
-    repIdType:'cedula', veh:'', vivienda:'', legal: BOND_FORM_LEGAL, sameAddress:'si' };
+    repIdType:'cedula', veh:'', vivienda:'', legal: BOND_FORM_LEGAL, sameAddress:'si', persona:'juridica' };
 }
 function bfv(b, k){ const F = b.form || {}; if(F[k] !== undefined && F[k] !== '') return F[k]; const d = bondFormDefaults(b)[k]; return d === undefined ? '' : d; }
 const BOND_FORM_REQUIRED = [['fechaConst', 'Fecha de constitución'], ['repName', 'Nombre del representante'], ['repId', 'Cédula / pasaporte'], ['cobCalle', 'Dirección'], ['cobCiudad', 'Ciudad'], ['cel', 'Celular'], ['email', 'Correo'], ['signName', 'Nombre de quien firma'], ['signPos', 'Posición de quien firma']];
 function bondFormMissing(b){ return BOND_FORM_REQUIRED.filter(([k]) => !String(bfv(b, k)).trim()).map(x => x[1]); }
 /* Pantalla */
+/* Datos que solo pide alguna aseguradora */
+function bondFormExtrasHtml(b, extras, inp, sel){
+  if(!extras.length) return '';
+  const name = (insurerFormFor(bondFormInsurer(b)) || {}).name || 'la aseguradora';
+  const yn = [['no', 'No'], ['si', 'Sí']];
+  let h = '';
+  if(extras.includes('ncf')) h += sel('ncf', 'Tipo de comprobante (NCF)', [['credito', 'Crédito fiscal'], ['consumo', 'Consumo'], ['gubernamental', 'Gubernamental'], ['especial', 'Régimen especial']]);
+  if(extras.includes('tipoEntidad')) h += sel('tipoEntidad', 'Tipo de entidad', [['privada', 'Privada'], ['publica', 'Pública']]);
+  if(extras.includes('sectorEco')) h += sel('sectorEco', 'Sector económico', [['comercial', 'Comercial'], ['industrial', 'Industrial'], ['financiero', 'Financiero'], ['servicio', 'Servicio']]);
+  if(extras.includes('contratista')) h += inp('expAnios', 'Años de experiencia en obras similares') + inp('licPendiente', '¿Tiene licitación o propuesta pendiente?') + inp('obrasEjecucion', 'Obras en ejecución (valor y % construido)', { full:true }) + inp('contratoCancelado', '¿Le han cancelado algún contrato?') + inp('penalizado', '¿Ha sido penalizado por incumplimiento?') + inp('funcionarios', 'Principales funcionarios del proyecto y su experiencia', { full:true });
+  if(extras.includes('respaldo')) h += sel('respaldo', 'Tipo de respaldo', [['fiador', 'Fiador'], ['liquida', 'Garantía líquida']]) + inp('respMonto', 'Monto del respaldo') + inp('respBanco', 'Banco del respaldo');
+  if(extras.includes('pep')) h += sel('pep', '¿Es o tiene familiar que sea funcionario público de alto nivel (PEP)?', yn, true) + (bfv(b, 'pep') === 'si' ? inp('pepNombre', 'Nombre') + inp('pepPuesto', 'Puesto') + inp('pepPais', 'País') + inp('pepPeriodo', 'Periodo o último año') : '');
+  return h ? `<div class="section-title">Datos adicionales que pide ${escapeHtml(name)}</div><div class="form-grid cols-3">${h}</div>` : '';
+}
+async function previewInsurerForm(auto){
+  const b = activeBond(); if(!b) return;
+  const spec = insurerFormFor(bondFormInsurer(b)); if(!spec) return;
+  try{
+    if(!(await loadScriptOnce('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js', 'PDFLib'))) throw new Error('No cargó la librería de PDF.');
+    const resp = await fetch('formularios/' + spec.file, { cache:'no-cache' }); if(!resp.ok) throw new Error('No se encontró formularios/' + spec.file);
+    const out = await fillInsurerPdf(await resp.arrayBuffer(), spec, bondPdfData(b));
+    /* se dibuja cada página como imagen (pdf.js): así no se descarga nada al editar */
+    const box = document.getElementById('docBondForm'); if(!box) return;
+    if(!window.pdfjsLib) throw new Error('El visor de PDF no cargó.');
+    const doc = await pdfjsLib.getDocument({ data: out.slice(0) }).promise;
+    const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;gap:14px;align-items:center;padding:6px 0';
+    for(let i = 1; i <= doc.numPages; i++){
+      const page = await doc.getPage(i), vp = page.getViewport({ scale: 1.6 });
+      const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+      cv.style.cssText = 'width:100%;max-width:820px;height:auto;background:#fff;box-shadow:0 2px 12px rgba(40,30,15,.12)';
+      await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+      wrap.appendChild(cv);
+    }
+    box.innerHTML = ''; box.appendChild(wrap);
+    if(!auto) box.scrollIntoView({ behavior:'smooth', block:'start' });
+  }catch(err){
+    const box = document.getElementById('docBondForm');
+    if(auto && box) box.innerHTML = `<div class="empty" style="padding:30px">No se pudo mostrar el formulario de ${escapeHtml(spec.name)} aquí (${escapeHtml(err.message || String(err))}). En la versión publicada se ve y se descarga normalmente.</div>`;
+    else syncToast('⚠ ' + (err.message || err), false);
+  }
+}
 function bondFormMissHtml(b){
   const miss = bondFormMissing(b);
   return miss.length ? `<div style="background:#FFF6E5;border:1px solid #F3D9A6;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400E;margin-bottom:6px">Faltan ${miss.length} dato${miss.length === 1 ? '' : 's'}: ${miss.join(' · ')}. Puedes generar el formulario igual; esos espacios saldrán en blanco.</div>`
     : `<div style="background:#E9F7EF;border:1px solid #BFE3CC;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#166534;margin-bottom:6px">✓ Formulario completo.</div>`;
 }
 /* Actualiza la vista previa sin redibujar los campos (no se pierde el foco al pasar de un campo a otro) */
+let _bondFormTimer = null;
 function bondFormRefresh(){
   const b = activeBond(); if(!b) return;
-  const d = document.getElementById('docBondForm'); if(d) d.innerHTML = renderBondFormBody(b);
+  const d = document.getElementById('docBondForm');
+  if(insurerFormFor(bondFormInsurer(b))){ clearTimeout(_bondFormTimer); _bondFormTimer = setTimeout(() => previewInsurerForm(true), 350); }
+  else if(d) d.innerHTML = renderBondFormBody(b);
   const m = document.getElementById('bondFormMiss'); if(m) m.innerHTML = bondFormMissHtml(b);
 }
 function viewBondForm(b){
-  const ins = bondFormInsurer(b), o = b.obligacion;
+  const ins = bondFormInsurer(b), o = b.obligacion, spec = insurerFormFor(ins), extras = bondFormExtras(b);
   const inp = (k, label, o2) => { o2 = o2 || {}; return `<div class="field ${o2.full ? 'full' : ''}"><label>${label}${o2.hint ? ` <span class="hint">${o2.hint}</span>` : ''}</label><input class="input" ${o2.type ? `type="${o2.type}"` : ''} ${o2.max ? `maxlength="${o2.max}" inputmode="numeric"` : ''} value="${escapeHtml(bfv(b, k))}" placeholder="${escapeHtml(o2.ph || '')}" onchange="updBond('form.${k}',this.value);bondFormRefresh()"></div>`; };
   const sel = (k, label, opts, rr) => `<div class="field"><label>${label}</label><select class="select" onchange="updBond('form.${k}',this.value)${rr ? ';render()' : ';bondFormRefresh()'}"><option value="">—</option>${opts.map(([v, t]) => `<option value="${v}" ${bfv(b, k) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
   const idOpts = [['cedula', 'Cédula'], ['pasaporte', 'Pasaporte']];
@@ -6318,7 +6399,7 @@ function viewBondForm(b){
     <div class="card">
       <div class="card-header"><div><h2 class="card-title">Formulario de solicitud de fianza</h2>
         <div class="card-subtitle">Lo que ya está en la fianza se llena solo. Completa lo demás y genera el formulario listo para firmar.</div></div>
-        <div class="row"><button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-primary btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button></div></div>
+        <div class="row">${spec ? `<button class="btn btn-ghost btn-sm" onclick="previewInsurerForm()">👁 Ver</button><button class="btn btn-primary btn-sm" onclick="exportInsurerForm()">⬇ Formulario de ${escapeHtml(spec.name)}</button>` : `<button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-primary btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button>`}</div></div>
       <div id="bondFormMiss">${bondFormMissHtml(b)}</div>
 
       <div class="section-title">Datos que vienen de la fianza</div>
@@ -6336,7 +6417,11 @@ function viewBondForm(b){
       <div class="form-grid cols-3">
         <div class="field"><label>Se presenta a</label><select class="select" onchange="updBond('form.insurer',this.value);render()"><option value="">—</option>${DEFAULT_INSURERS.map(i => `<option value="${i.id}" ${ins === i.id ? 'selected' : ''}>${escapeHtml(i.name)}</option>`).join('')}</select></div>
         ${inp('brokerCode', 'Código del intermediario', { ph:'Código asignado por la aseguradora' })}
+        ${sel('persona', 'El solicitante es', [['juridica', 'Una empresa'], ['fisica', 'Una persona física']], true)}
       </div>
+      ${!ins ? `<p class="muted" style="font-size:12.5px;margin:8px 0 0">Elige la aseguradora para generar su formulario oficial.</p>`
+        : spec ? `<div style="margin-top:10px;background:#E9F7EF;border:1px solid #BFE3CC;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#166534">✓ Se llenará el formulario oficial de <strong>${escapeHtml(spec.name)}</strong> con estos datos. ${extras.length ? 'Abajo aparecen los datos adicionales que esta aseguradora pide.' : ''}</div>`
+        : `<div style="margin-top:10px;background:#FFF6E5;border:1px solid #F3D9A6;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400E">Aún no tenemos el formulario propio de esta aseguradora: se genera el formulario genérico.</div>`}
 
       <div class="section-title">Solicitante (persona física que representa la empresa)</div>
       <div class="form-grid cols-3">
@@ -6347,15 +6432,20 @@ function viewBondForm(b){
         ${inp('repBirth', 'Fecha de nacimiento', { type:'date' })}
         ${sel('repSex', 'Sexo', [['M', 'M'], ['F', 'F']])}
         ${inp('repProfession', 'Nivel académico / profesión', { ph:'Ej: Ingeniero civil' })}
+        ${inp('nacionalidad', 'Nacionalidad', { ph:'Dominicana' })}
+        ${sel('estadoCivil', 'Estado civil', [['soltero', 'Soltero(a)'], ['casado', 'Casado(a)'], ['divorciado', 'Divorciado(a)'], ['viudo', 'Viudo(a)'], ['union', 'Unión libre']])}
+        ${extras.includes('personal') && bfv(b, 'persona') === 'fisica' ? inp('hijos', 'Hijos') + sel('nivel', 'Nivel académico', [['primaria', 'Primaria'], ['secundaria', 'Secundaria'], ['universitario', 'Universitario'], ['postgrado', 'Postgrado'], ['maestria', 'Maestría']]) : ''}
       </div>
 
       <div class="section-title">Dirección de cobro</div>
       <div class="form-grid cols-3">
         ${inp('cobCalle', 'Calle y número', { full:true })}
+        ${inp('cobNum', 'Número', { ph:'Solo si la aseguradora lo pide aparte' })}
         ${inp('cobEdif', 'Edificio / torre / residencial')}
         ${inp('cobApto', 'Apartamento / casa no.')}
         ${inp('cobSector', 'Barrio / sector')}
         ${inp('cobCiudad', 'Ciudad / municipio')}
+        ${inp('provincia', 'Provincia')}
       </div>
       <label class="check-row"><input type="checkbox" ${same ? 'checked' : ''} onchange="updBond('form.sameAddress',this.checked?'si':'no');render()"> La dirección del domicilio es la misma</label>
       ${same ? '' : `<div class="form-grid cols-3" style="margin-top:6px">
@@ -6386,7 +6476,8 @@ function viewBondForm(b){
       ${[1, 2].map(i => `<div class="form-grid cols-3">${inp('card' + i + 'Bank', 'Banco')}${inp('card' + i + 'Last4', 'Número', { hint:'(solo últimos 4 dígitos)', max:4, ph:'1234' })}${sel('card' + i + 'Type', 'Tipo', [['mastercard', 'Mastercard'], ['visa', 'Visa'], ['otra', 'Otra']])}</div>`).join('<div style="height:8px"></div>')}
 
       <div class="section-title">Fiadores solidarios</div>
-      ${[1, 2, 3].map(i => `<div class="form-grid cols-3">${inp('f' + i + 'Name', 'Nombre completo fiador ' + i)}${sel('f' + i + 'IdType', 'Tipo de identificación', idOpts)}${inp('f' + i + 'Id', 'Número')}</div>`).join('<div style="height:8px"></div>')}
+      ${[1, 2, 3].map(i => `<div class="form-grid cols-3">${inp('f' + i + 'Name', 'Nombre completo fiador ' + i)}${sel('f' + i + 'IdType', 'Tipo de identificación', idOpts)}${inp('f' + i + 'Id', 'Número')}${i < 3 && bfv(b, 'f' + i + 'Name') ? inp('f' + i + 'Prof', 'Profesión u ocupación') + inp('f' + i + 'Dir', 'Dirección') + inp('f' + i + 'Tel', 'Teléfono') + inp('f' + i + 'Email', 'Correo') : ''}</div>`).join('<div style="height:8px"></div>')}
+      ${bondFormExtrasHtml(b, extras, inp, sel)}
 
       <div class="section-title">Firma</div>
       <div class="form-grid cols-3">
@@ -6402,9 +6493,9 @@ function viewBondForm(b){
       </details>
     </div>
     <div class="preview-wrap">
-      <div class="preview-toolbar"><div class="row"><strong>Vista previa del formulario</strong></div>
-        <div class="row"><button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-ghost btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button></div></div>
-      <div class="preview-body"><div class="doc" id="docBondForm">${renderBondFormBody(b)}</div></div>
+      <div class="preview-toolbar"><div class="row"><strong>${spec ? 'Formulario de ' + escapeHtml(spec.name) : 'Vista previa del formulario genérico'}</strong></div>
+        <div class="row">${spec ? `<button class="btn btn-primary btn-sm" onclick="exportInsurerForm()">⬇ Descargar PDF</button><span class="muted" style="font-size:12px;margin-left:6px">Genérico:</span>` : ''}<button class="btn btn-ghost btn-sm" onclick="exportBondForm('docx')">⬇ Word</button><button class="btn btn-ghost btn-sm" onclick="exportBondForm('pdf')">⬇ PDF</button></div></div>
+      <div class="preview-body">${spec ? `<div id="docBondForm" style="min-height:200px"><div class="empty" style="padding:30px"><div class="spinner"></div><div style="margin-top:10px">Preparando el formulario de ${escapeHtml(spec.name)}…</div></div></div><div style="display:none"><div class="doc" id="docBondFormGen">${renderBondFormBody(b)}</div></div>` : `<div class="doc" id="docBondForm">${renderBondFormBody(b)}</div>`}</div>
     </div>`;
 }
 /* Documento */
@@ -6473,14 +6564,15 @@ async function exportBondForm(fmt){
   const b = activeBond(); if(!b) return;
   const fname = 'Formulario-Fianza-' + b.ref.replace(/[^a-zA-Z0-9_-]/g, '_');
   if(fmt === 'pdf'){
-    const el = document.getElementById('docBondForm'); if(!el) return;
+    let el = document.getElementById('docBondFormGen') || document.getElementById('docBondForm'); if(!el) return;
+    if(el.id === 'docBondFormGen'){ el.innerHTML = renderBondFormBody(b); el.parentElement.style.display = 'block'; }
     el.classList.add('exporting-pdf'); void el.offsetHeight;
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     try{
       await html2pdf().set({ margin:[10, 10, 10, 10], filename: fname + '.pdf', image:{ type:'jpeg', quality:0.96 },
         html2canvas:{ scale:2, useCORS:true, scrollX:0, scrollY:0, backgroundColor:'#ffffff' }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
         pagebreak:{ mode:['css', 'legacy'], avoid:['tr'] } }).from(el).save();
-    } finally { el.classList.remove('exporting-pdf'); }
+    } finally { el.classList.remove('exporting-pdf'); if(el.id === 'docBondFormGen') el.parentElement.style.display = 'none'; }
     return;
   }
   try{
@@ -6490,6 +6582,175 @@ async function exportBondForm(fmt){
     const blob = htmlDocx.asBlob(html, { orientation:'portrait', pageSize:{ width:11906, height:16838 }, margins:{ top:700, right:700, bottom:700, left:700 } });
     saveAs(blob, fname + '.docx');
   }catch(err){ console.error(err); syncToast('⚠ No se pudo generar el Word: ' + (err.message || err), false); }
+}
+
+/* ---------------- FORMULARIOS OFICIALES DE CADA ASEGURADORA ----------------
+   Cada aseguradora exige su propio formulario. Los PDF originales viven en la carpeta
+   formularios/ del sitio; aquí está, para cada uno, dónde va cada dato. Al generar,
+   se escribe encima del PDF original (pdf-lib en el navegador). */
+const INSURER_FORMS = {"aps":{"file":"aps.pdf","name":"APS Seguros","items":[{"t":"T","p":1,"k":"lugarFecha","x":416,"y":663.3,"w":165,"s":8},{"t":"T","p":1,"k":"empresa","x":142,"y":623.3,"w":440,"s":9},{"t":"T","p":1,"k":"direccion","x":142,"y":607.3,"w":440,"s":8},{"t":"T","p":1,"k":"rnc","x":142,"y":592.3,"w":105,"s":9},{"t":"T","p":1,"k":"telefono","x":361,"y":592.3,"w":105,"s":9},{"t":"T","p":1,"k":"f1Name","x":197,"y":564.3,"w":385,"s":9},{"t":"T","p":1,"k":"f1Dir","x":197,"y":548.3,"w":385,"s":8},{"t":"T","p":1,"k":"f1Id","x":197,"y":534.3,"w":385,"s":9},{"t":"X","p":1,"k":"tipo","v":"seriedad","x":331,"y":508.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"fiel","x":331,"y":495.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"aduanal","x":331,"y":482.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"anticipo","x":495,"y":508.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"vicios","x":495,"y":495.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"mantenimiento","x":495,"y":495.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"otra","x":495,"y":482.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"pago","x":495,"y":482.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"judicial","x":495,"y":482.8,"s":10},{"t":"X","p":1,"k":"tipo","v":"arrendamiento","x":495,"y":482.8,"s":10},{"t":"T","p":1,"k":"tipoOtro","x":470,"y":456.3,"w":112,"s":8},{"t":"T","p":1,"k":"beneficiario","x":142,"y":430.3,"w":440,"s":9},{"t":"T","p":1,"k":"plazoTxt","x":141,"y":414.3,"w":52,"s":8},{"t":"T","p":1,"k":"vigencia","x":360,"y":414.3,"w":107,"s":7},{"t":"T","p":1,"k":"valorContrato","x":142,"y":398.3,"w":212,"s":9},{"t":"T","p":1,"k":"pctNum","x":141,"y":382.3,"w":50,"s":9},{"t":"T","p":1,"k":"valor","x":360,"y":382.3,"w":107,"s":8},{"t":"L","p":1,"k":"obligacion","s":8.5,"lines":[[14,355.3,567],[14,342.3,567],[14,330.3,567],[14,318.3,567]]},{"t":"T","p":1,"k":"intermediario","x":14,"y":96.3,"w":178,"s":8}]},"general":{"file":"general.pdf","name":"La General de Seguros","items":[{"t":"T","p":1,"k":"hoyDia","x":326,"y":695.5,"w":45,"s":9},{"t":"T","p":1,"k":"hoyMesNombre","x":397,"y":695.5,"w":108,"s":9},{"t":"T","p":1,"k":"hoyAnio","x":530,"y":695.5,"w":44,"s":9},{"t":"T","p":1,"k":"empresa","x":78,"y":661.5,"w":495,"s":9},{"t":"T","p":1,"k":"rnc","x":151,"y":644.5,"w":420,"s":9},{"t":"T","p":1,"k":"direccion","x":80,"y":627.5,"w":493,"s":8},{"t":"T","p":1,"k":"cobCiudad","x":80,"y":611.5,"w":493,"s":9},{"t":"T","p":1,"k":"telefono","x":74,"y":594.5,"w":162,"s":9},{"t":"T","p":1,"k":"email","x":268,"y":594.5,"w":305,"s":9},{"t":"T","p":1,"k":"tipoLabel","x":98,"y":560.5,"w":475,"s":9},{"t":"T","p":1,"k":"valorContrato","x":112,"y":543.5,"w":460,"s":9},{"t":"T","p":1,"k":"valor","x":103,"y":527.5,"w":134,"s":9},{"t":"T","p":1,"k":"pctNum","x":285,"y":527.5,"w":28,"s":9},{"t":"L","p":1,"k":"obligacion","s":8,"lines":[[127,510.5,446],[40,493.5,533]]},{"t":"T","p":1,"k":"beneficiario","x":89,"y":476.5,"w":484,"s":9},{"t":"T","p":1,"k":"vigDesde","x":131,"y":459.5,"w":105,"s":9},{"t":"T","p":1,"k":"vigHasta","x":275,"y":459.5,"w":298,"s":9},{"t":"T","p":1,"k":"primaNeta","x":86,"y":443.5,"w":112,"s":8},{"t":"T","p":1,"k":"isc","x":278,"y":443.5,"w":106,"s":8},{"t":"T","p":1,"k":"primaTotal","x":432,"y":443.5,"w":140,"s":8},{"t":"T","p":1,"k":"f1Name","x":76,"y":409.5,"w":497,"s":9},{"t":"T","p":1,"k":"f1Prof","x":128,"y":392.5,"w":445,"s":9},{"t":"T","p":1,"k":"f1Id","x":90,"y":376.5,"w":483,"s":9},{"t":"T","p":1,"k":"f1Dir","x":80,"y":359.5,"w":493,"s":8},{"t":"T","p":1,"k":"f1Tel","x":77,"y":342.5,"w":160,"s":9},{"t":"T","p":1,"k":"f1Email","x":268,"y":342.5,"w":305,"s":9},{"t":"T","p":1,"k":"signDia","x":89,"y":141.5,"w":48,"s":9},{"t":"T","p":1,"k":"signMesNombre","x":160,"y":141.5,"w":85,"s":9},{"t":"T","p":1,"k":"signAnio","x":269,"y":141.5,"w":35,"s":9}]},"mapfre":{"file":"mapfre.pdf","name":"MAPFRE BHD Seguros","items":[{"t":"T","p":1,"k":"hoy","x":444,"y":725.2,"w":100,"s":9},{"t":"T","p":1,"k":"empresa","x":100,"y":712.2,"w":445,"s":9},{"t":"X","p":1,"k":"solDocType","v":"cedula","x":136,"y":697.7,"s":8},{"t":"X","p":1,"k":"solDocType","v":"rnc","x":213,"y":697.7,"s":8},{"t":"T","p":1,"k":"rnc","x":330,"y":695.2,"w":150,"s":9},{"t":"T","p":1,"k":"cobCalle","x":139,"y":683.2,"w":405,"s":9},{"t":"T","p":1,"k":"edifApto","x":158,"y":670.2,"w":158,"s":9},{"t":"T","p":1,"k":"cobSector","x":349,"y":670.2,"w":196,"s":9},{"t":"T","p":1,"k":"cobCiudad","x":120,"y":657.2,"w":196,"s":9},{"t":"T","p":1,"k":"provincia","x":349,"y":657.2,"w":196,"s":9},{"t":"T","p":1,"k":"telRes","x":81,"y":645.2,"w":103,"s":9},{"t":"T","p":1,"k":"cel","x":223,"y":645.2,"w":104,"s":9},{"t":"T","p":1,"k":"email","x":368,"y":645.2,"w":177,"s":9},{"t":"W","p":1,"x":290,"y":611.7,"w":86,"h":11},{"t":"T","p":1,"k":"beneficiario","x":120,"y":616.2,"w":425,"s":9},{"t":"X","p":1,"k":"benefDocType","v":"cedula","x":74,"y":606.7,"s":7},{"t":"X","p":1,"k":"benefDocType","v":"rnc","x":141,"y":606.7,"s":7},{"t":"T","p":1,"k":"beneficiarioRnc","x":223,"y":604.2,"w":93,"s":8},{"t":"T","p":1,"k":"beneficiario","x":387,"y":604.2,"w":158,"s":7},{"t":"T","p":1,"k":"vigDesde","x":81,"y":566.2,"w":84,"s":9},{"t":"T","p":1,"k":"vigHasta","x":206,"y":566.2,"w":91,"s":9},{"t":"T","p":1,"k":"valor","x":387,"y":566.2,"w":158,"s":9},{"t":"T","p":1,"k":"valorLetras","x":120,"y":547.2,"w":425,"s":8},{"t":"L","p":1,"k":"obligacion","s":8,"lines":[[262,529.2,283],[24,516.2,521],[24,503.2,521],[24,491.2,521]]},{"t":"X","p":1,"k":"respaldo","v":"liquida","x":116,"y":476.7,"s":8},{"t":"X","p":1,"k":"respaldo","v":"fiador","x":116,"y":450.7,"s":8},{"t":"X","p":1,"k":"respMoneda","v":"DOP","x":333,"y":475.7,"s":7},{"t":"X","p":1,"k":"respMoneda","v":"USD","x":371,"y":475.7,"s":7},{"t":"T","p":1,"k":"respMonto","x":444,"y":474.2,"w":100,"s":9},{"t":"T","p":1,"k":"respBanco","x":330,"y":461.2,"w":215,"s":9},{"t":"T","p":1,"k":"f1Apellidos","x":62,"y":419.2,"w":216,"s":9},{"t":"T","p":1,"k":"f1Nombres","x":330,"y":419.2,"w":215,"s":9},{"t":"X","p":1,"k":"f1DocType","v":"cedula","x":136,"y":408.7,"s":8},{"t":"X","p":1,"k":"f1DocType","v":"rnc","x":213,"y":408.7,"s":8},{"t":"T","p":1,"k":"f1Id","x":330,"y":407.2,"w":150,"s":9},{"t":"T","p":1,"k":"f1Dir","x":139,"y":394.2,"w":405,"s":8},{"t":"T","p":1,"k":"f1Tel","x":81,"y":356.2,"w":103,"s":9},{"t":"T","p":1,"k":"f1Cel","x":223,"y":356.2,"w":104,"s":9},{"t":"T","p":1,"k":"f1Email","x":368,"y":356.2,"w":177,"s":9},{"t":"T","p":1,"k":"f2Apellidos","x":62,"y":326.7,"w":216,"s":9},{"t":"T","p":1,"k":"f2Nombres","x":330,"y":326.7,"w":215,"s":9},{"t":"X","p":1,"k":"f2DocType","v":"cedula","x":136,"y":316.2,"s":8},{"t":"X","p":1,"k":"f2DocType","v":"rnc","x":213,"y":316.2,"s":8},{"t":"T","p":1,"k":"f2Id","x":330,"y":314.7,"w":150,"s":9},{"t":"T","p":1,"k":"f2Dir","x":139,"y":301.7,"w":405,"s":8},{"t":"T","p":1,"k":"f2Tel","x":81,"y":263.7,"w":103,"s":9},{"t":"T","p":1,"k":"f2Cel","x":223,"y":263.7,"w":104,"s":9},{"t":"T","p":1,"k":"f2Email","x":368,"y":263.7,"w":177,"s":9},{"t":"T","p":1,"k":"primaTotal","x":139,"y":170.2,"w":82,"s":8},{"t":"T","p":1,"k":"f1Id","x":82,"y":117.2,"w":138,"s":8},{"t":"T","p":1,"k":"f2Id","x":330,"y":117.2,"w":150,"s":8}]},"crecer":{"file":"crecer.pdf","name":"Seguros Crecer","items":[{"t":"T","p":1,"k":"empresa","x":50,"y":683.4,"w":255,"s":9},{"t":"T","p":1,"k":"rnc","x":314,"y":683.4,"w":105,"s":9},{"t":"T","p":1,"k":"fechaConst","x":427,"y":683.4,"w":118,"s":9},{"t":"T","p":1,"k":"repName","x":50,"y":659.4,"w":222,"s":9},{"t":"X","p":1,"k":"repIdType","v":"cedula","x":313.5,"y":661.4,"s":9},{"t":"X","p":1,"k":"repIdType","v":"pasaporte","x":367.5,"y":661.4,"s":9},{"t":"T","p":1,"k":"repId","x":426,"y":659.4,"w":120,"s":9},{"t":"T","p":1,"k":"repBirth","x":50,"y":634.4,"w":135,"s":9},{"t":"X","p":1,"k":"repSex","v":"M","x":210.5,"y":638.4,"s":9},{"t":"X","p":1,"k":"repSex","v":"F","x":246.5,"y":638.4,"s":9},{"t":"T","p":1,"k":"repProfession","x":278,"y":634.4,"w":268,"s":9},{"t":"T","p":1,"k":"cobCalle","x":50,"y":610.4,"w":495,"s":9},{"t":"T","p":1,"k":"cobEdif","x":50,"y":585.4,"w":230,"s":9},{"t":"T","p":1,"k":"cobApto","x":288,"y":585.4,"w":258,"s":9},{"t":"T","p":1,"k":"cobSector","x":50,"y":561.4,"w":230,"s":9},{"t":"T","p":1,"k":"cobCiudad","x":288,"y":561.4,"w":258,"s":9},{"t":"T","p":1,"k":"domCalle","x":50,"y":536.4,"w":495,"s":9},{"t":"T","p":1,"k":"domEdif","x":50,"y":512.4,"w":230,"s":9},{"t":"T","p":1,"k":"domApto","x":288,"y":512.4,"w":258,"s":9},{"t":"T","p":1,"k":"domSector","x":50,"y":487.4,"w":230,"s":9},{"t":"T","p":1,"k":"domCiudad","x":288,"y":487.4,"w":258,"s":9},{"t":"T","p":1,"k":"telRes","x":49,"y":463.4,"w":100,"s":8},{"t":"T","p":1,"k":"telOfi","x":154,"y":463.4,"w":98,"s":8},{"t":"T","p":1,"k":"cel","x":258,"y":463.4,"w":92,"s":8},{"t":"T","p":1,"k":"email","x":355,"y":463.4,"w":190,"s":8},{"t":"X","p":1,"k":"veh","v":"si","x":97.5,"y":441.4,"s":9},{"t":"X","p":1,"k":"veh","v":"no","x":129.5,"y":441.4,"s":9},{"t":"T","p":1,"k":"vehMarca","x":163,"y":439.4,"w":133,"s":9},{"t":"T","p":1,"k":"vehModelo","x":302,"y":439.4,"w":152,"s":9},{"t":"T","p":1,"k":"vehAnio","x":461,"y":439.4,"w":85,"s":9},{"t":"X","p":1,"k":"vivienda","v":"propia","x":76.5,"y":417.4,"s":9},{"t":"X","p":1,"k":"vivienda","v":"alquilada","x":129.5,"y":417.4,"s":9},{"t":"T","p":1,"k":"repProfession","x":186,"y":414.4,"w":270,"s":9},{"t":"T","p":1,"k":"vigDesde","x":128,"y":391.4,"w":62,"s":8},{"t":"T","p":1,"k":"vigHasta","x":217,"y":391.4,"w":64,"s":8},{"t":"X","p":1,"k":"moneda","v":"DOP","x":377.5,"y":392.4,"s":9},{"t":"X","p":1,"k":"moneda","v":"USD","x":416.5,"y":392.4,"s":9},{"t":"T","p":1,"k":"actividad","x":49,"y":364.4,"w":495,"s":9},{"t":"X","p":1,"k":"tipo","v":"seriedad","x":82.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"fiel","x":146.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"anticipo","x":228.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"aduanal","x":290.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"otra","x":356.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"vicios","x":356.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"mantenimiento","x":356.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"pago","x":356.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"judicial","x":356.5,"y":344.4,"s":9},{"t":"X","p":1,"k":"tipo","v":"arrendamiento","x":356.5,"y":344.4,"s":9},{"t":"T","p":1,"k":"tipoOtro","x":388,"y":343.4,"w":158,"s":8},{"t":"T","p":1,"k":"ubic1","x":58,"y":316.4,"w":488,"s":8},{"t":"T","p":1,"k":"ubic2","x":58,"y":304.4,"w":488,"s":8},{"t":"T","p":1,"k":"ubic3","x":58,"y":288.4,"w":488,"s":8},{"t":"T","p":1,"k":"ubic4","x":58,"y":276.4,"w":488,"s":8},{"t":"X","p":1,"k":"moneda","v":"DOP","x":398.5,"y":237.4,"s":9},{"t":"X","p":1,"k":"moneda","v":"USD","x":437.5,"y":237.4,"s":9},{"t":"T","p":1,"k":"valorNum","x":470,"y":237.4,"w":76,"s":9},{"t":"T","p":1,"k":"valorLetras","x":50,"y":237.4,"w":330,"s":8},{"t":"T","p":1,"k":"pctNum","x":48,"y":211.4,"w":20,"s":8},{"t":"T","p":1,"k":"baseSumaNum","x":152,"y":211.4,"w":48,"s":7},{"t":"L","p":1,"k":"obligacion","s":8.5,"lines":[[208,211.4,338],[50,193.4,495],[50,175.4,495],[50,158.4,495],[50,142.4,495]]},{"t":"T","p":1,"k":"beneficiario","x":50,"y":114.4,"w":495,"s":9},{"t":"T","p":2,"k":"bank1Name","x":49,"y":704.4,"w":160,"s":9},{"t":"X","p":2,"k":"bank1Type","v":"ahorro","x":255.5,"y":707.4,"s":9},{"t":"X","p":2,"k":"bank1Type","v":"corriente","x":314.5,"y":707.4,"s":9},{"t":"X","p":2,"k":"bank1Type","v":"certificado","x":376.5,"y":707.4,"s":9},{"t":"T","p":2,"k":"bank1Acct","x":443,"y":704.4,"w":100,"s":9},{"t":"T","p":2,"k":"bank2Name","x":49,"y":680.4,"w":160,"s":9},{"t":"X","p":2,"k":"bank2Type","v":"ahorro","x":255.5,"y":682.4,"s":9},{"t":"X","p":2,"k":"bank2Type","v":"corriente","x":314.5,"y":682.4,"s":9},{"t":"X","p":2,"k":"bank2Type","v":"certificado","x":376.5,"y":682.4,"s":9},{"t":"T","p":2,"k":"bank2Acct","x":443,"y":680.4,"w":100,"s":9},{"t":"T","p":2,"k":"card1Bank","x":49,"y":636.4,"w":160,"s":9},{"t":"T","p":2,"k":"card1Last4","x":215,"y":636.4,"w":100,"s":9},{"t":"X","p":2,"k":"card1Type","v":"mastercard","x":326.5,"y":639.4,"s":9},{"t":"X","p":2,"k":"card1Type","v":"visa","x":392.5,"y":639.4,"s":9},{"t":"X","p":2,"k":"card1Type","v":"otra","x":434.5,"y":639.4,"s":9},{"t":"T","p":2,"k":"card2Bank","x":49,"y":612.4,"w":160,"s":9},{"t":"T","p":2,"k":"card2Last4","x":215,"y":612.4,"w":100,"s":9},{"t":"X","p":2,"k":"card2Type","v":"mastercard","x":326.5,"y":615.4,"s":9},{"t":"X","p":2,"k":"card2Type","v":"visa","x":392.5,"y":615.4,"s":9},{"t":"X","p":2,"k":"card2Type","v":"otra","x":434.5,"y":615.4,"s":9},{"t":"T","p":2,"k":"f1Name","x":49,"y":572.4,"w":220,"s":9},{"t":"X","p":2,"k":"f1IdType","v":"cedula","x":313.5,"y":574.4,"s":9},{"t":"X","p":2,"k":"f1IdType","v":"pasaporte","x":367.5,"y":574.4,"s":9},{"t":"T","p":2,"k":"f1Id","x":425,"y":572.4,"w":120,"s":9},{"t":"T","p":2,"k":"f2Name","x":49,"y":547.4,"w":220,"s":9},{"t":"X","p":2,"k":"f2IdType","v":"cedula","x":313.5,"y":550.4,"s":9},{"t":"X","p":2,"k":"f2IdType","v":"pasaporte","x":367.5,"y":550.4,"s":9},{"t":"T","p":2,"k":"f2Id","x":425,"y":547.4,"w":120,"s":9},{"t":"T","p":2,"k":"f3Name","x":49,"y":523.4,"w":220,"s":9},{"t":"X","p":2,"k":"f3IdType","v":"cedula","x":313.5,"y":525.4,"s":9},{"t":"X","p":2,"k":"f3IdType","v":"pasaporte","x":367.5,"y":525.4,"s":9},{"t":"T","p":2,"k":"f3Id","x":425,"y":523.4,"w":120,"s":9},{"t":"T","p":2,"k":"signName","x":50,"y":306.4,"w":190,"s":9},{"t":"T","p":2,"k":"signPos","x":268,"y":306.4,"w":165,"s":9},{"t":"T","p":2,"k":"signDate","x":462,"y":306.4,"w":85,"s":9},{"t":"T","p":2,"k":"intermediario","x":137,"y":162.4,"w":158,"s":9},{"t":"T","p":2,"k":"brokerCode","x":331,"y":163.4,"w":85,"s":9}]},"humano":{"file":"humano.pdf","name":"Humano Seguros","items":[{"t":"T","p":1,"k":"hoy","x":30,"y":649.5,"w":235,"s":8},{"t":"T","p":1,"k":"vigDesde","x":372,"y":649.5,"w":66,"s":8},{"t":"T","p":1,"k":"vigHasta","x":460,"y":649.5,"w":120,"s":8},{"t":"X","p":1,"k":"ncf","v":"credito","x":103,"y":627.0,"s":8},{"t":"X","p":1,"k":"ncf","v":"consumo","x":185,"y":627.0,"s":8},{"t":"X","p":1,"k":"ncf","v":"gubernamental","x":251,"y":627.0,"s":8},{"t":"X","p":1,"k":"ncf","v":"especial","x":335,"y":627.0,"s":8},{"t":"T","p":1,"k":"pfNombre","x":30,"y":566.5,"w":310,"s":9},{"t":"T","p":1,"k":"pfId","x":30,"y":542.5,"w":200,"s":8},{"t":"X","p":1,"k":"pfIdType","v":"cedula","x":283,"y":545.0,"s":8},{"t":"X","p":1,"k":"pfIdType","v":"pasaporte","x":337.5,"y":545.0,"s":8},{"t":"T","p":1,"k":"pfBirth","x":437,"y":542.5,"w":140,"s":8},{"t":"X","p":1,"k":"pfSex","v":"F","x":67,"y":521.0,"s":8},{"t":"X","p":1,"k":"pfSex","v":"M","x":110,"y":521.0,"s":8},{"t":"X","p":1,"k":"pfNac","v":"dominicana","x":211,"y":521.0,"s":8},{"t":"X","p":1,"k":"pfNac","v":"otra","x":295.5,"y":521.0,"s":8},{"t":"T","p":1,"k":"pfNacOtra","x":350,"y":517.5,"w":100,"s":8},{"t":"X","p":1,"k":"pfCivil","v":"soltero","x":67,"y":497.0,"s":8},{"t":"X","p":1,"k":"pfCivil","v":"casado","x":119.5,"y":497.0,"s":8},{"t":"X","p":1,"k":"pfCivil","v":"viudo","x":177,"y":497.0,"s":8},{"t":"X","p":1,"k":"pfCivil","v":"divorciado","x":226,"y":497.0,"s":8},{"t":"X","p":1,"k":"pfCivil","v":"union","x":294,"y":497.0,"s":8},{"t":"T","p":1,"k":"pfHijos","x":30,"y":470.5,"w":230,"s":8},{"t":"X","p":1,"k":"pfNivel","v":"primaria","x":290.5,"y":473.0,"s":8},{"t":"X","p":1,"k":"pfNivel","v":"secundaria","x":342.5,"y":473.0,"s":8},{"t":"X","p":1,"k":"pfNivel","v":"universitario","x":403,"y":473.0,"s":8},{"t":"X","p":1,"k":"pfNivel","v":"postgrado","x":466.5,"y":473.0,"s":8},{"t":"X","p":1,"k":"pfNivel","v":"maestria","x":522.5,"y":473.0,"s":8},{"t":"T","p":1,"k":"pfCalle","x":30,"y":446.5,"w":270,"s":8},{"t":"T","p":1,"k":"pfNum","x":310,"y":446.5,"w":62,"s":8},{"t":"T","p":1,"k":"pfEdif","x":380,"y":446.5,"w":200,"s":8},{"t":"T","p":1,"k":"pfSector","x":30,"y":422.5,"w":200,"s":8},{"t":"T","p":1,"k":"pfCiudad","x":240,"y":422.5,"w":340,"s":8},{"t":"X","p":1,"k":"pfVivienda","v":"propia","x":69,"y":401.0,"s":8},{"t":"X","p":1,"k":"pfVivienda","v":"alquilada","x":110,"y":401.0,"s":8},{"t":"T","p":1,"k":"pfTelRes","x":274,"y":398.5,"w":105,"s":8},{"t":"T","p":1,"k":"pfTelOfi","x":385,"y":398.5,"w":80,"s":8},{"t":"T","p":1,"k":"pfCel","x":470,"y":398.5,"w":110,"s":8},{"t":"T","p":1,"k":"pfEmail","x":30,"y":375.5,"w":400,"s":8},{"t":"T","p":1,"k":"pjEmpresa","x":30,"y":335.5,"w":310,"s":9},{"t":"X","p":1,"k":"tipoEntidad","v":"publica","x":393,"y":339.0,"s":8},{"t":"X","p":1,"k":"tipoEntidad","v":"privada","x":449.5,"y":339.0,"s":8},{"t":"T","p":1,"k":"pjCalle","x":30,"y":312.5,"w":275,"s":8},{"t":"T","p":1,"k":"pjNum","x":312,"y":312.5,"w":62,"s":8},{"t":"T","p":1,"k":"pjEdif","x":380,"y":312.5,"w":200,"s":8},{"t":"T","p":1,"k":"pjSector","x":30,"y":289.5,"w":205,"s":8},{"t":"T","p":1,"k":"pjCiudad","x":240,"y":289.5,"w":340,"s":8},{"t":"T","p":1,"k":"pjRep","x":30,"y":264.5,"w":275,"s":8},{"t":"T","p":1,"k":"pjFechaConst","x":312,"y":264.5,"w":138,"s":8},{"t":"T","p":1,"k":"pjRnc","x":455,"y":264.5,"w":125,"s":8},{"t":"T","p":1,"k":"pjTel","x":30,"y":240.5,"w":96,"s":8},{"t":"T","p":1,"k":"pjTelOfi","x":132,"y":240.5,"w":82,"s":8},{"t":"T","p":1,"k":"pjCel","x":219,"y":240.5,"w":98,"s":8},{"t":"T","p":1,"k":"pjEmail","x":323,"y":240.5,"w":260,"s":8},{"t":"X","p":1,"k":"sectorEco","v":"comercial","x":67,"y":219.0,"s":8},{"t":"X","p":1,"k":"sectorEco","v":"industrial","x":131,"y":219.0,"s":8},{"t":"X","p":1,"k":"sectorEco","v":"financiero","x":185.5,"y":219.0,"s":8},{"t":"X","p":1,"k":"sectorEco","v":"servicio","x":244.5,"y":219.0,"s":8},{"t":"T","p":1,"k":"pjActividad","x":300,"y":212.5,"w":280,"s":8},{"t":"T","p":1,"k":"fechaConst","x":30,"y":170.5,"w":165,"s":8},{"t":"T","p":1,"k":"expAnios","x":205,"y":170.5,"w":172,"s":8},{"t":"T","p":1,"k":"licPendiente","x":385,"y":170.5,"w":195,"s":8},{"t":"T","p":1,"k":"obrasEjecucion","x":30,"y":148.5,"w":550,"s":8},{"t":"T","p":1,"k":"contratoCancelado","x":30,"y":124.5,"w":238,"s":8},{"t":"T","p":1,"k":"penalizado","x":278,"y":124.5,"w":300,"s":8},{"t":"T","p":1,"k":"funcionarios","x":30,"y":101.5,"w":550,"s":8},{"t":"X","p":1,"k":"tipo","v":"anticipo","x":267.5,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"seriedad","x":144,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"fiel","x":338,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"pago","x":439,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"vicios","x":538,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"mantenimiento","x":538,"y":64.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"otra","x":269.5,"y":49.0,"s":8},{"t":"X","p":1,"k":"tipo","v":"arrendamiento","x":269.5,"y":49.0,"s":8},{"t":"T","p":2,"k":"beneficiario","x":110,"y":743.5,"w":470,"s":8},{"t":"T","p":2,"k":"beneficiario","x":30,"y":719.5,"w":305,"s":8},{"t":"T","p":2,"k":"beneficiarioRnc","x":350,"y":719.5,"w":230,"s":8},{"t":"T","p":2,"k":"valorNum","x":30,"y":670.5,"w":115,"s":9},{"t":"X","p":2,"k":"moneda","v":"DOP","x":177,"y":674.0,"s":8},{"t":"X","p":2,"k":"moneda","v":"USD","x":223.5,"y":674.0,"s":8},{"t":"L","p":2,"k":"obligacion","s":6,"lines":[[250,678.5,128],[250,671.5,128]]},{"t":"T","p":2,"k":"pctNum","x":392,"y":673.0,"w":26,"s":8},{"t":"T","p":2,"k":"baseSumaNum","x":489,"y":673.0,"w":85,"s":7},{"t":"X","p":2,"k":"respaldo","v":"fiador","x":42,"y":650.0,"s":8},{"t":"X","p":2,"k":"respaldo","v":"liquida","x":88,"y":650.0,"s":8},{"t":"T","p":2,"k":"respMonto","x":210,"y":646.5,"w":95,"s":8},{"t":"T","p":2,"k":"respBanco","x":318,"y":646.5,"w":262,"s":8},{"t":"T","p":2,"k":"f1Name","x":30,"y":598.5,"w":550,"s":9},{"t":"T","p":2,"k":"f1Id","x":30,"y":574.5,"w":165,"s":8},{"t":"X","p":2,"k":"f1DocType","v":"cedula","x":211,"y":578.0,"s":8},{"t":"X","p":2,"k":"f1DocType","v":"pasaporte","x":265.5,"y":578.0,"s":8},{"t":"X","p":2,"k":"f1DocType","v":"rnc","x":322,"y":578.0,"s":8},{"t":"T","p":2,"k":"f1Prof","x":423,"y":574.5,"w":160,"s":8},{"t":"T","p":2,"k":"f2Name","x":30,"y":550.0,"w":550,"s":9},{"t":"T","p":2,"k":"f2Id","x":30,"y":526.0,"w":165,"s":8},{"t":"X","p":2,"k":"f2DocType","v":"cedula","x":211,"y":529.5,"s":8},{"t":"X","p":2,"k":"f2DocType","v":"pasaporte","x":265.5,"y":529.5,"s":8},{"t":"X","p":2,"k":"f2DocType","v":"rnc","x":322,"y":529.5,"s":8},{"t":"T","p":2,"k":"f2Prof","x":423,"y":526.0,"w":160,"s":8},{"t":"X","p":2,"k":"canal","v":"corredores","x":46,"y":198.0,"s":8},{"t":"T","p":2,"k":"intermediario","x":30,"y":173.5,"w":200,"s":8},{"t":"T","p":2,"k":"brokerCode","x":240,"y":173.5,"w":100,"s":8}]},"sura":{"file":"sura.pdf","name":"Seguros Sura","items":[{"t":"T","p":1,"k":"n1","x":30,"y":687.5,"w":270,"s":9},{"t":"T","p":1,"k":"n2","x":315,"y":687.5,"w":265,"s":9},{"t":"T","p":1,"k":"a1","x":30,"y":665.5,"w":270,"s":9},{"t":"T","p":1,"k":"a2","x":315,"y":665.5,"w":265,"s":9},{"t":"X","p":1,"k":"repIdType","v":"cedula","x":30,"y":650.0,"s":7},{"t":"X","p":1,"k":"repIdType","v":"pasaporte","x":69,"y":650.0,"s":7},{"t":"T","p":1,"k":"repId","x":115,"y":642.5,"w":185,"s":9},{"t":"T","p":1,"k":"nacionalidad","x":315,"y":642.5,"w":265,"s":9},{"t":"T","p":1,"k":"telRes","x":30,"y":620.5,"w":180,"s":9},{"t":"T","p":1,"k":"telOfi","x":216,"y":620.5,"w":180,"s":9},{"t":"T","p":1,"k":"cel","x":402,"y":620.5,"w":180,"s":9},{"t":"T","p":1,"k":"repEmail","x":30,"y":597.5,"w":550,"s":9},{"t":"X","p":1,"k":"repSex","v":"F","x":30,"y":579.0,"s":7},{"t":"X","p":1,"k":"repSex","v":"M","x":85,"y":579.0,"s":7},{"t":"T","p":1,"k":"repBirth","x":154,"y":575.5,"w":175,"s":9},{"t":"X","p":1,"k":"estadoCivil","v":"casado","x":345,"y":579.0,"s":7},{"t":"X","p":1,"k":"estadoCivil","v":"soltero","x":391,"y":579.0,"s":7},{"t":"X","p":1,"k":"estadoCivil","v":"divorciado","x":437,"y":579.0,"s":7},{"t":"X","p":1,"k":"estadoCivil","v":"union","x":490,"y":579.0,"s":7},{"t":"X","p":1,"k":"estadoCivil","v":"viudo","x":551,"y":579.0,"s":7},{"t":"T","p":1,"k":"repProfession","x":30,"y":552.5,"w":270,"s":9},{"t":"T","p":1,"k":"empresa","x":315,"y":552.5,"w":265,"s":8},{"t":"T","p":1,"k":"empresa","x":30,"y":515.5,"w":395,"s":9},{"t":"T","p":1,"k":"rnc","x":432,"y":515.5,"w":150,"s":9},{"t":"T","p":1,"k":"actividad","x":30,"y":492.5,"w":550,"s":9},{"t":"T","p":1,"k":"telOfi","x":30,"y":469.5,"w":90,"s":8},{"t":"T","p":1,"k":"email","x":228,"y":469.5,"w":355,"s":9},{"t":"T","p":1,"k":"repName","x":30,"y":447.5,"w":320,"s":9},{"t":"T","p":1,"k":"signPos","x":356,"y":447.5,"w":225,"s":9},{"t":"T","p":1,"k":"cobNum","x":30,"y":390.5,"w":90,"s":9},{"t":"T","p":1,"k":"cobCalleEdif","x":126,"y":390.5,"w":300,"s":8},{"t":"T","p":1,"k":"cobApto","x":432,"y":390.5,"w":150,"s":9},{"t":"T","p":1,"k":"cobSector","x":228,"y":368.5,"w":355,"s":9},{"t":"T","p":1,"k":"cobCiudad","x":30,"y":346.5,"w":270,"s":9},{"t":"T","p":1,"k":"provincia","x":309,"y":346.5,"w":275,"s":9},{"t":"T","p":1,"k":"vigDesde","x":50,"y":312.5,"w":150,"s":9},{"t":"T","p":1,"k":"vigHasta","x":230,"y":312.5,"w":200,"s":9},{"t":"T","p":1,"k":"valor","x":30,"y":289.5,"w":410,"s":9},{"t":"T","p":1,"k":"pctNum","x":118,"y":275.0,"w":30,"s":9},{"t":"T","p":1,"k":"baseSumaNum","x":229,"y":275.0,"w":105,"s":8},{"t":"L","p":1,"k":"obligacion","s":8.5,"lines":[[480,276.5,102],[30,244.5,550],[30,220.5,550],[30,196.5,550]]},{"t":"T","p":1,"k":"beneficiario","x":30,"y":172.5,"w":550,"s":9},{"t":"T","p":1,"k":"bank1Name","x":30,"y":115.5,"w":140,"s":8},{"t":"T","p":1,"k":"bank1Acct_corriente","x":173,"y":115.5,"w":48,"s":7},{"t":"T","p":1,"k":"bank1Acct_ahorro","x":256,"y":115.5,"w":48,"s":7},{"t":"T","p":1,"k":"bank1Acct_certificado","x":339,"y":115.5,"w":48,"s":7},{"t":"T","p":1,"k":"bank2Name","x":30,"y":100.5,"w":140,"s":8},{"t":"T","p":1,"k":"bank2Acct_corriente","x":173,"y":100.5,"w":48,"s":7},{"t":"T","p":1,"k":"bank2Acct_ahorro","x":256,"y":100.5,"w":48,"s":7},{"t":"T","p":1,"k":"bank2Acct_certificado","x":339,"y":100.5,"w":48,"s":7},{"t":"T","p":2,"k":"card1Bank","x":30,"y":726.5,"w":250,"s":8},{"t":"X","p":2,"k":"card1Type","v":"visa","x":294,"y":730.0,"s":7},{"t":"X","p":2,"k":"card1Type","v":"mastercard","x":329,"y":730.0,"s":7},{"t":"T","p":2,"k":"card2Bank","x":30,"y":711.5,"w":250,"s":8},{"t":"T","p":2,"k":"card2TypeTxt","x":290,"y":711.5,"w":130,"s":8},{"t":"T","p":2,"k":"signDate","x":325,"y":454.5,"w":145,"s":8},{"t":"T","p":2,"k":"signPos","x":325,"y":427.5,"w":145,"s":8},{"t":"T","p":2,"k":"signDate","x":60,"y":286.5,"w":145,"s":8},{"t":"T","p":2,"k":"brokerCode","x":130,"y":259.5,"w":75,"s":8}]},"banreservas":{"file":"reservas.pdf","name":"Seguros Reservas","items":[{"t":"C","p":1,"k":"hoyComb","x":55,"y":693.5,"w":86,"n":8,"s":8},{"t":"T","p":1,"k":"intermediario","x":470,"y":683.5,"w":118,"s":8},{"t":"T","p":1,"k":"pjEmpresa","x":134,"y":641.5,"w":454,"s":9},{"t":"T","p":1,"k":"pjEmail","x":113,"y":626.5,"w":475,"s":9},{"t":"T","p":1,"k":"pjRnc","x":47,"y":608.5,"w":241,"s":9},{"t":"T","p":1,"k":"pjTel","x":347,"y":608.5,"w":104,"s":8},{"t":"T","p":1,"k":"pjCel","x":459,"y":608.5,"w":129,"s":8},{"t":"T","p":1,"k":"pjDireccion","x":71,"y":590.5,"w":517,"s":8},{"t":"T","p":1,"k":"pfNombre","x":112,"y":555.5,"w":476,"s":9},{"t":"T","p":1,"k":"pfEmail","x":113,"y":538.5,"w":475,"s":9},{"t":"T","p":1,"k":"pfId","x":118,"y":520.5,"w":174,"s":9},{"t":"T","p":1,"k":"pfTelRes","x":352,"y":521.5,"w":105,"s":8},{"t":"T","p":1,"k":"pfCel","x":466,"y":521.5,"w":122,"s":8},{"t":"T","p":1,"k":"pfDireccion","x":71,"y":502.5,"w":517,"s":8},{"t":"X","p":1,"k":"pep","v":"si","x":29.0,"y":423.5,"s":9},{"t":"X","p":1,"k":"pep","v":"no","x":54.0,"y":424.0,"s":9},{"t":"T","p":1,"k":"pepNombre","x":68,"y":401.5,"w":248,"s":9},{"t":"T","p":1,"k":"pepPuesto","x":451,"y":401.5,"w":137,"s":8},{"t":"T","p":1,"k":"pepPais","x":152,"y":382.5,"w":167,"s":9},{"t":"T","p":1,"k":"pepPeriodo","x":480,"y":383.5,"w":108,"s":8},{"t":"X","p":1,"k":"tipo","v":"seriedad","x":355.5,"y":326.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"anticipo","x":355.5,"y":309.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"fiel","x":355.5,"y":291.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"pago","x":355.5,"y":273.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"vicios","x":355.5,"y":254.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"mantenimiento","x":355.5,"y":254.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"otra","x":562.5,"y":291.0,"s":9},{"t":"X","p":1,"k":"tipo","v":"arrendamiento","x":562.5,"y":291.0,"s":9},{"t":"C","p":1,"k":"vigDesdeComb","x":149,"y":232.5,"w":86,"n":8,"s":8},{"t":"C","p":1,"k":"vigHastaComb","x":312,"y":232.5,"w":87,"n":8,"s":8},{"t":"T","p":1,"k":"beneficiario","x":165,"y":191.5,"w":423,"s":9},{"t":"X","p":1,"k":"moneda","v":"DOP","x":193.5,"y":177.5,"s":9},{"t":"X","p":1,"k":"moneda","v":"USD","x":229.5,"y":177.5,"s":9},{"t":"T","p":1,"k":"valorNum","x":257,"y":175.5,"w":110,"s":9},{"t":"T","p":1,"k":"pctNum","x":429,"y":175.5,"w":29,"s":9},{"t":"X","p":1,"k":"moneda","v":"DOP","x":170.5,"y":159.5,"s":9},{"t":"X","p":1,"k":"moneda","v":"USD","x":206.5,"y":159.5,"s":9},{"t":"T","p":1,"k":"baseSumaNum","x":233,"y":157.5,"w":111,"s":9},{"t":"L","p":1,"k":"obligacion","s":8,"lines":[[311,139.5,276],[24,127.5,564]]},{"t":"T","p":1,"k":"f1Name","x":113,"y":94.5,"w":205,"s":9},{"t":"T","p":1,"k":"f1Id","x":398,"y":94.5,"w":190,"s":9},{"t":"T","p":1,"k":"f1Prof","x":131,"y":76.5,"w":187,"s":9},{"t":"T","p":1,"k":"f2Name","x":112,"y":58.5,"w":206,"s":9},{"t":"T","p":1,"k":"f2Id","x":398,"y":58.5,"w":190,"s":9},{"t":"T","p":1,"k":"f2Prof","x":131,"y":40.5,"w":187,"s":9},{"t":"X","p":2,"k":"moneda","v":"DOP","x":186.5,"y":692.0,"s":9},{"t":"X","p":2,"k":"moneda","v":"USD","x":222.0,"y":692.0,"s":9},{"t":"T","p":2,"k":"valorLetrasSolo","x":250,"y":690.5,"w":338,"s":8},{"t":"T","p":2,"k":"valorNum","x":89,"y":673.5,"w":99,"s":8},{"t":"T","p":2,"k":"signName","x":36,"y":254.5,"w":354,"s":9},{"t":"T","p":3,"k":"hoyDia","x":530,"y":757.5,"w":37,"s":9},{"t":"T","p":3,"k":"hoyMesNombre","x":44,"y":742.5,"w":58,"s":8},{"t":"T","p":3,"k":"hoyAnio","x":127,"y":742.5,"w":67,"s":9}]}};
+/* Datos adicionales que pide cada aseguradora (se muestran solo para esa aseguradora) */
+const INSURER_FORM_EXTRAS = {
+  humano: ['ncf', 'tipoEntidad', 'sectorEco', 'contratista', 'respaldo', 'personal'],
+  mapfre: ['respaldo', 'provincia'],
+  sura: ['personal', 'provincia', 'cobNum'],
+  banreservas: ['pep'],
+  general: [], aps: [], crecer: []
+};
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function insurerFormFor(id){ return INSURER_FORMS[id] || null; }
+function bondFormExtras(b){ return INSURER_FORM_EXTRAS[bondFormInsurer(b)] || []; }
+/* Separa "Lucien Antoine Hache Pérez" en nombres y apellidos */
+function splitNombre(full){
+  const w = String(full || '').trim().split(/\s+/).filter(Boolean).filter((x, i) => !(i === 0 && /^(ing|lic|licda|dr|dra|arq|sr|sra|srta|ingra?)\.?$/i.test(x)));
+  if(w.length <= 1) return { nombres: w.join(' '), apellidos: '', n1: w[0] || '', n2: '', a1: '', a2: '' };
+  if(w.length === 2) return { nombres: w[0], apellidos: w[1], n1: w[0], n2: '', a1: w[1], a2: '' };
+  if(w.length === 3) return { nombres: w[0], apellidos: w[1] + ' ' + w[2], n1: w[0], n2: '', a1: w[1], a2: w[2] };
+  const n = w.slice(0, w.length - 2), a = w.slice(-2);
+  return { nombres: n.join(' '), apellidos: a.join(' '), n1: n[0], n2: n.slice(1).join(' '), a1: a[0], a2: a[1] };
+}
+function dmy(iso){ if(!iso) return ''; const p = String(iso).slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(iso); }
+/* Todos los datos que puede pedir un formulario, como texto listo para escribir */
+function bondPdfData(b){
+  const v = k => String(bfv(b, k) || '').trim(), a = b.afianzado, o = b.obligacion;
+  const ccy = bondCcy(b), sym = ccy === 'USD' ? 'US$ ' : 'RD$ ';
+  const num = n => (+n > 0) ? (+n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '';
+  const amt = bondAmount(b), base = bondType(b).base !== 'manual' ? bondBaseAmount(b) : 0, pct = bondPct(b);
+  const t = new Date(), hoyIso = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  const sign = v('signDate') || hoyIso;
+  const rep = splitNombre(v('repName'));
+  const persona = v('persona') || 'juridica';
+  const edifApto = [v('cobEdif'), v('cobApto') ? 'Apto. ' + v('cobApto') : ''].filter(Boolean).join(', ');
+  const direccion = [v('cobCalle'), edifApto, v('cobSector'), v('cobCiudad')].filter(Boolean).join(', ');
+  const same = v('sameAddress') !== 'no';
+  const ins = bondFormInsurer(b), q = (b.quotes || []).find(x => x.insurerId === ins);
+  const qc = q ? bondCalc(b, q) : null;
+  const letras = numeroALetras(amt);
+  const contrato = +o.contractAmount > 0 ? +o.contractAmount : base;
+  const pctC = contrato && amt ? String(+(amt / contrato * 100).toFixed(2)) : (pct !== '' ? String(pct) : '');
+  const d = {
+    persona, empresa: a.name || '', rnc: a.rnc || '', actividad: a.activity || '', fechaConst: dmy(v('fechaConst')),
+    cobCalle: v('cobCalle'), cobEdif: v('cobEdif'), cobApto: v('cobApto'), edifApto, cobSector: v('cobSector'), cobCiudad: v('cobCiudad'),
+    cobNum: v('cobNum'), cobCalleEdif: [v('cobCalle'), v('cobEdif')].filter(Boolean).join(', '), provincia: v('provincia'), direccion,
+    domCalle: same ? '' : v('domCalle'), domEdif: same ? '' : v('domEdif'), domApto: same ? '' : v('domApto'), domSector: same ? '' : v('domSector'), domCiudad: same ? '' : v('domCiudad'),
+    telRes: v('telRes'), telOfi: v('telOfi'), cel: v('cel'), telefono: v('cel') || v('telOfi') || v('telRes'), email: v('email'), repEmail: v('repEmail') || v('email'),
+    repName: v('repName'), n1: rep.n1, n2: rep.n2, a1: rep.a1, a2: rep.a2, repIdType: v('repIdType'), repId: v('repId'), repBirth: dmy(v('repBirth')),
+    repSex: v('repSex'), repProfession: v('repProfession'), nacionalidad: v('nacionalidad'), estadoCivil: v('estadoCivil'),
+    veh: v('veh'), vehMarca: v('vehMarca'), vehModelo: v('vehModelo'), vehAnio: v('vehAnio'), vivienda: v('vivienda'),
+    moneda: ccy, tipo: b.type, tipoLabel: bondTypeName(b), tipoOtro: ['seriedad', 'fiel', 'anticipo', 'aduanal'].includes(b.type) ? '' : bondTypeName(b),
+    vigDesde: dmy(o.startDate), vigHasta: dmy(bondEnd(b)), vigencia: o.startDate ? dmy(o.startDate) + ' al ' + dmy(bondEnd(b)) : '',
+    plazoTxt: o.months ? o.months + ' meses' : '',
+    valorNum: num(amt), valor: amt ? sym + num(amt) : '', valorLetras: amt ? numeroALetras(amt, ccy === 'USD' ? 'dólares' : 'pesos') : '',
+    valorLetrasSolo: amt ? letras.replace(/ con \d\d\/100$/, '') : '',
+    /* los formularios piden el % sobre el contrato (si no hay contrato, sobre la base de la fianza) */
+    pctNum: pctC, pct: pctC ? pctC + '%' : '',
+    baseSumaNum: num(contrato), baseSuma: contrato ? sym + num(contrato) : '', valorContrato: +o.contractAmount ? sym + num(o.contractAmount) : '',
+    obligacion: [o.description, o.process ? '(' + (b.sector === 'publico' ? 'Proceso ' : 'Ref. ') + o.process + ')' : ''].filter(Boolean).join(' '),
+    beneficiario: b.beneficiario.name || '', beneficiarioRnc: b.beneficiario.rnc || '',
+    benefDocType: b.beneficiario.rnc ? (String(b.beneficiario.rnc).replace(/\D/g, '').length === 11 ? 'cedula' : 'rnc') : '',
+    solDocType: persona === 'fisica' ? 'cedula' : 'rnc',
+    signName: v('signName'), signPos: v('signPos'), signDate: dmy(sign),
+    signDia: sign.slice(8, 10), signMesNombre: MESES_ES[+sign.slice(5, 7) - 1] || '', signAnio: sign.slice(0, 4),
+    hoy: dmy(hoyIso), hoyDia: String(t.getDate()), hoyMesNombre: MESES_ES[t.getMonth()], hoyAnio: String(t.getFullYear()),
+    hoyComb: hoyIso.slice(8, 10) + hoyIso.slice(5, 7) + hoyIso.slice(0, 4),
+    vigDesdeComb: o.startDate ? o.startDate.slice(8, 10) + o.startDate.slice(5, 7) + o.startDate.slice(0, 4) : '',
+    vigHastaComb: bondEnd(b) ? bondEnd(b).slice(8, 10) + bondEnd(b).slice(5, 7) + bondEnd(b).slice(0, 4) : '',
+    lugarFecha: (v('cobCiudad') || 'Santo Domingo') + ', ' + dmy(hoyIso),
+    intermediario: (state.config && state.config.brokerName) || '', brokerCode: v('brokerCode'),
+    primaNeta: qc && qc.net ? sym + num(qc.net) : '', isc: qc && qc.isc ? sym + num(qc.isc) : '', primaTotal: qc && qc.total ? sym + num(qc.total) : '',
+    ncf: v('ncf'), tipoEntidad: v('tipoEntidad') || (b.sector === 'publico' ? '' : 'privada'), sectorEco: v('sectorEco'),
+    expAnios: v('expAnios'), licPendiente: v('licPendiente'), obrasEjecucion: v('obrasEjecucion'), contratoCancelado: v('contratoCancelado'),
+    penalizado: v('penalizado'), funcionarios: v('funcionarios'),
+    respaldo: v('respaldo'), respMonto: v('respMonto'), respBanco: v('respBanco'), respMoneda: v('respMonto') ? ccy : '',
+    pep: v('pep'), pepNombre: v('pepNombre'), pepPuesto: v('pepPuesto'), pepPais: v('pepPais'), pepPeriodo: v('pepPeriodo'),
+    canal: 'corredores'
+  };
+  for(let i = 1; i <= 4; i++) d['ubic' + i] = v('ubic' + i);
+  for(let i = 1; i <= 2; i++){
+    const t2 = v('bank' + i + 'Type');
+    d['bank' + i + 'Name'] = v('bank' + i + 'Name'); d['bank' + i + 'Type'] = t2; d['bank' + i + 'Acct'] = v('bank' + i + 'Acct');
+    ['corriente', 'ahorro', 'certificado'].forEach(tt => { d['bank' + i + 'Acct_' + tt] = t2 === tt ? (v('bank' + i + 'Acct') || '✓') : ''; });
+    const l4 = v('card' + i + 'Last4'), ct = v('card' + i + 'Type');
+    d['card' + i + 'Bank'] = v('card' + i + 'Bank'); d['card' + i + 'Last4'] = l4 ? '**** ' + l4 : ''; d['card' + i + 'Type'] = ct;
+    d['card' + i + 'TypeTxt'] = ({ visa:'Visa', mastercard:'MasterCard', otra:'Otra' })[ct] || '';
+  }
+  for(let i = 1; i <= 3; i++){
+    const f = 'f' + i, s = splitNombre(v(f + 'Name'));
+    d[f + 'Name'] = v(f + 'Name'); d[f + 'Nombres'] = s.nombres; d[f + 'Apellidos'] = s.apellidos;
+    d[f + 'IdType'] = v(f + 'IdType'); d[f + 'DocType'] = v(f + 'IdType'); d[f + 'Id'] = v(f + 'Id');
+    d[f + 'Prof'] = v(f + 'Prof'); d[f + 'Dir'] = v(f + 'Dir'); d[f + 'Tel'] = v(f + 'Tel'); d[f + 'Cel'] = ''; d[f + 'Email'] = v(f + 'Email');
+  }
+  /* Secciones de persona física / jurídica (Humano y Reservas las separan) */
+  if(persona === 'fisica'){
+    Object.assign(d, { pfNombre: a.name || v('repName'), pfId: a.rnc || v('repId'), pfIdType: v('repIdType') || 'cedula', pfBirth: d.repBirth, pfSex: v('repSex'),
+      pfNac: v('nacionalidad') && !/dominican/i.test(v('nacionalidad')) ? 'otra' : 'dominicana', pfNacOtra: /dominican/i.test(v('nacionalidad')) ? '' : v('nacionalidad'),
+      pfCivil: v('estadoCivil'), pfHijos: v('hijos'), pfNivel: v('nivel'), pfCalle: v('cobCalle'), pfNum: v('cobNum'), pfEdif: edifApto, pfSector: v('cobSector'), pfCiudad: v('cobCiudad'),
+      pfVivienda: v('vivienda'), pfTelRes: v('telRes'), pfTelOfi: v('telOfi'), pfCel: v('cel'), pfEmail: v('email'), pfDireccion: direccion, tipoEntidad: '' });
+  } else {
+    Object.assign(d, { pjEmpresa: a.name || '', pjRnc: a.rnc || '', pjCalle: v('cobCalle'), pjNum: v('cobNum'), pjEdif: edifApto, pjSector: v('cobSector'), pjCiudad: v('cobCiudad'),
+      pjRep: v('repName'), pjFechaConst: d.fechaConst, pjTel: v('telRes') || v('telOfi'), pjTelOfi: v('telOfi'), pjCel: v('cel'), pjEmail: v('email'), pjActividad: a.activity || '', pjDireccion: direccion });
+  }
+  return d;
+}
+/* Escribe los datos sobre el PDF original */
+async function fillInsurerPdf(bytes, spec, data){
+  const L = window.PDFLib;
+  const pdf = await L.PDFDocument.load(bytes, { ignoreEncryption:true });
+  try{ const form = pdf.getForm(); form.getFields().forEach(f => { try{ form.removeField(f); }catch(e){} }); }catch(e){}
+  const font = await pdf.embedFont(L.StandardFonts.Helvetica), bold = await pdf.embedFont(L.StandardFonts.HelveticaBold);
+  const ok = new Set(font.getCharacterSet());
+  const clean = s => Array.from(String(s == null ? '' : s).replace(/\s+/g, ' ').trim()).map(ch => ok.has(ch.codePointAt(0)) ? ch : (ch === '✓' ? 'X' : '')).join('');
+  const ink = L.rgb(0.05, 0.12, 0.42), pages = pdf.getPages();
+  const fit = (txt, w, size) => { let s = size; while(s > 5.5 && font.widthOfTextAtSize(txt, s) > w) s -= 0.5; return s; };
+  for(const it of spec.items){
+    const pg = pages[it.p - 1]; if(!pg) continue;
+    if(it.t === 'W'){ pg.drawRectangle({ x:it.x, y:it.y, width:it.w, height:it.h, color:L.rgb(1, 1, 1) }); continue; }
+    if(it.t === 'X'){ const val = data[it.k]; if(val != null && String(val) === String(it.v)){ const s = it.s || 9; pg.drawText('X', { x:it.x - bold.widthOfTextAtSize('X', s) / 2, y:it.y - s * 0.35, size:s, font:bold, color:ink }); } continue; }
+    const txt = clean(data[it.k]); if(!txt) continue;
+    if(it.t === 'C'){ const cw = it.w / it.n; Array.from(txt).slice(0, it.n).forEach((ch, i) => { pg.drawText(ch, { x:it.x + i * cw + (cw - font.widthOfTextAtSize(ch, it.s)) / 2, y:it.y, size:it.s, font, color:ink }); }); continue; }
+    if(it.t === 'T'){ const s = fit(txt, it.w, it.s || 9); let t2 = txt; while(t2.length > 1 && font.widthOfTextAtSize(t2, s) > it.w) t2 = t2.slice(0, -2) + '…'; pg.drawText(t2, { x:it.x, y:it.y, size:s, font, color:ink }); continue; }
+    if(it.t === 'L'){
+      /* reparte el texto en las líneas disponibles; reduce la letra si no cabe */
+      let s = it.s || 9, lines;
+      const wrap = size => { const out = []; let rest = txt.split(' '); for(const [, , w] of it.lines){ let cur = ''; while(rest.length){ const nx = cur ? cur + ' ' + rest[0] : rest[0]; if(font.widthOfTextAtSize(nx, size) <= w || !cur){ cur = nx; rest.shift(); } else break; } out.push(cur); } return { out, rest }; };
+      while(true){
+        const r = wrap(s); lines = r.out;
+        if(!r.rest.length || s <= 5.5){
+          if(r.rest.length){ /* no cabe: se corta la última línea con "…" */
+            const w = it.lines[it.lines.length - 1][2]; let last = lines[lines.length - 1] + ' …';
+            while(last.length > 2 && font.widthOfTextAtSize(last, s) > w){ const nx = last.replace(/\s*\S+\s*…$/, ' …'); if(nx === last) break; last = nx; }
+            lines[lines.length - 1] = last.trim();
+          }
+          break;
+        }
+        s -= 0.5;
+      }
+      lines.forEach((ln, i) => { if(!ln) return; const [x, y, w] = it.lines[i]; const s2 = fit(ln, w, s); pg.drawText(ln, { x, y, size:s2, font, color:ink }); });
+    }
+  }
+  return pdf.save();
+}
+function loadScriptOnce(src, globalName){
+  if(window[globalName]) return Promise.resolve(true);
+  return new Promise(res => { const s = document.createElement('script'); s.src = src; s.onload = () => res(!!window[globalName]); s.onerror = () => res(false); document.head.appendChild(s); });
+}
+async function exportInsurerForm(){
+  const b = activeBond(); if(!b) return;
+  const id = bondFormInsurer(b), spec = insurerFormFor(id);
+  if(!spec){ syncToast('Esta aseguradora no tiene formulario propio cargado. Usa el genérico.', false); return; }
+  syncToast('Preparando el formulario de ' + spec.name + '…', true);
+  try{
+    const okLib = await loadScriptOnce('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js', 'PDFLib');
+    if(!okLib) throw new Error('No cargó la librería de PDF. Revisa la conexión.');
+    const resp = await fetch('formularios/' + spec.file, { cache:'no-cache' });
+    if(!resp.ok) throw new Error('No se encontró formularios/' + spec.file + ' en el sitio (HTTP ' + resp.status + ').');
+    const out = await fillInsurerPdf(await resp.arrayBuffer(), spec, bondPdfData(b));
+    saveAs(new Blob([out], { type:'application/pdf' }), 'Formulario-' + spec.name.replace(/[^A-Za-z0-9]+/g, '-') + '-' + b.ref + '.pdf');
+    syncToast('Formulario de ' + spec.name + ' listo ✓', true);
+  }catch(err){
+    console.error(err);
+    syncToast('⚠ ' + (err.message || err) + (typeof LOCAL_DEV !== 'undefined' && LOCAL_DEV && location.protocol === 'file:' ? ' (Al abrir el archivo directo en la PC el navegador no deja leer la carpeta formularios/; funciona en la versión publicada.)' : ''), false);
+  }
 }
 
 /* ============================================================
